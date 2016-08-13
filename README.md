@@ -35,7 +35,9 @@ Download the GIT repo wherever you want :
 ```sh
 	git clone https://github.com/wildtruc/winestart.git
 	# as su -c in a terminal or with sudo
-	make install
+	su-c "make install"
+	# or
+	sudo make install
 ```
 
 To uninstall:

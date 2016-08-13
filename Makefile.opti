@@ -1,4 +1,4 @@
-CONF_DIR = ~/.winestart
+CONF_DIR = /home/$(USER).winestart
 
 .PHONY: all install uninstall safeuninstall
 

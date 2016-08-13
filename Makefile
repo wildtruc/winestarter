@@ -1,4 +1,4 @@
-CONF_DIR = ~/.winestart
+CONF_DIR = ~/home/$(USER)/.winestart
 
 .PHONY: all install uninstall safeuninstall
 
@@ -6,8 +6,8 @@ all: install
 
 install:
 	mkdir -p $(CONF_DIR)
-	cp ./winestart.conf $(CONF_DIR)/
-	cp ./winestart /usr/local/bin/
+	cp -f ./winestart.conf $(CONF_DIR)/
+	cp -f ./winestart /usr/local/bin/
 	
 uninstall:
 	rm -rf $(CONF_DIR)
