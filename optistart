@@ -1,0 +1,65 @@
+#! /bin/bash
+
+## You can place the script everywhere, but /usr/local/bin is still the best
+## You can rename the script as you wish
+## You can redistribute it as you wish : GPL v3
+## author : wildtruc@noneltd.net
+## usage : winestart.sh CONFILE 
+## define per game conf files dir
+
+scpt_dir=/home/$USER/.user_scripts
+conf=$1
+## create the user script conf directory if it doesn't exist
+[ -d $scpt_dir ]|| mkdir -p $scpt_dir
+## Is per game specific wine conf file exist ?
+[ -n $scpt_dir/$conf ]|| exit 0
+. $scpt_dir/$conf
+
+## additional function for wine process
+fn_regedit(){
+	if [ ! -e /home/$USER/$prefix/$reg_file ]; then
+		printf "$user_reg\n" > /home/$USER/$prefix/$reg_file
+		if [[ $(cat -n /home/$USER/$prefix/$reg_file| sed -n '$p'|awk '{print $1}') -ge 1 ]]; then
+#			printf "boom!\n"
+			wine regedit /home/$USER/$prefix/$reg_file
+		else
+			IFS=$ifs ; exit 0
+		fi
+	fi
+}
+
+cd $scpt_dir
+##set xrandr if necessary
+if [ $auto_set -gt 0 ]; then
+	${set_xrandr}
+	sleep 3
+fi
+## made space unix redeable
+ifs=$IFS
+IFS=$(echo -en "\n\b")
+if [ ! -e /home/$USER/$prefix/drive_c/Program\ Files/$game_dir/$game_exe ]; then IFS=$ifs ; exit 0; fi
+## export env variable, usually "env WINEARCH=wine32 WINEPREFIX=~/wine_prefix" before wine cmd 
+export WINEARCH=win32
+#export WINEARCH=win64
+export WINEPREFIX=/home/$USER/$prefix
+#export PRIMUS_SYNC=$SYNC
+export vblank_mode=$VBLK
+reg_file=$(printf "$conf"| sed -n "s/\.conf//p")".reg"
+## create and insert registry entry if any.
+if [[ $(printf "$user_reg"| sed -n '$p') != '' ]]; then fn_regedit; fi
+## Replace slash by backslash
+game_dir=$(printf "$game_dir"|sed -n "s/\//\\\/g;p")
+game_exe=$(printf "$game_exe"|sed -n "s/\//\\\/g;p")
+## execute
+$starter $opts $accel wine C:\\Program\ Files\\$game_dir\\$game_exe $wine_opts
+## restore linux regex
+IFS=$ifs
+if [ $auto_set -gt 0 ]; then
+	sleep 5
+	bin_pid="pgrep $short_name*"
+	while [[ $(${bin_pid}) ]]; do 
+		sleep 10
+	done
+	${bck_xrandr}
+fi
+exit 0

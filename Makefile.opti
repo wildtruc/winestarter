@@ -1,0 +1,18 @@
+CONF_DIR = ~/.winestart
+
+.PHONY: all install uninstall safeuninstall
+
+all: install
+
+install:
+	mkdir -p $(CONF_DIR)
+	cp ./optistart.conf $(CONF_DIR)/
+	cp ./optistart /usr/local/bin/
+	
+uninstall:
+	rm -rf $(CONF_DIR)
+	rm -f /usr/local/bin/optistart
+	
+safeuninstall:
+	rm -f /usr/local/bin/optistart
+
