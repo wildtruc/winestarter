@@ -14,6 +14,7 @@ Well, boring...
 At the beginning, I wish to get a script to launch some games over **Wine** and **Bumblebee**. If **Wine** command lines could be a bit long, I wont tell you with **Bumblebee** !
 
 I turn around the right solution since a while, but finally got this one and I'm very happy with it.
+
 --------
 
 The GIT repo comes with 2 versions :
