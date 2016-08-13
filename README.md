@@ -14,13 +14,13 @@ Well, boring...
 At the beginning, I wish to get a script to launch some games over **Wine** and **Bumblebee**. If **Wine** command lines could be a bit long, I wont tell you with **Bumblebee** !
 
 I turn around the right solution since a while, but finally got this one and I'm very happy with it.
+--------
 
-
-The GIT repo comes with 2 versions
+The GIT repo comes with 2 versions :
 
 The original one used to launch games/apps with *Bumblebee/Optimus*: `optistart`, and a lighter one without the *Optimus* options: `winestart`.
 
-Two files for each:
+Two files for each :
  - The bash script launcher
  - The config file.
 
@@ -34,7 +34,7 @@ I add a **xrandr** option that can be very useful in some case.
 Download the GIT repo wherever you want :
 ```sh
 	git clone https://github.com/wildtruc/winestart.git
-	# as su in a terminal or with sudo
+	# as su -c in a terminal or with sudo
 	make install
 ```
 
@@ -43,7 +43,7 @@ To uninstall:
 	make uninstall
 ```
 
-To uninstall without remove recious conf files :
+To uninstall without remove precious conf files :
 ```sh
 	make safeuninstall
 ```
@@ -52,7 +52,7 @@ The `makefile` will install launcher in `/usr/local/bin` and the per game/app co
 If you choose the **optistart** launcher :
 ```sh
 	make -f Makefile.opti install
-``` 
+```
 
 ## Usage
 First, remenber this is just a launcher.
@@ -63,7 +63,7 @@ Edit and rename the winestart/optistart conf file as you wish, then :
 	winestart game.conf
 ```
 
-### Config file edit
+## Config file edit
 The config is a per game/app file, so you can create many conf files as you want.
 
 This is an example for *Final Fantasy XIV* in the 2 ways (winestart/optistart):
@@ -170,7 +170,7 @@ The difference is in the bumblebee options, that all.
 As you can see there is many variable options, in fact you can write as many as you need. It's very useful to test all the tricks send in WinHQ or else where.
 You finally keep the ones really needed.
 
-### Xrandr
+## Xrandr
 There is also an **xrandr** option.
 
 For a classic app, this is unuseful, but for games it really could be.
@@ -182,15 +182,18 @@ This option use the game *PID* to know when the game start and stop. This way it
 
 To discover the *PID*, the script need a *short word* extract usually from the real `.exe` game launcher. In the case of *Final Fantasy XIV*, there's 2, `ffxivlauncher.exe` and `ffxivboot.exe`, but both have `ffxiv`, so the short name is *ffxiv*.
 
-*Final Fantasy XIV* has 3 screen mode: *fullscreen, windowed and borderless window*. This is in the last case the **xrandr"" trick is very very useful for my small mobile Nvidia GPU.
+*Final Fantasy XIV* has 3 screen mode: *fullscreen, windowed and borderless window*. This is in the last case the **xrandr** trick is very very useful for my small mobile Nvidia GPU.
 
 Hope it would be for you too.
 
-### xrandr special
+### Xrandr special
 To get your default screen res, type in a terminal :
 ```sh
 	xrandr --current | grep -w "connected"
 ```
 
 The one with a res is your default(s). You just have now to set it in the conf file to the default reset point.
+
+## Special thanks
+To all the community and contributors of **WineHQ** that make the world goes round and made this work possible.
 
