@@ -120,14 +120,14 @@ optistart :
 
 	## optimus starter with options
 	## comment if you don't need them
-	#starter="optirun"
-	#opts="-b"
-	#accel="primus"
+	starter="optirun"
+	opts="-b"
+	accel="primus"
 	#starter="primusrun"
 	#opts=""
 	#accel=""
 	## optimus env options
-	#SYNC=1
+	SYNC=1
 	
 	## Vertical sync behavior
 	## set enable (1) or disable (0)
