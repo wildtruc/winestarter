@@ -1,0 +1,171 @@
+#! /bin/bash
+
+## You can place the script everywhere, but /usr/local/bin is still the best
+## You can rename the script as you wish
+## You can redistribute it as you wish : GPL v3
+## author : wildtruc@noneltd.net
+## usage : winestart.sh CONFILE 
+
+## define per game conf files dir
+scpt_dir=/home/$USER/.user_scripts
+w_tricks=/usr/local/bin/winetricks
+wine_bin=wine
+conf=$1
+
+## create the user script conf directory if it doesn't exist
+[ -d $scpt_dir ]|| mkdir -p $scpt_dir
+## Is per game specific wine conf file exist ?
+[ -n $scpt_dir/$conf ]|| exit 0
+. $scpt_dir/$conf
+
+## optimus special sets
+fn_optimus(){
+	export vblank_mode=$opti_VBLK
+	export PRIMUS_SYNC=$opti_SYNC
+	opti_run="$opti_starter $opti_opts $opti_accel"
+}
+## additional function for wine process
+fn_regedit(){
+	if [ ! -e $user_prefix/$bottle_prefix/$reg_file ]; then
+		printf "$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file
+		if [[ $(cat -n $user_prefix/$bottle_prefix/$reg_file| sed -n '$p'|awk '{print $1}') -ge 1 ]]; then
+#			printf "boom!\n"
+			wine regedit $user_prefix/$bottle_prefix/$reg_file
+		else
+			IFS=$ifs ; exit 0
+		fi
+	else
+		previous_reg=$(cat -n $user_prefix/$bottle_prefix/$reg_file| grep -c ".*")
+		new_reg=$(printf "$user_reg"|grep -c ".*")
+		if [ $new_reg -ne $previous_reg ]; then
+			printf "$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file
+			wine regedit $user_prefix/$bottle_prefix/$reg_file
+		fi
+	fi
+}
+fn_use_winepath(){
+	if [ -d $wine_path/$wine_ver ]; then
+#		export PATH=$PATH:$wine_path/$wine_ver/bin
+#		wine_bin=$wine_path/$wine_ver/bin/wine
+		export WINELOADER=$wine_path/$wine_ver/bin/wine
+		export WINESERVER=$wine_path/$wine_ver/bin/wineserver
+		export WINEDLLPATH=$wine_path/$wine_ver
+	else
+		printf "# No special Wine path found: Was it set in conf ?\n"
+		exit 0
+	fi
+}
+fn_install_tricks(){
+	if [ $w_tricks_list ]; then
+		if [ -x $w_tricks ]; then
+			for w_list in "${w_tricks_list[@]}"; do
+				$w_tricks $w_tricks_opts $w_list
+			done
+			perl -ni -pe "s|w_install_tricks=[0-9]|w_install_tricks=0|i" $scpt_dir/$conf
+#			$w_tricks ${w_tricks_list[@]}
+		else
+			printf "# Winetricks was not found, install it first\n"
+			exit 0
+		fi
+	fi
+}
+fn_install_exe(){
+	if [ -e $w_exe_path ]; then
+		msi=$(printf "$w_exe_path"| grep -c "\.msi")
+#		if [[ $(printf "$w_exe_path"| grep -o "\.msi") ]]; then
+#			msi=" msiexec /i"
+#		fi
+		if [ $msi = 0 ]; then
+			$wine_bin $w_exe_path $w_exe_opts
+		else
+			$wine_bin msiexec \/i $w_exe_path $w_exe_opts
+		fi
+		if [ -e $user_prefix/$bottle_prefix/drive_c/$game_dir/$game_exe]; then
+			perl -ni -pe "s|w_install_exe=[0-9]|w_install_exe=0|i" $scpt_dir/$conf
+		fi
+	else
+		printf "# EXE path was not found.\n# Define the right install executable path is mandatory.\n# EXIT.\n"
+		exit 0
+	fi
+	
+}
+fn_game_dir_exist(){
+	if [[ $game_path != '' ]]; then
+		link=$(printf "$game_path"| sed -n "s/^.*\///g;p")
+#		cd $user_prefix/$bottle_prefix/drive_c/Program\ Files/
+		ln -sf $game_path $user_prefix/$bottle_prefix/drive_c/Program\ Files/
+	fi
+}
+fn_wineconf(){
+	winecfg
+	perl -ni -pe "s|w_config=[0-9]|w_config=0|i" $scpt_dir/$conf
+}
+fn_replace_env(){
+	if [ -x $secondary_desktop ]; then
+		$secondary_desktop --replace &
+	fi
+}
+cd $scpt_dir
+##set xrandr if necessary
+if [ $auto_set -gt 0 ]; then
+	${set_xrandr}
+	sleep 3
+fi
+## make unix space behaviour redeable
+ifs=$IFS
+IFS=$(echo -en "\n\b")
+## export env variable, usually "env WINEARCH=wine32 WINEPREFIX=~/wine_prefix" before wine cmd 
+export WINEARCH=win32
+#export WINEARCH=win64
+export WINEPREFIX=$user_prefix/$bottle_prefix
+if [ $use_optimus = 1 ]; then fn_optimus; fi
+if [ $use_winepath = 1 ]; then fn_use_winepath; fi
+if [ $w_install_tricks = 1 ]; then fn_install_tricks; fi
+if [ $w_install_exe = 1 ]; then fn_install_exe; fi
+fn_game_dir_exist
+if [ $w_config = 1 ]; then fn_wineconf ; fi
+
+## check one last time that appli directory exist
+#full_dir=$(printf "$user_prefix/$bottle_prefix/drive_c/Program File/$game_dir"| \
+#sed -n "s/ /\\\ /g;p")
+#if [ ! -d "$full_dir" ]; then
+#    IFS=$ifs 
+#    printf "# Can't find $user_prefix/$bottle_prefix for $game_dir/$game_exe\n# EXIT.\n"
+#    exit 0
+#fi
+if [ $set_desktop_env = 1 ]; then fn_replace_env; fi
+#[ -e $user_prefix/$bottle_prefix/drive_c/$game_dir/$game_exe ]|| export $game_dir/$game_exe
+reg_file=$(printf "$conf"| sed -n "s/\.conf//p")".reg"
+## create and insert registry entry if any.
+if [[ $(printf "$user_reg"| sed -n '$p') != '' ]]; then fn_regedit; fi
+## Replace Linux slash by Windows backslash
+game_dir=$(printf "$game_dir"|sed -n "s/\//\\\/g;p")
+game_exe=$(printf "$game_exe"|sed -n "s/\//\\\/g;p")
+## execute
+$opti_run $wine_bin C:\\Program\ Files\\$game_dir\\$game_exe $wine_opts
+#$starter $opts $accel wine C:\\Program\ Files\\$game_dir\\$game_exe $wine_opts
+#PRIMUS_SYNC\=1 vblank_mode\=0 $starter $opts $accel wine C:\\Program\ Files\\$game_dir\\$game_exe $wine_opts
+## restore linux regex
+IFS=$ifs
+## find .exe pid file and let some time for exe too launch before
+sleep 5
+exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*\/\(\w*\([A-Z]\|[a-z]\).exe\).*$/\1/;s/^\(.\{3\}\).*/\1/g;1p")
+bin_pid="pgrep ^$exe_short"
+## if replace window manager is set, don't kill it before the app is ended
+if [ $set_desktop_env -gt 0 ]; then
+#	sleep 5
+	while [[ $(${bin_pid}) ]]; do 
+		sleep 10
+	done
+	$default_desktop --replace &
+fi
+## if xrandr resolution is set, don't kill it before the app is ended
+if [ $auto_set -gt 0 ]; then
+#	sleep 5
+#	bin_pid="pgrep $short_name*"
+	while [[ $(${bin_pid}) ]]; do 
+		sleep 10
+	done
+	${bck_xrandr}
+fi
+exit 0

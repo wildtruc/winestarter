@@ -11,11 +11,14 @@ install:
 	cp -Rf ./emblem $(CONF_DIR)/
 	cp -Rf ./png $(CONF_DIR)/
 	cp -f ./winestarter /usr/local/bin/
+	cp -f ./winestarter_conf /usr/local/bin/
 	
 uninstall:
 	rm -rf $(CONF_DIR)
 	rm -f /usr/local/bin/winestarter
+	rm -f /usr/local/bin/winestarter_conf
 	
 safeuninstall:
 	rm -f /usr/local/bin/winestarter
+	rm -f /usr/local/bin/winestarter_conf
 
