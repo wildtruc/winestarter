@@ -77,8 +77,9 @@ This is an example for *Final Fantasy XIV*:
 ```sh
 #! /bin/bash
 
-## fixme:winediag:IcmpCreateFile Failed to use ICMP (network ping), this requires special permissions.
-## fixme:winediag:IcmpCreateFile Falling back to system 'ping' command as a workaround.
+## comments with '##' are unremovable, they are user help comments
+## comments with '#' are unset feature
+
 ## optimus starter with options
 ## comment if you don't need them
 use_optimus=1
@@ -267,20 +268,23 @@ The one with a res is your default(s). You just have now to set it in the conf f
 ----------
 
 ## Testing configurator UI
-Configurator can do more than the default config file, but doesn't change it except for last dedicated line.
+Configurator can do more than the default config file, but doesn't change it except for dedicated configurator needed line.
 
 to test type:
 ```sh
 	make -F Makefile.testing
 ```
 
-It will produce the needed example config files and dirs in `~/.winestarter/configs`: FFXIV, LOL, STEAM. Note taht that STEAM was fully installed and configured by thescript on my desktop.
+The makefile will produce the needed example config files and dirs in `~/.winestarter/configs`: FFXIV, LOL, STEAM.
 then just type in a terminal:
 ```sh
 	winestarter_conf
 ```
 
 `winestarter_conf` will procduce many codes lines in the terminal at this point slowing it, this is intentional for my debug purpose. It wont in final release.
+
+### Experienced
+Note that STEAM was fully installed and configured by the basic script on my desktop.
 
 ## Special thanks
 To all the community and contributors of **WineHQ** that make the world goes round and made this work possible.

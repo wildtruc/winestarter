@@ -7,7 +7,8 @@
 ## usage : winestart.sh CONFILE 
 
 ## define per game conf files dir
-scpt_dir=/home/$USER/.user_scripts
+#scpt_dir=$HOME/.user_scripts
+scpt_dir=$HOME/.winestarter
 w_tricks=/usr/local/bin/winetricks
 wine_bin=wine
 conf=$1
