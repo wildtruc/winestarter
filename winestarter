@@ -4,7 +4,7 @@
 ## You can rename the script as you wish
 ## You can redistribute it as you wish : GPL v3
 ## author : wildtruc@noneltd.net
-## usage : winestart.sh CONFILE 
+## usage : winestart CONIGFILE 
 
 ## define per game conf files dir
 #scpt_dir=$HOME/.user_scripts
@@ -16,14 +16,26 @@ conf=$1
 ## create the user script conf directory if it doesn't exist
 [ -d $scpt_dir ]|| mkdir -p $scpt_dir
 ## Is per game specific wine conf file exist ?
-[ -n $scpt_dir/$conf ]|| exit 0
-. $scpt_dir/$conf
+[ -n $scpt_dir/configs/$conf ]|| exit 0
+config_file=$scpt_dir/configs/$conf
+. $config_file
+[[ $auto_set ]]|| auto_set=0
+[[ $set_desktop_env ]]|| set_desktop_env=0
+[[ $use_optimus ]]|| use_optimus=0
+[[ $use_winepath ]]|| use_winepath=0
+[[ $w_install_tricks ]]|| w_install_tricks=0
+[[ $w_install_exe ]]|| w_install_exe=0
+[[ $w_config ]]|| w_config=0
+##define user home desktop directory
+DESK_DIR=$(cat $HOME/.config/user-dirs.dirs| grep "XDG_DESKTOP_DIR"| \
+sed -n "s|\"||g;s|\$HOME|$HOME|p")
+DESK_DIR=("$DESK_DIR")
 
 ## optimus special sets
 fn_optimus(){
 	export vblank_mode=$opti_VBLK
 	export PRIMUS_SYNC=$opti_SYNC
-	opti_run="$opti_starter $opti_opts $opti_accel"
+	opti_run="$opti_starter $opti_accel"
 }
 ## additional function for wine process
 fn_regedit(){
@@ -31,7 +43,7 @@ fn_regedit(){
 		printf "$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file
 		if [[ $(cat -n $user_prefix/$bottle_prefix/$reg_file| sed -n '$p'|awk '{print $1}') -ge 1 ]]; then
 #			printf "boom!\n"
-			wine regedit $user_prefix/$bottle_prefix/$reg_file
+			$wine_b regedit $user_prefix/$bottle_prefix/$reg_file
 		else
 			IFS=$ifs ; exit 0
 		fi
@@ -39,36 +51,164 @@ fn_regedit(){
 		previous_reg=$(cat -n $user_prefix/$bottle_prefix/$reg_file| grep -c ".*")
 		new_reg=$(printf "$user_reg"|grep -c ".*")
 		if [ $new_reg -ne $previous_reg ]; then
-			printf "$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file
-			wine regedit $user_prefix/$bottle_prefix/$reg_file
+			if [ $new_reg -gt 0 ]; then
+				printf "$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file
+				wine regedit $user_prefix/$bottle_prefix/$reg_file
+			else
+				$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Direct3D
+				printf "" > $user_prefix/$bottle_prefix/$reg_file
+			fi
 		fi
 	fi
 }
 fn_use_winepath(){
-	if [ -d $wine_path/$wine_ver ]; then
-#		export PATH=$PATH:$wine_path/$wine_ver/bin
-#		wine_bin=$wine_path/$wine_ver/bin/wine
+	wine_env(){
 		export WINELOADER=$wine_path/$wine_ver/bin/wine
 		export WINESERVER=$wine_path/$wine_ver/bin/wineserver
 		export WINEDLLPATH=$wine_path/$wine_ver
+	}
+	if ! [ -n $wine_path ]; then mkdir -p $HOME/.winebin; fi
+	if [ -d $wine_path/$wine_ver ]; then
+		wine_env
 	else
-		printf "# No special Wine path found: Was it set in conf ?\n"
-		exit 0
-	fi
+		printf "# No special Wine path found: Try to download.\n"
+		## control if wine bin dir exist. If not create it from default
+		if ! [ -d $wine_path/ ]; then mkdir -p $wine_path; fi
+		## PoL server address
+		pol_address='http://wine.playonlinux.com/binaries/linux-x86/'
+		## create tmp dir for package download
+		dl_dir=$(mktemp --tmpdir -d wine_pol.XXXXXXXX)
+		w_title="Winestarter"
+		w_text="<span weight=\"bold\" font=\"10\">Downloading $wine_ver from PoL server. Please wait</span>"
+		## Analyse and parse wget stdout field, then display it in a yad window
+		track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $wine_ver [\1] time left: \3\t\2\/s/"; }
+		dl_cmd(){ wget $pol_address/PlayOnLinux-wine-$wine_ver-linux-x86.pol $dl_dir/ 2>&1; }
+		cd $dl_dir
+		## yad progress bar
+		dl_cmd | track | yad --width=450 --title "$w_title" --text-align=center --text="$w_text" \
+		--window-icon=filesave --image=filesave --progress --auto-close
+		if [ -s $dl_dir/PlayOnLinux-wine-$wine_ver-linux-x86.pol ]; then
+			e_text="<span weight=\"bold\" font=\"10\">Extracting $wine_ver to $wine_path</span>"
+			tar -xf PlayOnLinux-wine-$wine_ver-linux-x86.pol | \
+			yad --width=400 --title "$w_title" --text-align=center --text="$e_text" \
+			--window-icon=filesave --progress --pulsate--auto-close
+			cp -Rf wineversion/$wine_ver/ $wine_path/
+			wine_env
+		else
+			printf "# Downloaded package missing. Using defautl Wine.\n"
+		fi
+	fi	
 }
 fn_install_tricks(){
 	if [ $w_tricks_list ]; then
 		if [ -x $w_tricks ]; then
+			w_tricks_list=( $(echo "$w_tricks_list"| sed -n "s/,/\n/g;p") )
 			for w_list in "${w_tricks_list[@]}"; do
 				$w_tricks $w_tricks_opts $w_list
 			done
-			perl -ni -pe "s|w_install_tricks=[0-9]|w_install_tricks=0|i" $scpt_dir/$conf
+			perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
 #			$w_tricks ${w_tricks_list[@]}
 		else
 			printf "# Winetricks was not found, install it first\n"
 			exit 0
 		fi
 	fi
+}
+fn_extract_lnk(){
+	local $DESK_DIR
+	sct_time=$(date +%H%M)
+	dsk_dir=$XDG_DESKTOP_DIR
+	
+	desktop_file=$(ls -rtgGB --time-style=+%H%M $dsk_dir |sed -n '$p')
+	dsk_name=$(echo "$desktop_file"| sed -n "s/\(^.*$sct_time\) \(.*\..*$\)/\2/p")
+	f_name=$(echo "$dsk_name"| sed -n "s/\..*$//p")
+	if [ "$dsk_name" ]; then
+		IFS=$(echo -en "\n\b")
+		if [ $(cat $dsk_dir/"$dsk_name"| grep -c "Path=" ) -gt 0 ]; then
+			d_dest_dir=$(cat $dsk_dir/$dsk_name| grep "Path="|sed -n "s/^.*c:\\///p")
+			if [ $(echo "$d_dest_dir"| egrep -c "(^\s*Prog.*Files)") -gt 0 ];then
+				root_key="Program Files/"
+				game_dir=$(echo "$d_dest_dir"| sed -n "s/^\(Prog.*Files\)\/\(.*\)/\2/p")
+			else
+				root_key='/'
+				game_dir=$(echo "$d_dest_dir"| sed -n "s/\/$//p")
+			fi
+		fi
+		w_dest_lnk=$(cat $dsk_dir/$dsk_name| grep "Exec="|sed -n "s/^.*C://p"| cut -d' ' -f3)
+		t_dest_exe=$(strings "$w_dest_lnk"| egrep "(\s*[\w]*.exe)"|sed -n '1p')
+		t_dest_dir=$(strings "$w_dest_lnk"| egrep "(\s*[\w]*.exe)"|sed -n "s/^.*\\\//p")
+		if [[ $t_dest_exe ]]; then
+			game_exe=$t_dest_exe	
+		else
+			game_exe=$t_dest_dir
+		fi
+		if [ -s $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; then
+			if [ -s $config_file ]; then
+				sed -ni "s|^\(\w*game_dir=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_dir\4|i;p" $config_file
+				sed -ni "s|^\(\w*game_exe=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_exe\4|i;p" $config_file
+			fi
+			## modify and backup the desktop file
+			fn_convert_desktop_file
+		fi
+#		IFS=$ifs
+	fi
+}
+fn_convert_desktop_file(){
+	if [ -s /usr/bin/convert ]; then
+	local $DESK_DIR
+	exe_key=$(printf "$game_exe"| perl -pe "s/^.*\///p")
+	
+	if [ -s $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; then
+		dsk_dir=$XDG_DESKTOP_DIR
+		if ! [ $dsk_name ]; then
+			dsk_key=$(echo "$game_dir"| sed -n "s/^.*\///g;p")
+			desktop_file_list=( $(ls -1 $dsk_dir| egrep "(\s*.desktop$)") )
+			for _file in "${desktop_file_list[@]}"; do
+				if [ $(cat $dsk_dir/$_file|egrep -c "(\s*$dsk_key)") -gt 0 ]; then
+					dsk_name=$_file
+				fi
+			done
+		fi
+		if [ -s $dsk_dir/$dsk_name ]; then
+			if [ $(cat $dsk_dir/$dsk_name| egrep -c "(\s*Icon=.*$exe_key)") = 0 ]; then
+				d_icon=$(cat $dsk_dir/$dsk_name| grep "Icon="|sed -n "s/^Icon=//p")
+				d_exec=$(printf "$game_exe"|perl -pe "s/$.*\///p")
+				d_path=$(cat $dsk_dir/$dsk_name| grep "Path="|sed -n "s/^Path=//p")
+				d_emblem=$scpt_dir/emblems/wine_emblem.png
+				d_png_dir=$scpt_dir/png
+				l_icon_dir=$HOME/.local/share/icons/hicolor
+				cp -f $dsk_dir/$dsk_name $HOME/.winestarter/desktop/
+				icons_list=( $(find $l_icon_dir -iname "$d_icon*") )
+				R=0
+				for _png in ${icons_list[@]}; do
+					# /home/mike/.local/share/icons/hicolor/16x16/apps/A409_tera-launcher.0.png
+					icon_def=$(printf "$_png"| egrep -o "(\s*[0-9]*x[0-9]*)")
+					icon_rank=$(printf "$icon_def"| sed -n "s/^.*x//p")
+					icon_min=$((256-$icon_rank))
+					if [ $icon_min -le 208 ]; then
+						rank_list+=("$icon_rank")
+					fi
+				done
+				if [[ "${rank_list[*]}" != '' ]]; then
+					# "0,64 1,48 2,128"
+					scale_op=$(printf "%s\n" ${rank_list[*]}| sort -n| tail -1)
+					scale=$scale_op'x'$scale_op
+					d_icon_src=$l_icon_dir/$scale/apps/$d_icon.png
+					/usr/bin/convert $d_icon_src $d_emblem -scale $scale -composite $d_png_dir/$d_exec.png
+					if [ -s $d_png_dir/$d_exec.png ]; then
+						## replace icon
+						sed -ni "s|^\(Icon\)=\(.*\)|\1=$d_png_dir/$d_exec.png|i;p" $dsk_dir/$dsk_name
+						## replace exec
+						sed -ni "s|^\(Exec\)=\(.*\)|\1=winestarter $conf|i;p" $dsk_dir/$dsk_name
+					fi
+				fi
+			fi
+		else
+			## not found
+			echo "»»»» NO DESKTOP FILE TO PROVIDE. PASSED."
+		fi		
+	fi
+	else echo "»»»» WARNING: IMAGEMAGIK CONVERT NOT FOUND. PASSED."; fi
 }
 fn_install_exe(){
 	if [ -e $w_exe_path ]; then
@@ -81,9 +221,11 @@ fn_install_exe(){
 		else
 			$wine_bin msiexec \/i $w_exe_path $w_exe_opts
 		fi
-		if [ -e $user_prefix/$bottle_prefix/drive_c/$game_dir/$game_exe]; then
-			perl -ni -pe "s|w_install_exe=[0-9]|w_install_exe=0|i" $scpt_dir/$conf
+		fn_extract_lnk
+		if [ -e $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; then
+			perl -ni -pe "s|(w_install_exe)=[0-9]|\1=0|i" $config_file
 		fi
+		sleep 2
 	else
 		printf "# EXE path was not found.\n# Define the right install executable path is mandatory.\n# EXIT.\n"
 		exit 0
@@ -91,15 +233,36 @@ fn_install_exe(){
 	
 }
 fn_game_dir_exist(){
+	if ! [ -d $user_prefix/$bottle_prefix/drive_c/Program\ Files ]; then
+		root_key=''
+		sed_key=''
+	else
+		root_key="Program Files/"
+		sed_key='Files\/'
+	fi
 	if [[ $game_path != '' ]]; then
 		link=$(printf "$game_path"| sed -n "s/^.*\///g;p")
 #		cd $user_prefix/$bottle_prefix/drive_c/Program\ Files/
-		ln -sf $game_path $user_prefix/$bottle_prefix/drive_c/Program\ Files/
+		if ! [ -d $user_prefix/$bottle_prefix/drive_c/"$root_key"$link ]; then
+#		if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then
+			ln -sf $game_path $user_prefix/$bottle_prefix/drive_c/$root_key
+#		else
+#			ln -sf $game_path $user_prefix/$bottle_prefix/drive_c/Program\ Files/
+#			fn_extract_lnk
+			if ! [ $game_dir ]; then
+				game_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"$link/$(ls -1 $user_prefix/$bottle_prefix/drive_c/"$root_key"$link/)
+				game_dir=$(echo "$game_dir"| sed -n "s/^.*$sed_key//g;p")
+				sed -ni "s|^\(\w*game_dir=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_dir\4|i;p" $config_file
+			fi
+			if ! [ $game_exe ]; then
+				sed -ni "s|^\(\w*game_exe=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_dir\4|i;p" $config_file
+			fi
+		fi
 	fi
 }
 fn_wineconf(){
 	winecfg
-	perl -ni -pe "s|w_config=[0-9]|w_config=0|i" $scpt_dir/$conf
+	perl -ni -pe "s|(w_config)=[0-9]|\1=0|i" $config_file
 }
 fn_replace_env(){
 	if [ -x $secondary_desktop ]; then
@@ -107,7 +270,7 @@ fn_replace_env(){
 	fi
 }
 cd $scpt_dir
-##set xrandr if necessary
+## set xrandr if necessary
 if [ $auto_set -gt 0 ]; then
 	${set_xrandr}
 	sleep 3
@@ -119,39 +282,50 @@ IFS=$(echo -en "\n\b")
 export WINEARCH=win32
 #export WINEARCH=win64
 export WINEPREFIX=$user_prefix/$bottle_prefix
+
 if [ $use_optimus = 1 ]; then fn_optimus; fi
 if [ $use_winepath = 1 ]; then fn_use_winepath; fi
 if [ $w_install_tricks = 1 ]; then fn_install_tricks; fi
 if [ $w_install_exe = 1 ]; then fn_install_exe; fi
 fn_game_dir_exist
+fn_convert_desktop_file
 if [ $w_config = 1 ]; then fn_wineconf ; fi
 
 ## check one last time that appli directory exist
-#full_dir=$(printf "$user_prefix/$bottle_prefix/drive_c/Program File/$game_dir"| \
-#sed -n "s/ /\\\ /g;p")
-#if [ ! -d "$full_dir" ]; then
-#    IFS=$ifs 
-#    printf "# Can't find $user_prefix/$bottle_prefix for $game_dir/$game_exe\n# EXIT.\n"
-#    exit 0
-#fi
+#if ! [ -s $user_prefix/$bottle_prefix/drive_c/Program\ Files/$game_dir/$game_exe ] || \
+if ! [ -s $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; then
+    IFS=$ifs 
+    echo "»»»» Can't find $game_exe for $user_prefix/$bottle_prefix
+»»»» ABORT & EXIT"
+    exit 0
+fi
 if [ $set_desktop_env = 1 ]; then fn_replace_env; fi
 #[ -e $user_prefix/$bottle_prefix/drive_c/$game_dir/$game_exe ]|| export $game_dir/$game_exe
 reg_file=$(printf "$conf"| sed -n "s/\.conf//p")".reg"
 ## create and insert registry entry if any.
-if [[ $(printf "$user_reg"| sed -n '$p') != '' ]]; then fn_regedit; fi
+#if [[ $(printf "$user_reg"| sed -n '$p') != '' ]]; then fn_regedit; fi
+fn_regedit
+if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then
+	win_prog=''
+else	
+	win_prog='Program Files\\'
+	win_prog='Program Files\'
+fi
 ## Replace Linux slash by Windows backslash
 game_dir=$(printf "$game_dir"|sed -n "s/\//\\\/g;p")
 game_exe=$(printf "$game_exe"|sed -n "s/\//\\\/g;p")
 ## execute
-$opti_run $wine_bin C:\\Program\ Files\\$game_dir\\$game_exe $wine_opts
-#$starter $opts $accel wine C:\\Program\ Files\\$game_dir\\$game_exe $wine_opts
-#PRIMUS_SYNC\=1 vblank_mode\=0 $starter $opts $accel wine C:\\Program\ Files\\$game_dir\\$game_exe $wine_opts
+$opti_run $wine_bin C:\\$win_prog$game_dir\\$game_exe $wine_opts
 ## restore linux regex
 IFS=$ifs
 ## find .exe pid file and let some time for exe too launch before
 sleep 5
-exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*\/\(\w*\([A-Z]\|[a-z]\).exe\).*$/\1/;s/^\(.\{3\}\).*/\1/g;1p")
+#exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*\/\(\w*\([A-Z]\|[a-z]\).exe\).*$/\1/;s/^\(.\{3\}\).*/\1/g;1p")
+exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*[\/\|\\\]//;s/^\(.\{3\}\).*/\1/g;p")
 bin_pid="pgrep ^$exe_short"
+## if script is launched from winestarter configurator, ger Yad pid and kill it
+#if [ $YAD_PID ]; then killall -9 yad ; fi
+if [ $YAD_PID ]; then kill $YAD_PID $(($YAD_PID+1)) ; fi
 ## if replace window manager is set, don't kill it before the app is ended
 if [ $set_desktop_env -gt 0 ]; then
 #	sleep 5
