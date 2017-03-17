@@ -176,9 +176,6 @@ main_code(){
 	}
 	extract_tmp_settings(){
 	unset conf_prep _reg_var _uns_var
-	echo -e "*****\n${tmp_cut[*]}\n"
-	echo -e "#####\n${tab_temp[*]}\n"
-
 	for sets in "${tab_temp[@]}"; do
 		unset conf_prep new_conf_list
 		s_var=$(printf "$sets"| cut -d';' -f1)
@@ -203,7 +200,6 @@ main_code(){
 			fi
 		done
 		# start write here
-		echo "#########################"
 		for ins in "${conf_prep[@]}"; do
 			_fn_var=$(printf "$ins"| cut -d';' -f1)
 			_fn_val=$(printf "$ins"| cut -d';' -f2)
@@ -223,24 +219,16 @@ main_code(){
 						if [[ $_var == user_reg ]]; then
 							cat $config_file | sed -n "/^user_reg='/,/'/{;s/.*/user_reg=''/};p"| \
 							uniq > $reg_temp
-#							if [ $(printf "$_val"| grep -c ".*") -gt 0 ]; then
 								perl -ni -pe "s|^user_reg=''|user_reg='$(cat $reg_edit)'|i" $reg_temp
 								if [ $insert_section = 0 ]; then
 									cat $reg_temp > $config_file
 								fi
-#							else
-#								perl -ni -pe "s|^user_reg=''|user_reg='$(cat $reg_edit)'|i" $reg_temp
-#								if [ $insert_section = 0 ]; then
-#									cat $reg_temp > $config_file
-#								fi
-#							fi
 						else
 							if [ "$_val" != discard ]; then
 								if [ "$_val" != '' ]; then
 									if [ $(cat "$config_file"| egrep -c "(^\s*$_var.*['\|\"])") -gt 0 ]; then
 										sed -ni "s|^\(\w*$_var=\)\(['\|\"]\)\(.*\)\(['\|\"]\)$|\1\2$_val\4|i;p" $config_file
 									else
-#										sed -ni "s|^\(\w*$_var\)=\([0-9]\)$|\1=$_val|i;p" $config_file
 										sed -ni "s|^\(\w*$_var\)=\(.*\)$|\1=$_val|i;p" $config_file
 									fi
 								else
@@ -300,15 +288,11 @@ main_code(){
 		# launch default start window
 		conf_target=$(printf "$bottle_prefix"| sed -n "s/^.*\/.//g;p")
 		w_title="Wine Starter"
-		main_tab_text="$bf Configuration applied to$end $brf$conf_target$end" 
-		#"$nf\\n Items leave \'unset\' will not be set to the Winestarter config file$end"
+		main_tab_text="$bf Configuration applied to$end $brf$conf_target$end"
  		w_text="BloBlo"
 		tab_set=(
 		"1;_resume;Resume;fn_end_game_1;$img_wine_desk_ui")
 #		"2;_resume;Warnings;fn_end_game_2;$img_wine_desk_ui")
-		
-		# TODO > buttons launch now and launch now debug
-		
 		# window style and function
 		win_type=1
 		# create main window variables
@@ -323,9 +307,6 @@ main_code(){
 You can launch the script now or later by command line from a terminal window :$end\\n\
 $nf\winetstarter $conf_target.conf$end"
 		w_res_0="Note and warnings : When using this tool, you can occur window crash or freeze. This is a Yad issue that will be hopefuly fix in a near futur."
-#		w_res_0="Note and warnings : When using this tool, you can"
-#		w_res_1="occur window crash or freeze. This is a Yad issue that" 
-#		w_res_2="will be hopefuly fix in a near futur."
 		basic_sets=(
 		"1;;;;;LBL;;;"
 		"2;$res_action;;;$res_launch;FBTN;;;"
@@ -399,7 +380,7 @@ $nf\winetstarter $conf_target.conf$end"
 			else _val=''; fi
 		fi
 		if [[ $_var == wine_bin ]]; then
-			if [[ $_val != $HOME ]]; then
+			if [[ $_val != unset ]]; then
 				if [[ $_val != $wine_ver ]]; then _var=wine_ver; fi
 			else
 				_val=''
@@ -1049,10 +1030,10 @@ to already know the complete path name of the installed app.$end"
 			local_bin_list=( $(ls -1x $wine_path) )
 		fi
 		if [ -s /usr/bin/lftp ]; then
-			ftp_temp=$(mktemp --tmpdir ftp.XXXXXXXX)
-			loc_temp=$(mktemp --tmpdir ftp.XXXXXXXX)
+			ftp_temp=$(mktemp --tmpdir ftp1.XXXXXXXX)
+			loc_temp=$(mktemp --tmpdir ftp2.XXXXXXXX)
 			pol_address='http://wine.playonlinux.com/binaries/linux-x86/'
-			/usr/bin/lftp -c "anon; cd $pol_address;sleep 1; ls > $ftp_temp; quit"
+			/usr/bin/lftp -c "anon; cd $pol_address;sleep 2; ls > $ftp_temp; quit"
 #			sleep 1
 			cat $ftp_temp| egrep -v "(^\s*.*sha1)"| awk '{print $5}'| \
 			sed -n "s|^.*wine-\(.*\)-\(linux.*$\)|\1|p"| tac > $ftp_temp
@@ -2061,15 +2042,16 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 		from_config=1
 		export from_config=$from_config config_file=$config_file
 		if [ $desktop_file = 1 ]; then
-#			bash -x -c "colors; icons_set; config_text; edit_desktop"
-			bash -c "colors; icons_set; config_text; edit_desktop"
+#			bash -x -c "colors; icons_set; edit_desktop"
+			bash -c "colors; icons_set; edit_desktop"
 		else
-#			bash -x -c "colors; icons_set; config_text; code=$code; main_code"
-			bash -c "colors; icons_set; config_text; code=$code; main_code"
+#			bash -x -c "colors; icons_set; code=$code; main_code"
+			bash -c "colors; icons_set; code=$code; main_code"
 		fi
 	else
 		exit 0
-	fi	
+	fi
+	exit 0
 }
 
 #main_cmd_0='bash -x -c "colors; icons_set; code=0; from_config=0; main_code"'
