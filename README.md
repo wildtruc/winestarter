@@ -20,8 +20,7 @@ I turn around the right solution since a while, but finally got this one and I'm
 
 Note to MAC users: The script will probably works for you (don't know for Yad), but it need somme desktop environnent I don't have or know. So, if you want it, give a hand !
 
---------
-
+# Basics
 The project comes with 2 scripts:
  - `winestarter`: the command line base.
  - `winestarter_conf`: the Yad graphical interface
@@ -30,6 +29,13 @@ Config file and configuration UI are completly independent and script can work w
 
 Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards
 
+# OS Depencies
+ - Yad (zenity fork)
+ - lftp (for PoL packages download)
+ - ImageMagick (for image convertion, mostly by default in all distros)
+ - strings (for MS Icons reading, mostly by default in all distros)
+ - icoutils (for MS Icons png extraction, name can vary by distro)
+ 
 --------
 ## Features
  - Create and configure a basic Wine bottle
