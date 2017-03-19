@@ -1,5 +1,8 @@
 # winestart
-A very simple script to start wine emulated applications
+
+[[/png/defaults/wine32r.png]]
+
+A not very simple script to start wine emulated applications
 
 -------
 ## Introduction
@@ -28,6 +31,18 @@ Config file and configuration UI are completly independent and script can work w
 
 Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards
 
+--------
+## Features
+ - Create and configure a basic Wine bottle
+ - Configure a custom Wine binaries directory
+ - Install Winestricks packages
+ - Create and configure a Wine registry
+ - Install a MS software.
+ - Create or modify a desktop file entry
+ - Configure Nvidia apps enviroment options
+ - Configure Xrandr behaviour
+ - Set Optimus Bumblebee/Primusrun variables
+ 
 --------
 To simplefy usage description, we will use a full working example for config from Final Fantasy XIV game.
  
@@ -268,7 +283,9 @@ There is short user help displayed
 
 ### Experienced
 STEAM was fully installed and configured by the basic script on my desktop.
+
 TERA Online was installed successfuly too.
+
 FF was installed earlier, but I spend my time to change many things for my debug purpose: desktop file, icons, game directory, Wine binary, etc... And it still work great. 
 
 ## Special thanks and Dedicates

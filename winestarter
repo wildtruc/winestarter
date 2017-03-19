@@ -10,7 +10,7 @@
 #scpt_dir=$HOME/.user_scripts
 scpt_dir=$HOME/.winestarter
 w_tricks=/usr/local/bin/winetricks
-wine_bin=wine
+wine_bin='wine'
 conf=$1
 
 ## create the user script conf directory if it doesn't exist
@@ -84,8 +84,8 @@ fn_use_winepath(){
 		--window-icon=filesave --image=filesave --progress --auto-close
 		if [ -s $dl_dir/PlayOnLinux-wine-$wine_ver-linux-x86.pol ]; then
 			e_text="<span weight=\"bold\" font=\"10\">Extracting $wine_ver to $wine_path</span>"
-			tar -xf PlayOnLinux-wine-$wine_ver-linux-x86.pol | \
-			yad --width=400 --title "$w_title" --text-align=center --text="$e_text" \
+			( tar -xf PlayOnLinux-wine-$wine_ver-linux-x86.pol 
+			)| yad --width=400 --title "$w_title" --text-align=center --text="$e_text" \
 			--window-icon=filesave --progress --pulsate --auto-close
 			cp -Rf wineversion/$wine_ver/ $wine_path/
 			_use_winepath_env=1
@@ -97,7 +97,7 @@ fn_use_winepath(){
 fn_use_winepath_env(){
 	export WINELOADER=$wine_path/$wine_ver/bin/wine
 	export WINESERVER=$wine_path/$wine_ver/bin/wineserver
-	export WINEDLLPATH=$wine_path/$wine_ver
+	export WINEDLLPATH=$wine_path/$wine_ver/lib
 }
 fn_install_tricks(){
 	if [ $w_tricks_list ]; then
@@ -317,10 +317,8 @@ fn_convert_desktop_file
 if [ $_use_winepath_env -gt 0 ]; then
 	export WINELOADER=$wine_path/$wine_ver/bin/wine
 	export WINESERVER=$wine_path/$wine_ver/bin/wineserver
-	export WINEDLLPATH=$wine_path/$wine_ver/
-#	wine_bin=$WINELOADER
-#	w_env="env WINELOADER=$WINELOADER WINESERVER=$WINESERVER WINEDLLPATH=$WINEDLLPATH"
-#	env $PATH=$PATH;$wine_path/$wine_ver/bin/
+#	export WINEDLLPATH=$wine_path/$wine_ver
+	export PATH=$PATH:$wine_path/$wine_ver/bin
 fi
 if [ $w_config = 1 ]; then fn_wineconf ; fi
 
@@ -348,8 +346,10 @@ fi
 ## Replace Linux slash by Windows backslash
 game_dir=$(printf "$game_dir"|sed -n "s/\//\\\/g;p")
 game_exe=$(printf "$game_exe"|sed -n "s/\//\\\/g;p")
+
 ## execute
-$opti_run $w_env $wine_bin C:\\$win_prog$game_dir\\$game_exe $wine_opts
+$opti_run $wine_bin C:\\$win_prog$game_dir\\$game_exe $wine_opts
+
 ## restore linux regex
 IFS=$ifs
 ## find .exe pid file and let some time for exe too launch before
@@ -357,7 +357,7 @@ sleep 5
 #exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*\/\(\w*\([A-Z]\|[a-z]\).exe\).*$/\1/;s/^\(.\{3\}\).*/\1/g;1p")
 exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*[\/\|\\\]//;s/^\(.\{3\}\).*/\1/g;p")
 bin_pid="pgrep ^\(\s*$exe_short.*$\)"
-PID=`$bin_pid`
+A_PID=`$bin_pid`
 ## if script is launched from winestarter configurator, ger Yad pid and kill it
 #if [ $YAD_PID ]; then killall -9 yad ; fi
 if [ $YAD_PID ]; then kill $YAD_PID $(($YAD_PID+1)) ; fi

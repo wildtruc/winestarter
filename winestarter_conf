@@ -99,7 +99,7 @@ main_code(){
 		fi
 		if [ $win_type = 1 ]; then
 			yad --width=420 $t_plug --text="$w_text" --form \
-			"${field_list[@]}" "${chk_list[@]}" --separator=';' &> $temp &
+			"${field_list[@]}" "${chk_list[@]}" --separator=';' > $temp &
 		fi
 		if [ $win_type = 2 ]; then
 			"${field_list[@]}" "${chk_list[@]}"
@@ -286,7 +286,7 @@ main_code(){
 		
 		unset basic_sets tab_set tab_temp cfg_set t_display form_win 
 		# launch default start window
-		conf_target=$(printf "$bottle_prefix"| sed -n "s/^.*\/.//g;p")
+		conf_target=$(printf "$bottle_prefix"|  sed -n "s/^.*[\/.\|.]\(\w*[Aa-Zz]\.\w*[Aa-Zz]*\)/\1/g;p")
 		w_title="Wine Starter"
 		main_tab_text="$bf Configuration applied to$end $brf$conf_target$end"
  		w_text="BloBlo"
@@ -333,6 +333,7 @@ $nf\winetstarter $conf_target.conf$end"
 		# create main window variables
 	}
 	reconf_wine(){
+		
 		# "user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
 		if [[ $_var == use_winepath ]]; then
 			if [[ $_val == TRUE ]]; then _val=1; else _val=0; fi
@@ -347,7 +348,15 @@ $nf\winetstarter $conf_target.conf$end"
 			else _val=''; fi
 		fi
 		if [[ $_var == wine_ver ]]; then
-			if [[ $_val != $HOME ]]; then _val=$(printf "$_val"| sed -n "s|^.*/||g;p"); else _val=''; fi
+			if [ -s /tmp/w_bin_tmp ]; then
+				cat "$loc_temp"
+				_val=$(cat /tmp/w_bin_tmp| sed -n "s/ //p")
+			else
+				if [[ $_val != $HOME ]]; then _val=$(printf "$_val"| sed -n "s|^.*/||g;p")
+				else _val=''; fi
+			fi
+			rm -f /tmp/w_bin_tmp
+			
 		fi
 		if [[ $_var == bottle_prefix ]]; then
 			if [[ $_val != $HOME ]]; then _val=$(printf "$_val"| sed -n "s|^.*/||g;p"); else _val=''; fi
@@ -603,7 +612,7 @@ user_reg=''"
 					if [ "$_val" == 'full control' ]; then
 						_FSAA_list=("__GL_FSAAAppControlled;0" "__GL_FSAAAppEnhanced;0")
 					
-					elif [ "$_val" == 'multisample' ]; then
+					elif [ "$_val" == 'enhanced' ]; then
 						_FSAA_list=("__GL_FSAAAppControlled;0" "__GL_FSAAAppEnhanced;1") 
 						
 					elif [ "$_val" == 'ignored' ]; then
@@ -683,7 +692,7 @@ user_reg=''"
 export __GL_FSAA_MODE=$__GL_FSAA_MODE
 ## if set, FSAA comes 2 others variables that have to be set as follow respectively :
 ## To get FSAA full control: [0] [0]
-## To get FSAA if application use multisample : [0] [1]
+## To get FSAA enhanced for application using multisample : [0] [1]
 ## To get FSAA controlled by nvidia-setting ignored : [1] [1]
 export __GL_FSAAAppControlled=$__GL_FSAAAppControlled
 export __GL_FSAAAppEnhanced=$__GL_FSAAAppEnhanced
@@ -917,7 +926,7 @@ opti_VBLK=$opti_VBLK"
 ## Yad UI messages and main text	
 	messages(){
 		main_tab_text="$bf Select settings by theme$end$nf\\n \
- Items leave \'unset\' will not be set to the Winestarter config file$end"
+ Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end"
 		msg_wine="Set a new Wine prefix (mandatory)"
 		msg_tricks="Winetricks packages install (Windows packages)"
 		msg_install="Install a Windows Software (experimental)"
@@ -940,27 +949,25 @@ $nf Check here the sections you would like to configure.$end"
 		w_title="Wine Start Config"
 		w_title1="$vB Nvidia OpenGL options$end"
 		w_title2="$vB Miscellenous options$end"
-		wine_tip0="$vb Install software feature is highly experimental. For the instance, you need \
-to already know the complete path name of the installed app.$end"
-		wine_tip1="$vb Main prefix install sections$end"
+#		wine_tip0="$vb Install software feature is highly experimental. For the instance, you need \
+#to already know the complete path name of the installed app.$end"
+		wine_tip0="$vb Main prefix install sections$end"
 				
 		basic_sets=(
 		"1;;;;;LBL;;;"
 		"2;;;;$wine_tip0;LBL"
-		"3;;;;;LBL;;;"
-		"4;;;;$wine_tip1;LBL"
-		"5;$_wine;_wine;Wine;$msg_wine;CHK;;;fn_wine_config;$img_wine_cfg"
-		"6;$_install;_install;Install*Software;$msg_install;CHK;;;fn_install_soft;$img_install"
-		"7;$_tricks;_tricks;Install*tricks;$msg_tricks;CHK;;;fn_winetricks;$img_tricks"
-		"8;$_reged;_reged;Regedit;$msg_reged;CHK;;;fn_regedit_config;$img_reged"
-		"9;;;;;LBL;;;"
-		"10;;;;$w_title1;LBL"
-		"11;$_nvidia_1;_nvidia_1;Nvidia*(common);$msg_nvidia1;CHK;;;fn_nvidia_config_1;$img_nv_cm"
-		"12;$_nvidia_2;_nvidia_2;Nvidia*(optional);$msg_nvidia2;CHK;;;fn_nvidia_config_2;$img_nv_ext"
-		"13;;;;;LBL;;;"
-		"14;;;;$w_title2;LBL"
-		"15;$_xrandr;_xrandr;Monitor;$msg_xrandr;CHK;;;fn_xrandr_config;$img_xrandr"
-		"16;$_optimus;_optimus;Optimus;$msg_optimus;CHK;;;fn_optimus_config;$img_opti")
+		"3;$_wine;_wine;Wine;$msg_wine;CHK;;;fn_wine_config;$img_wine_cfg"
+		"4;$_install;_install;Install*Software;$msg_install;CHK;;;fn_install_soft;$img_install"
+		"5;$_tricks;_tricks;Install*tricks;$msg_tricks;CHK;;;fn_winetricks;$img_tricks"
+		"6;$_reged;_reged;Regedit;$msg_reged;CHK;;;fn_regedit_config;$img_reged"
+		"7;;;;;LBL;;;"
+		"8;;;;$w_title1;LBL"
+		"9;$_nvidia_1;_nvidia_1;Nvidia*(common);$msg_nvidia1;CHK;;;fn_nvidia_config_1;$img_nv_cm"
+		"10;$_nvidia_2;_nvidia_2;Nvidia*(optional);$msg_nvidia2;CHK;;;fn_nvidia_config_2;$img_nv_ext"
+		"11;;;;;LBL;;;"
+		"12;;;;$w_title2;LBL"
+		"13;$_xrandr;_xrandr;Monitor;$msg_xrandr;CHK;;;fn_xrandr_config;$img_xrandr"
+		"14;$_optimus;_optimus;Optimus;$msg_optimus;CHK;;;fn_optimus_config;$img_opti")
 		# window style and function
 		win_type=0
 		ignore_loop=1
@@ -990,10 +997,10 @@ to already know the complete path name of the installed app.$end"
 		unset basic_sets field_list chk_list track_list track_sets conf_dat pol_bin_list local_bin_list
 		# window messages
 		w_wine_user_prefix="$vB Set user prefix if not the default one:$end"
-		w_wine_prefix="$vB Set the Wine Bottle prefix to use:$end"
-		w_wine_game_path="$vB Set the full game/appli path if different from bottle or if existing already:$end"
-		w_wine_game_dir="$vB Set full Wine style game/appli directory:$end"
-		w_wine_game_exe="$vB Set the Wine game/appli executable to launch:$end"
+		w_wine_prefix="$vB Set the Wine Bottle prefix to use: (\"wine.\" suffix is mandatory)$end"
+		w_wine_game_path="$vB Set the full game/appli path if different from bottle:$end"
+		w_wine_game_dir="$vB Set full Wine style game/appli directory (if already existing):$end"
+		w_wine_game_exe="$vB Set the Wine game/appli executable to launch (if already existing):$end"
 		w_wine_use_winepath="$vB Set if you want to use a custom Wine binary path:$end"
 		w_wine_binary_title="$bf Configure custom Wine binaries$end"
 		w_wine_wine_path="$vB Set full path of customs Wine binaries repository:$end"
@@ -1003,7 +1010,13 @@ to already know the complete path name of the installed app.$end"
 		# check already setted variables
 		track_list="user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
 		wineset_list=$track_list
-
+#		select_win_bin(){ echo -e "\n#############»»»»0000000000000 #################\n"; }
+#		export select_win_bin
+		wine_bin_cmd='bash -c \"select_win_bin"'
+#		wine_bin_cmd='bash --verbose -c \"winestarter select_win_bin"'
+#		wine_bin_cmd='@bash -x -c \"change_fonts_colors\"' 
+#		wine_bin_cmd='@bash -c \"winetricks\"' 
+		
 		if [ $from_config = 1 ]; then
 			ifs=$IFS
 			IFS=$(echo -en "\n\b")
@@ -1026,32 +1039,15 @@ to already know the complete path name of the installed app.$end"
 				local $local_set
 			done
 		fi
-		if [ -d $wine_path ]&&[ "$wine_path" != "$HOME" ]; then	
-			local_bin_list=( $(ls -1x $wine_path) )
-		fi
-		if [ -s /usr/bin/lftp ]; then
-			ftp_temp=$(mktemp --tmpdir ftp1.XXXXXXXX)
-			loc_temp=$(mktemp --tmpdir ftp2.XXXXXXXX)
-			pol_address='http://wine.playonlinux.com/binaries/linux-x86/'
-			/usr/bin/lftp -c "anon; cd $pol_address;sleep 2; ls > $ftp_temp; quit"
-#			sleep 1
-			cat $ftp_temp| egrep -v "(^\s*.*sha1)"| awk '{print $5}'| \
-			sed -n "s|^.*wine-\(.*\)-\(linux.*$\)|\1|p"| tac > $ftp_temp
-#			sleep 1
-			pol_bin_list=( $(cat "$ftp_temp") )
-			for r_bins in ${pol_bin_list[@]}; do
-				out=''
-				for bins in ${local_bin_list[@]}; do
-					if [ $bins == $r_bins ]; then out=' *'; fi
-				done
-				printf "$r_bins$out!" >> $loc_temp
-			done
-			## PlayOnLinux-wine-$r_bins-linux-x86.pol
-			wine_bin_list=$(cat $loc_temp)
-		fi
+		export wine_path=$wine_path 
+#		if [ -d $wine_path ]&&[ "$wine_path" != "$HOME" ]; then	
+#			local_bin_list=( $(ls -1x $wine_path) )
+#		fi
+		
 		
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
+		
 		basic_sets=(
 		"1;;;;;LBL;;;"
 		"2;;;;$w_wine_user_prefix;LBL;;;"
@@ -1066,14 +1062,16 @@ to already know the complete path name of the installed app.$end"
 		"11;$game_exe;game_exe;;$nf EXE file$end;FL;;;"
 		"12;;;;;LBL;;;"
 		"13;;;;$w_wine_binary_title;LBL;;;"
-		"14;$use_winepath;use_winepath;; use Wine binaries path;CHK;;;"
+		"14;$use_winepath;use_winepath;; use Wine binaries path (default:$HOME/.winebin);CHK;;;"
 		"15;;;;$w_wine_wine_path;LBL;;;"
 		"16;$wine_path;wine_path;;$nf Wine binaries dir\t\t$end;DIR;;;"
 		"17;;;;$w_wine_wine_ver;LBL;;;"
 		"18;$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;;"
-		"19;;;;$w_wine_wine_ver;LBL;;;"
-		"20;^unset;wine_bin;;$nf Select package$end;CB;$wine_bin_list;;"
+		"19;$wine_bin_cmd;;;$vb or select a PoL wine package to download$end;FBTN;;;"
 		)
+#		"19;;;;$w_wine_wine_pol;LBL;;;"
+#		"20;^unset;wine_bin;;$nf Select package$end;CB;$wine_bin_list;;"
+#		)
 		IFS=$ifs
 		# window style and function
 		win_type=1
@@ -1095,7 +1093,7 @@ $rb WARNNG:$end$vb Direct3D register config is only usable under WindowsXP bottl
 		w_reg_useglsl=""
 		w_reg_memory=""
 		w_reg_manual1="$vB Custom register (manual edit).$end"
-		w_reg_manual2="$rb Warning:$end$vb Remove all custom or empty lines$end"
+		w_reg_manual2="$rb Warning:$end$vb Remove all custom (set by yourself) or empty lines$end"
 
 		# config file preset
 		vid_mem="256!512!768!1024!2048!3072!4096!6144"
@@ -1186,7 +1184,7 @@ $vb Set the most common Windows packages available in Winetricks needed by your 
 		w_tricks_alt_dot4="Dot NET version 4 (not fully supported)"
 		w_tricks_winetricks="$bf More from Winetricks$end"
 		w_tricks_trk_launch="$st Launch Winetricks separatly$end"
-		w_tricks_trk_dll="$vb or launch Winetricks (can't be used at first config edition)$end"
+		w_tricks_trk_dll="$vb or launch Winetricks$end $rb(can't be used at first config edition)$end"
 		w_tricks_trk_dlls="$vb Add an additional DLL component$end"
 		w_tricks_="$vb $end"
 		w_tricks_="$vb $end"
@@ -1264,9 +1262,9 @@ $vb Set the most common Windows packages available in Winetricks needed by your 
 	fn_install_soft(){
 		unset basic_sets field_list chk_list
 		# window messages
-		w_text="$bf Software install (experimantal)$end\\n \
+		w_text="$bf Software install$end\\n \
 $vb\This feature allow you to install a software at WineStarter launch$end\\n \
-$vb\Remember this is experimental and could fail before the end of process$end"
+$vb\It will work in most cases, but could fail before the end of process$end"
 		w_tricks_trk_exe="check here to activate install process"
 		w_tricks_ins_exe="$vb Select the .exe or .msi package to install$end"
 		w_tricks_trk_opt="$vb Winetricks command line options:$end"
@@ -1300,10 +1298,11 @@ $vb\Remember this is experimental and could fail before the end of process$end"
 		unset basic_sets field_list chk_list track_list track_sets conf_dat
 		# window messages
 		w_nv_tip0="$vB All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
-		w_nv_fsaamod0="$vB Full Scene Anti Aliasing can be set from 0 (off) to 5 16x(4xSS,4xMS)$end"
+#		w_nv_fsaamod0="$vB Full Scene Anti Aliasing, from 0 (off) to 5 (16x) : (1) 2x (2xMS)[1], (2) 4x (4xMS)[5], (3) 8x (4xSS/2xMS)[9], (4) 8x (8xMS)[10], (5) 16x (4xSS/4xMS)[11]$end"
+		w_nv_fsaamod0="$vB Full Scene Anti Aliasing, from 0 (off) to 5 (16x) : (1) 2x (2xMS), (2) 4x (4xMS), (3) 8x (4xSS/2xMS), (4) 8x (8xMS), (5) 16x (4xSS/4xMS)$end"
 		w_nv_fsaactrl0="$vB If set, FSAA comes with 2 others arguments:$end"
-		w_nv_fsaactrl1="$nf Full controlled, if app use multisample or ignored (manage by nvidia-setting)$end"
-		w_nv_fxaa0="$vB Fast approximate antialiasing: multisampling and supersampling methods$end"
+		w_nv_fsaactrl1="$nf Full controlled, enhanced if using multisample or ignored (manage by nvidia-setting)$end"
+		w_nv_fxaa0="$vB This will allow (not force) Fast Approximate Antialiasing: multisampling and supersampling methods$end"
 		w_nv_aniso="$vB Anisotropic texture filtering set: off (0), x2 (1), x4 (2), x8 (3), x16 (4)$end"
 		w_nv_vblank="$vB Synchronize vertical diplay refresh$end"
 		w_nv_thread="$vB Libpthread is not usualy enable in Wine, you can force it to prelaod$end"
@@ -1324,7 +1323,7 @@ $vb\Remember this is experimental and could fail before the end of process$end"
 					__GL_FSAA_CTRL='full control'
 				elif [ $__GL_FSAAAppControlled = 0 ]&&[ $__GL_FSAAAppEnhanced = 1 ]; then
 #					__GL_FSAA_CTRL=2
-					__GL_FSAA_CTRL='multisample'
+					__GL_FSAA_CTRL='enhanced'
 				elif [ $__GL_FSAAAppControlled = 1 ]&&[ $__GL_FSAAAppEnhanced = 1 ]; then
 #					__GL_FSAA_CTRL=3
 					__GL_FSAA_CTRL='ignored'
@@ -1367,7 +1366,7 @@ $vb\Remember this is experimental and could fail before the end of process$end"
 		"4;$__GL_FSAA_MODE;__GL_FSAA_MODE;;$nf Full scene antialiasing$end;NUM;0..5;FSAA_mod;"
 		"5;;;;$w_nv_fsaactrl0;LBL;;;"
 		"6;;;;$w_nv_fsaactrl1;LBL;;;"
-		"7;$__GL_FSAA_CTRL;__GL_FSAAA_CTRL;;$nf FSAA control type$end;CB;full control!multisample!ignored;FSAA_ctrl;"
+		"7;$__GL_FSAA_CTRL;__GL_FSAAA_CTRL;;$nf FSAA control type$end;CB;full control!enhanced!ignored;FSAA_ctrl;"
 		"8;;;;$w_nv_fxaa0;LBL;;;"
 		"9;$__GL_ALLOW_FXAA_USAGE;__GL_ALLOW_FXAA_USAGE;;$nf Fast approximate antialiasing (FXAA)\t\t\t$end;CB;0!1;FXAA_use;"
 		"10;;;;$w_nv_aniso;LBL;;;"
@@ -1389,13 +1388,13 @@ $vb\Remember this is experimental and could fail before the end of process$end"
 		unset basic_sets field_list chk_list track_list track_sets conf_dat
 		# window messages
 		w_nv_tip0="$vB All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
-		w_nv_display="$vB VBLANK can't bet set when using multi screen, choose one here if needed$end"
-		w_nv_fbconfig="$vB This set the X server FBconfig behaviour (very optional)$end"
-		w_nv_yield0="$vB Updating window moves yield: can be useful if some window has refresh$end"
-		w_nv_yield1="$vB issues:$end$nf normal yield (''), no yield (NOTHING), background (USLEEP)$end"
-		w_nv_unofficial0="$vB Allow unofficial GLX implementation (very optional):$end"
-		w_nv_gsync="$vB If monitor can manage G-SYNC behaviour, this could improove performance$end"
-		w_nv_glsl0="$vB This option could be useful in case of some missing extension in OpenGL sets$end"
+		w_nv_display="$vB VBLANK can't bet set separatly when using multi screen, choose one here if needed:$end"
+		w_nv_fbconfig="$vB This set the X server FBconfig behaviour (very optional):$end"
+		w_nv_yield0="$vB Updating window moves yield: can be useful if some window has refresh issues:$end"
+		w_nv_yield1="$nf normal yield (''), no yield (NOTHING), background (USLEEP)$end"
+		w_nv_unofficial0="$vB Allow unofficial GLX implementation from appli (very optional):$end"
+		w_nv_gsync="$vB If monitor can manage G-SYNC behaviour, this option could improove performance:$end"
+		w_nv_glsl0="$vB This option permit to recompile GLSL and could be useful if appli is missing some extension in OpenGL sets:$end"
 		# use 'get_xrandr_list' to set the connected monitor list.
 		monitors_list=$(printf "${connect_[@]}"|tr '\n' '!')
 		# check already setted variables
@@ -1629,7 +1628,7 @@ when it stop. (Mostly useful for Optimus display behaviour).$end"
 		unset basic_sets field_list chk_list track_list
 		# window messages
 		w_text="$bf Optimus special options and sets$end$vb \\n \
-If your using a Optimus Laptop, you can set here the dedicated commands and options usualy use by Linux Optimus manager to launch a app.$end$nf\\nNote: For games, we strongly recommand to use Nvidia-Prime instead of Bumblebee. there's a few tools on the Web, Google then!$end"	
+If your using a Optimus Laptop, you can set here the dedicated commands and options usualy use by Linux Optimus manager to launch a app.$end$nf\\nNote: For games, we strongly recommand to use Nvidia-Prime instead of Bumblebee. there's a few tools on the Web, Google them!$end"	
 		w_opti_tip0="$vb In Bumblebee, you can choose between \'primus\' and \'virtualgl\' as virtualizer.$end"
 		w_opti_tip1="$nf Note: unset will use Bumblebee default virtualizer$end"
 		w_opti_tip2="$vb Primus SYNC environment option is sometime useful in bad frame render$end"
@@ -1724,9 +1723,54 @@ If your using a Optimus Laptop, you can set here the dedicated commands and opti
 	if [ $(printf "${cl[*]}"| grep -c ".*") -gt 0 ]; then local "${cl[@]}"; fi
 	get_xrandr_list
 	if [ $code = 0 ]; then fn_create_prefix; else fn_nvidia_config; fi
-	exit 0	
+	
 }
 ########### MAIN ###########
+# PlayOnLinux packages download window
+select_win_bin(){ colors ; icons_set ; select_wine_bin; }
+select_wine_bin(){
+	unset pol_bin_list local_bin_list
+	if [ -d $wine_path ]&&[ "$wine_path" != "$HOME" ]; then	
+			local_bin_list=( $(ls -1x $wine_path) )
+	fi
+	
+	if [ -s /usr/bin/lftp ]; then
+		ftp_temp=$(mktemp --tmpdir ftp1.XXXXXXXX)
+		loc_temp=$(mktemp --tmpdir ftp2.XXXXXXXX)
+		pol_address='http://wine.playonlinux.com/binaries/linux-x86'
+		p_text="$vb\Retrieving Wine PlayOnLinux server information$end"
+		( /usr/bin/lftp -c "cd $pol_address; ls > $ftp_temp; sleep 3" 2>&1
+		)| yad --with=400 --text-align=center --text="$p_text" --progress --pulsate \
+		--auto-close --progress-text="please, wait..." 
+		cat $ftp_temp| egrep -v "(^\s*.*sha1)"| awk '{print $5}'| \
+		sed -n "s|^.*wine-\(.*\)-\(linux.*$\)|\1|p"| tac > $ftp_temp
+#			sleep 1
+		pol_bin_list=( $(cat "$ftp_temp") )
+		for r_bins in ${pol_bin_list[@]}; do
+			out=''
+			for bins in ${local_bin_list[@]}; do
+				if [ $bins == $r_bins ]; then out=' *'; fi
+			done
+			printf "$r_bins$out!" >> $loc_temp
+		done
+		w_text="$vb Download a binary package from PlayOnLinux repo:$end"
+		## PlayOnLinux-wine-$r_bins-linux-x86.pol
+		wine_bin_list=$(cat $loc_temp)
+		
+		wine_bin=$(
+		yad --width=300 --title "$w_title" --image="$img_wine_desk_ui" \
+		--window-icon="$img_wine_desk_ui" --form --text="$w_text" --separator=" " \
+		--field="$vb Select package$end":CB "$wine_bin_list")
+		
+		if [ $? = 0 ]; then
+			if [ $wine_bin != '' ]; then
+				printf "$wine_bin" > /tmp/w_bin_tmp
+			fi
+		else
+			exit 0
+		fi
+	fi
+}
 ## main ui buttons functions
 change_fonts_colors(){
 	unset font_color color_fonts
@@ -1752,8 +1796,8 @@ Change font UI colors at will, but keep in mind the sens of each of them: main, 
 			perl -ni -pe "s|^($colr=['])(#\w*[0-9A-Z])(['])$|\1$previous\3|i" $base_script
 			C=$[ $C+1 ]
 		done
-#		bash -x -c $base_script
-		bash -c $base_script
+		bash -x -c $base_script
+#		bash -c $base_script
 	fi
 	exit 0
 }
@@ -2053,12 +2097,14 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 	fi
 	exit 0
 }
+#select_win_bin(){ echo -e "\n#############»»»»222222222222222 #################\n"; }
 
 #main_cmd_0='bash -x -c "colors; icons_set; code=0; from_config=0; main_code"'
 #main_cmd_1='bash -x -c "colors; icons_set; from_config=1; desktop_file=0; rstart=0; edit_bottle"'
 #main_cmd_2='bash -x -c "colors; icons_set; from_config=1; desktop_file=1; rstart=0; edit_bottle"'
 #main_cmd_3='bash -x -c "colors; icons_set; change_fonts_colors"'
 #main_cmd_4='bash -x -c "colors; icons_set; from_config=1; desktop_file=1; rstart=1; edit_bottle"'
+#main_cmd_5='bash -x -c "select_win_bin"'
 main_cmd_0='bash -c "colors; icons_set; code=0; from_config=0; main_code"'
 main_cmd_1='bash -c "colors; icons_set; from_config=1; desktop_file=0; rstart=0; edit_bottle"'
 main_cmd_2='bash -c "colors; icons_set; from_config=1; desktop_file=1; rstart=0; edit_bottle"'
@@ -2076,7 +2122,7 @@ main_text4="$vb Modify$end"
 
 list_bottles
 export -f colors icons_set
-export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors
+export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_win_bin
 export w_title="winestarter configurator" base_script="$0"
 yad --width=492 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons --center \
 --form --text="$main_text0" --image=$the_big_button \
@@ -2087,7 +2133,8 @@ yad --width=492 --title "Winestarter configurator"  --window-icon=$img_wine_desk
 --field="$vb Edit a Wine bottle$end"!$img_wine_mod!"Add or change features, options, etc in an existing Wine bottle":FBTN "$main_cmd_1" \
 --field="$vb Edit or create a Desktop file$end"!$img_wine_desk_bt!"Create a new or modify an existing Wine bottle Desktop file":FBTN "$main_cmd_2" \
 --field="$vb Change fonts colors$end"!$img_wine_colors!"If you occur issues with default fonts colors, you can change them here":FBTN "$main_cmd_3" \
---field="$vb Restart features$end"!$img_wine_restart!"You can restart here some functions at next launch, ex: winecfg":FBTN "$main_cmd_4"
+--field="$vb Restart features$end"!$img_wine_restart!"You can restart here some functions at next launch, ex: winecfg":FBTN "$main_cmd_4" 
+#--field="$vb Bouezin$end"!$img_wine_restart!"You can restart here some functions at next launch, ex: winecfg":FBTN "$main_cmd_5"
 #
 exit 0
 
