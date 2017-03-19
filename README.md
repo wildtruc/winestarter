@@ -1,4 +1,4 @@
-# winestart 
+# winestarter
 A not very simple script to start wine emulated applications
 
 ![winestarter logo](/png/defaults/winestarter_128.png)
