@@ -85,7 +85,7 @@ main_code(){
 		done
 		# ne pas tenir compte des labels
 		if [ $win_type = 0 ]; then
-			def_win=$(yad --width=420 --title "$w_title" --image=$img_wine_ui \
+			def_win=$(yad --width=500 --title "$w_title" --image=$img_wine_ui \
 			--window-icon=$img_desktop --center \
 			--form "${field_list[@]}" "${chk_list[@]}" --separator=';' \
 			--align=left --text "$bf$w_text$end" \
@@ -98,7 +98,7 @@ main_code(){
 				
 		fi
 		if [ $win_type = 1 ]; then
-			yad --width=420 $t_plug --text="$w_text" --form \
+			yad --width=500 $t_plug --text="$w_text" --form \
 			"${field_list[@]}" "${chk_list[@]}" --separator=';' > $temp &
 		fi
 		if [ $win_type = 2 ]; then
@@ -254,6 +254,7 @@ main_code(){
 				local "${new_conf_set}"
 				${reconf}
 			fi
+			
 			if [ -n $M ]; then
 				if [ $M -gt 0 ]; then _fn_val=1; else _fn_val=0; fi
 				if [ $from_config = 1 ]; then
@@ -301,7 +302,7 @@ main_code(){
 	fn_end_game_1(){
 		# --field="$vb New Wine prefix $end"!$img_wine_add!"Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \
 		unset basic_sets field_list chk_list track_list track_sets conf_dat
-		res_action="bash -c \"winestarter "$conf_target".conf\""
+		res_action="bash $bash_opt \"winestarter "$conf_target".conf\""
 		res_launch="$vb Launch Winetarter$end"
 		w_text="$vb\All change are saved to the bootle configuration.\\n\
 You can launch the script now or later by command line from a terminal window :$end\\n\
@@ -335,7 +336,7 @@ $nf\winetstarter $conf_target.conf$end"
 	reconf_wine(){
 		
 		# "user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
-		if [[ $_var == use_winepath ]]; then
+		if [[ $_var == use_winepath || $_var == special_cmd ]]; then
 			if [[ $_val == TRUE ]]; then _val=1; else _val=0; fi
 		fi
 		if [[ $_var == wine_path ]]; then
@@ -394,7 +395,7 @@ $nf\winetstarter $conf_target.conf$end"
 			else
 				_val=''
 			fi
-		fi	
+		fi
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
 		new_conf_list+=("$_var=$_val")
@@ -441,7 +442,9 @@ bottle_prefix=\".$bottle_prefix\"
 game_path=\"$game_path\"
 ## Full game dir name in Progrma Files (including Program Files dir name)
 game_dir=\"$game_dir\"
-game_exe=\"$game_exe\"\n
+game_exe=\"$game_exe\"
+## if classic wine command fail, execute .exe inside the directory
+special_cmd=$special_cmd\n
 ## Use a specific Wine path: yes (1), no (0).
 use_winepath=$use_winepath
 ## where is your custom Wine binary, if any 
@@ -803,11 +806,11 @@ export __GL_IGNORE_GLSL_EXT_REQS=$__GL_IGNORE_GLSL_EXT_REQS"
 			
 			if [[ $_val != unset ]]; then
 				if [[ $_var == bck_mode ]]; then
-						_val="xrandr --ouput $monitor --mode $_val --rate 60"
+						_val="xrandr --output $monitor --mode $_val --rate 60"
 						((M++)); N=1
 				fi
 				if [[ $_var == set_mode ]]; then
-						_val="xrandr --ouput $monitor --mode $_val --rate 60"
+						_val="xrandr --output $monitor --mode $_val --rate 60"
 						((M++)); N=$(($N+1))
 				fi
 			else
@@ -1001,6 +1004,7 @@ $nf Check here the sections you would like to configure.$end"
 		w_wine_game_path="$vB Set the full game/appli path if different from bottle:$end"
 		w_wine_game_dir="$vB Set full Wine style game/appli directory (if already existing):$end"
 		w_wine_game_exe="$vB Set the Wine game/appli executable to launch (if already existing):$end"
+		w_wine_game_spl="$vb Set if the app have to be started from the app directory:$end"
 		w_wine_use_winepath="$vB Set if you want to use a custom Wine binary path:$end"
 		w_wine_binary_title="$bf Configure custom Wine binaries$end"
 		w_wine_wine_path="$vB Set full path of customs Wine binaries repository:$end"
@@ -1010,12 +1014,7 @@ $nf Check here the sections you would like to configure.$end"
 		# check already setted variables
 		track_list="user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
 		wineset_list=$track_list
-#		select_win_bin(){ echo -e "\n#############»»»»0000000000000 #################\n"; }
-#		export select_win_bin
-		wine_bin_cmd='bash -c \"select_win_bin"'
-#		wine_bin_cmd='bash --verbose -c \"winestarter select_win_bin"'
-#		wine_bin_cmd='@bash -x -c \"change_fonts_colors\"' 
-#		wine_bin_cmd='@bash -c \"winetricks\"' 
+		wine_bin_cmd="bash $bash_opt \"select_win_bin\""
 		
 		if [ $from_config = 1 ]; then
 			ifs=$IFS
@@ -1034,16 +1033,12 @@ $nf Check here the sections you would like to configure.$end"
 		else
 			for trk_set in ${track_list[@]}; do
 				unset local_set
-				if [ $trk_set == use_winepath ]; then trk_box=0; else trk_box="$HOME/"; fi
+				if [[ $trk_set == use_winepath || $trk_set == special_cmd ]]; then trk_box=0; else trk_box="$HOME/"; fi
 				local_set+=("$trk_set=$trk_box")
 				local $local_set
 			done
 		fi
-		export wine_path=$wine_path 
-#		if [ -d $wine_path ]&&[ "$wine_path" != "$HOME" ]; then	
-#			local_bin_list=( $(ls -1x $wine_path) )
-#		fi
-		
+		export wine_path=$wine_path	
 		
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
@@ -1060,14 +1055,16 @@ $nf Check here the sections you would like to configure.$end"
 		"9;$game_dir;game_dir;;$nf Full Wine appli directory$end;DIR;;;"
 		"10;;;;$w_wine_game_exe;LBL;;;"
 		"11;$game_exe;game_exe;;$nf EXE file$end;FL;;;"
-		"12;;;;;LBL;;;"
-		"13;;;;$w_wine_binary_title;LBL;;;"
-		"14;$use_winepath;use_winepath;; use Wine binaries path (default:$HOME/.winebin);CHK;;;"
-		"15;;;;$w_wine_wine_path;LBL;;;"
-		"16;$wine_path;wine_path;;$nf Wine binaries dir\t\t$end;DIR;;;"
-		"17;;;;$w_wine_wine_ver;LBL;;;"
-		"18;$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;;"
-		"19;$wine_bin_cmd;;;$vb or select a PoL wine package to download$end;FBTN;;;"
+		"12;;;;$w_wine_game_spl;LBL;;;"
+		"13;$special_cmd;special_cmd;; execute the binary file inside the directory;CHK;;;"
+		"14;;;;;LBL;;;"
+		"15;;;;$w_wine_binary_title;LBL;;;"
+		"16;$use_winepath;use_winepath;; use Wine binaries path (default:$HOME/.winebin);CHK;;;"
+		"17;;;;$w_wine_wine_path;LBL;;;"
+		"18;$wine_path;wine_path;;$nf Wine binaries dir\t\t$end;DIR;;;"
+		"19;;;;$w_wine_wine_ver;LBL;;;"
+		"20;$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;;"
+		"21;$wine_bin_cmd;;;$vb or select a PoL wine package to download$end;FBTN;;;"
 		)
 #		"19;;;;$w_wine_wine_pol;LBL;;;"
 #		"20;^unset;wine_bin;;$nf Select package$end;CB;$wine_bin_list;;"
@@ -1161,7 +1158,7 @@ $rb WARNNG:$end$vb Direct3D register config is only usable under WindowsXP bottl
 		# change wintricks button color for first edition
 		if [ $from_config = 1 ]; then
 			st=$vb
-			trk_action='bash -c \"winetricks\"'
+			trk_action="bash $bash_opt \"winetricks\""
 		else
 			st=$gb
 			trk_action=''
@@ -1706,8 +1703,7 @@ If your using a Optimus Laptop, you can set here the dedicated commands and opti
 		if [ ${#active_export} -gt 0 ]; then local "${active_export[@]}"; fi
 		if [ ${#inactive_values} -gt 0 ]; then local "${inactive_values[@]}"; fi
 		if [ ${#inactive_export} -gt 0 ]; then local "${inactive_export[@]}"; fi
-		IFS=$ifs
-		
+		IFS=$ifs	
 	fi
 	check_list=("$_wine,_wine" "$_nvidia_1,_nvidia_1" "$_nvidia_2,_nvidia_2"
 			"$w_install_exe,_install" "$_reged,_reged" "$_tricks,_tricks"
@@ -1784,8 +1780,7 @@ Change font UI colors at will, but keep in mind the sens of each of them: main, 
 			--field="$vb Main messages color\t\t$end":CLR "$main" \
 			--field="$vb Warning messages color$end":CLR "$warn" \
 			--field="$vb Unavialable messages color$end":CLR "$freeze")
-#	if [ $? = 1 ]; then bash -x -c $base_script; exit 0; fi
-	if [ $? = 1 ]; then bash -c $base_script; exit 0; fi
+	if [ $? = 1 ]; then bash $bash_opt $base_script; exit 0; fi
 	if [ $? = 0 ]; then
 		for i in ${font_color[@]}; do
 			color_fonts+=("$i")
@@ -1796,8 +1791,7 @@ Change font UI colors at will, but keep in mind the sens of each of them: main, 
 			perl -ni -pe "s|^($colr=['])(#\w*[0-9A-Z])(['])$|\1$previous\3|i" $base_script
 			C=$[ $C+1 ]
 		done
-		bash -x -c $base_script
-#		bash -c $base_script
+		bash $bash_opt $base_script
 	fi
 	exit 0
 }
@@ -2086,30 +2080,24 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 		from_config=1
 		export from_config=$from_config config_file=$config_file
 		if [ $desktop_file = 1 ]; then
-#			bash -x -c "colors; icons_set; edit_desktop"
-			bash -c "colors; icons_set; edit_desktop"
+			bash $bash_opt "colors; icons_set; edit_desktop"
 		else
-#			bash -x -c "colors; icons_set; code=$code; main_code"
-			bash -c "colors; icons_set; code=$code; main_code"
+			bash $bash_opt "colors; icons_set; code=$code; main_code"
 		fi
 	else
 		exit 0
 	fi
 	exit 0
 }
-#select_win_bin(){ echo -e "\n#############»»»»222222222222222 #################\n"; }
-
-#main_cmd_0='bash -x -c "colors; icons_set; code=0; from_config=0; main_code"'
-#main_cmd_1='bash -x -c "colors; icons_set; from_config=1; desktop_file=0; rstart=0; edit_bottle"'
-#main_cmd_2='bash -x -c "colors; icons_set; from_config=1; desktop_file=1; rstart=0; edit_bottle"'
-#main_cmd_3='bash -x -c "colors; icons_set; change_fonts_colors"'
-#main_cmd_4='bash -x -c "colors; icons_set; from_config=1; desktop_file=1; rstart=1; edit_bottle"'
-#main_cmd_5='bash -x -c "select_win_bin"'
-main_cmd_0='bash -c "colors; icons_set; code=0; from_config=0; main_code"'
-main_cmd_1='bash -c "colors; icons_set; from_config=1; desktop_file=0; rstart=0; edit_bottle"'
-main_cmd_2='bash -c "colors; icons_set; from_config=1; desktop_file=1; rstart=0; edit_bottle"'
-main_cmd_3='bash -c "colors; icons_set; change_fonts_colors"'
-main_cmd_4='bash -c "colors; icons_set; from_config=1; desktop_file=1; rstart=1; edit_bottle"'
+## Script debug options
+#bash_opt='-x -c'
+bash_opt='-c'
+## Main button commands
+main_cmd_0="bash $bash_opt \"colors; icons_set; code=0; from_config=0; main_code\""
+main_cmd_1="bash $bash_opt \"colors; icons_set; from_config=1; desktop_file=0; rstart=0; edit_bottle\""
+main_cmd_2="bash $bash_opt \"colors; icons_set; from_config=1; desktop_file=1; rstart=0; edit_bottle\""
+main_cmd_3="bash $bash_opt \"colors; icons_set; change_fonts_colors\""
+main_cmd_4="bash $bash_opt \"colors; icons_set; from_config=1; desktop_file=1; rstart=1; edit_bottle\""
 
 the_big_button="$HOME/.winestarter/png/defaults/winestarter_128.png"
 #messages; main_code
@@ -2123,7 +2111,7 @@ main_text4="$vb Modify$end"
 list_bottles
 export -f colors icons_set
 export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_win_bin
-export w_title="winestarter configurator" base_script="$0"
+export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt"
 yad --width=492 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons --center \
 --form --text="$main_text0" --image=$the_big_button \
 --field="":LBL '' \

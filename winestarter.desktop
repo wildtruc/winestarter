@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Winestarter Configurator
+Comment=Winestarter config files editor
+Exec=winestarter_conf
+Icon=winestarter_128.png
+Terminal=false
+Type=Application
+Categories=X-Wine;
+
