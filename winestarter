@@ -103,11 +103,6 @@ fn_use_winepath(){
 		fi
 	fi	
 }
-#fn_use_winepath_env(){
-#	export WINELOADER=$wine_path/$wine_ver/bin/wine
-#	export WINESERVER=$wine_path/$wine_ver/bin/wineserver
-#	export WINEDLLPATH=$wine_path/$wine_ver/lib
-#}
 fn_install_tricks(){
 	if [ $w_tricks_list ]; then
 		if [ -x $w_tricks ]; then
@@ -138,7 +133,7 @@ fn_extract_lnk(){
 		if [ $(cat $dsk_dir/"$dsk_name"| grep -c "Path=" ) -gt 0 ]; then
 			d_dest_dir=$(cat $dsk_dir/$dsk_name| grep "Path="|sed -n "s/^.*c:\\///p")
 			if [ $(echo "$d_dest_dir"| egrep -c "(^\s*Prog.*Files)") -gt 0 ];then
-				root_key="Program Files/"
+				root_key="Program Files"$elf_ext"/"
 				game_dir=$(echo "$d_dest_dir"| sed -n "s/^\(Prog.*Files\)\/\(.*\)/\2/p")
 			else
 				root_key='/'
@@ -262,7 +257,7 @@ fn_install_exe(){
 			$wine_bin msiexec \/i $w_exe_path $w_exe_opts
 		fi
 		fn_extract_lnk
-		if [ -e $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; then
+		if [ -e $user_prefix/$bottle_prefix/drive_c/"$root_key""$elf_ext"$game_dir/$game_exe ]; then
 			perl -ni -pe "s|(w_install_exe)=[0-9]|\1=0|i" $config_file
 		fi
 		sleep 2
@@ -276,15 +271,15 @@ fn_game_dir_exist(){
 #	force_link=0
 	# if game_path is used and game_dir is not set, create a wine directory and lauch wincfg 
 	if [[ $game_dir == '' && $game_exe == '' ]]; then
-		mkdir -p $user_prefix/$bottle_prefix/drive_c/Program\ Files
+		mkdir -p $user_prefix/$bottle_prefix/drive_c/Program\ Files"$elf_ext"
 #		force_link=1
 	fi
-	if ! [ -d $user_prefix/$bottle_prefix/drive_c/Program\ Files ]; then
+	if ! [ -d $user_prefix/$bottle_prefix/drive_c/Program\ Files"$elf_ext" ]; then
 		root_key=''
 		sed_key=''
 	else
-		root_key="Program Files/"
-		sed_key='Files\/'
+		root_key="Program Files$elf_ext/"
+		sed_key="Files$elf_ext\/"
 	fi
 	if [[ $game_path != '' ]]; then
 		link=$(printf "$game_path"| sed -n "s/^.*\///g;p")
@@ -327,8 +322,13 @@ fi
 ## make unix space behaviour redeable
 ifs=$IFS
 IFS=$(echo -en "\n\b")
+if [ $wine_elf = 1 ]; then
+	elf=64; elf_ext=' (x86)'; w_elf_ext='\ (86)'
+else
+	elf=32; elf_ext=''; w_elf_ext=''
+fi
 ## export env variable, usually "env WINEARCH=wine32 WINEPREFIX=~/wine_prefix" before wine cmd 
-export WINEARCH=win32
+export WINEARCH=win$elf
 #export WINEARCH=win64
 export WINEPREFIX=$user_prefix/$bottle_prefix
 _use_winepath_env=0
@@ -373,10 +373,14 @@ if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then
 	win_prog=''
 else	
 #	win_prog='Program Files\\'
+#	if [ $special_cmd -gt 0 ]; then
+#		win_prog='Program\ Files'$w_elf_ext
+#	else
+#	win_prog='Program Files'$w_elf_ext'\'; fi
 	if [ $special_cmd -gt 0 ]; then
-		win_prog='Program\ Files'
+		win_prog="Program\ Files$w_elf_ext"
 	else
-	win_prog='Program Files\'; fi
+	win_prog="Program Files$elf_ext\\"; fi
 fi
 
 
@@ -399,7 +403,7 @@ sleep 5
 exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*[\/\|\\\]//;s/^\(.\{3\}\).*/\1/g;p")
 #bin_pid="pgrep ^\(\s*$exe_short.*$\)"
 bin_pid="pgrep ^$exe_short.*$"
-A_PID=`$bin_pid`
+#A_PID=`$bin_pid`
 ## if script is launched from winestarter configurator, ger Yad pid and kill it
 #if [ $YAD_PID ]; then killall -9 yad ; fi
 if [ $YAD_PID ]; then kill $YAD_PID $(($YAD_PID+1)) ; fi

@@ -85,7 +85,7 @@ main_code(){
 		done
 		# ne pas tenir compte des labels
 		if [ $win_type = 0 ]; then
-			def_win=$(yad --width=500 --title "$w_title" --image=$img_wine_ui \
+			def_win=$(yad --width=420 --title "$w_title" --image=$img_wine_ui \
 			--window-icon=$img_desktop --center \
 			--form "${field_list[@]}" "${chk_list[@]}" --separator=';' \
 			--align=left --text "$bf$w_text$end" \
@@ -98,7 +98,7 @@ main_code(){
 				
 		fi
 		if [ $win_type = 1 ]; then
-			yad --width=500 $t_plug --text="$w_text" --form \
+			yad --width=450 $t_plug --text="$w_text" --form \
 			"${field_list[@]}" "${chk_list[@]}" --separator=';' > $temp &
 		fi
 		if [ $win_type = 2 ]; then
@@ -162,7 +162,7 @@ main_code(){
 			if [ $t_num -gt 0 ]; then ${t_fn_op}; fi
 		done
 		if [ $win_type = 1 ]; then
-			yad --width=500 --title "$w_title" --window-icon=$img_wine_desk_ui \
+			yad --width=550 --title "$w_title" --window-icon=$img_wine_desk_ui \
 			--center --notebook --key=$key --tab-pos=right --tab-border=2 \
 			--text="$main_tab_text" \
 			"${t_display[@]}"
@@ -304,8 +304,12 @@ main_code(){
 		unset basic_sets field_list chk_list track_list track_sets conf_dat
 		res_action="bash $bash_opt \"winestarter "$conf_target".conf\""
 		res_launch="$vb Launch Winetarter$end"
+		res_special="$vb Launch or relaunch boot features:$end"
+#		w_text="$vb\All change are saved to the bootle configuration.\\n\
+#You can launch the script now or later by command line from a terminal window :$end\\n\
+#$nf\winetstarter $conf_target.conf$end"
 		w_text="$vb\All change are saved to the bootle configuration.\\n\
-You can launch the script now or later by command line from a terminal window :$end\\n\
+You can launch the script now or later from the desktop file entry (if any) or from a terminal window with the command line:$end\\n\
 $nf\winetstarter $conf_target.conf$end"
 		w_res_0="Note and warnings : When using this tool, you can occur window crash or freeze. This is a Yad issue that will be hopefuly fix in a near futur."
 		basic_sets=(
@@ -314,6 +318,13 @@ $nf\winetstarter $conf_target.conf$end"
 		"3;;;;;LBL;;;"
 		"4;;;;$w_res_0;LBL;;;"
 		)
+#		basic_sets=(
+#		"1;;;;;LBL;;;"
+#		"2;0;w_start;;launch $conf_target now;CHK;;;"
+#		"3;$w_config;w_config;;launch Winecfg at $conf_target start;CHK;;;"
+#		"4;;;;;LBL;;;"
+#		"5;;;;$w_res_0;LBL;;;"
+#		)
 		# start form display
 		win_type=1
 		ignore_loop=0
@@ -333,31 +344,10 @@ $nf\winetstarter $conf_target.conf$end"
 		default_win_design
 		# create main window variables
 	}
-	reconf_wine(){
-		
+	reconf_wine(){		
 		# "user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
-		if [[ $_var == use_winepath || $_var == special_cmd ]]; then
+		if [[ $_var == special_cmd || $_var == wine_elf ]]; then
 			if [[ $_val == TRUE ]]; then _val=1; else _val=0; fi
-		fi
-		if [[ $_var == wine_path ]]; then
-			if [[ $_val != $HOME ]]; then 
-				if [[ $wine_path != $user_prefix/.winebin ]]; then 
-					_val=$_val
-				else
-					_val=$user_prefix/.winebin
-				fi
-			else _val=''; fi
-		fi
-		if [[ $_var == wine_ver ]]; then
-			if [ -s /tmp/w_bin_tmp ]; then
-				cat "$loc_temp"
-				_val=$(cat /tmp/w_bin_tmp| sed -n "s/ //p")
-			else
-				if [[ $_val != $HOME ]]; then _val=$(printf "$_val"| sed -n "s|^.*/||g;p")
-				else _val=''; fi
-			fi
-			rm -f /tmp/w_bin_tmp
-			
 		fi
 		if [[ $_var == bottle_prefix ]]; then
 			if [[ $_val != $HOME ]]; then _val=$(printf "$_val"| sed -n "s|^.*/||g;p"); else _val=''; fi
@@ -386,7 +376,8 @@ $nf\winetstarter $conf_target.conf$end"
 			
 		fi
 		if [[ $_var == game_exe ]]; then
-			if [[ $_val != $HOME ]]; then _val=$(printf "$_val"|perl -pe "s|^$game_dir/||p")
+#			if [[ $_val != $HOME ]]; then _val=$(printf "$_val"|perl -pe "s|^$game_dir/||p")
+			if [[ $_val != $HOME ]]; then _val=$(printf "$_val"| sed -n "s|^\($game_dir\)\/\(.*\)$|\2|p")
 			else _val=''; fi
 		fi
 		if [[ $_var == wine_bin ]]; then
@@ -401,7 +392,7 @@ $nf\winetstarter $conf_target.conf$end"
 		new_conf_list+=("$_var=$_val")
 		IFS=$ifs
 		((M++))
-		echo "333333333333"
+		echo "2222222222222"
 	}
 	newconf_wine(){
 		## create temp file and insert script headers at first config step
@@ -433,6 +424,26 @@ $nf\winetstarter $conf_target.conf$end"
 			config_file=$HOME/.winestarter/configs/$(printf "$bottle_prefix"| sed -n "s/^.//p")
 			## print headers in config file
 			printf "$conf_headers" > $tmp_conf
+#			_wine_conf="
+### default is $HOME
+#user_prefix=$user_prefix
+### game/appli prefix name
+#bottle_prefix=\".$bottle_prefix\"
+### default system path of the game/appli if not in the chosen Wine prefix
+#game_path=\"$game_path\"
+### Full game dir name in Progrma Files (including Program Files dir name)
+#game_dir=\"$game_dir\"
+#game_exe=\"$game_exe\"
+### if classic wine command fail, execute .exe inside the directory
+#special_cmd=$special_cmd\n
+### Use a specific Wine path: yes (1), no (0).
+#use_winepath=$use_winepath
+### where is your custom Wine binary, if any 
+#wine_path=\"$wine_path\"
+### custom Wine binary name
+#wine_ver='$wine_ver'\n
+### to lauch winecfg at first launch
+#w_config=1"
 			_wine_conf="
 ## default is $HOME
 user_prefix=$user_prefix
@@ -444,18 +455,56 @@ game_path=\"$game_path\"
 game_dir=\"$game_dir\"
 game_exe=\"$game_exe\"
 ## if classic wine command fail, execute .exe inside the directory
-special_cmd=$special_cmd\n
-## Use a specific Wine path: yes (1), no (0).
-use_winepath=$use_winepath
-## where is your custom Wine binary, if any 
-wine_path=\"$wine_path\"
-## custom Wine binary name
-wine_ver='$wine_ver'\n
+special_cmd=$special_cmd
+## set a 64 bits bottle: false (0), true (1)
+wine_elf=$wine_elf\n
 ## to lauch winecfg at first launch
 w_config=1"
 			printf "$_wine_conf\n" >> $tmp_conf
 			printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
 		fi
+	}
+	reconf_wbin(){
+		if [[ $_val == TRUE || $_val == FALSE ]]; then
+			if [[ $_val == TRUE ]]; then _val=1; else _val=0; fi	
+		fi
+		if [[ $_var == wine_path ]]; then
+			if [[ $_val != $HOME ]]; then 
+				if [[ $wine_path != $user_prefix/.winebin ]]; then 
+					_val=$_val
+				else
+					_val=$user_prefix/.winebin
+				fi
+			else _val=''; fi
+		fi
+		if [[ $_var == wine_ver ]]; then
+			if [ -s /tmp/w_bin_tmp ]; then
+				cat "$loc_temp"
+				_val=$(cat /tmp/w_bin_tmp| sed -n "s/ //p")
+			else
+				if [[ $_val != $HOME ]]; then _val=$(printf "$_val"| sed -n "s|^.*/||g;p")
+				else _val=''; fi
+			fi
+			rm -f /tmp/w_bin_tmp
+			
+		fi
+		ifs=$IFS
+		IFS=$(echo -en "\n\b")
+		new_conf_list+=("$_var=$_val")
+		IFS=$ifs
+		((M++))
+		echo "3333333333333"
+	}
+	newconf_wbin(){
+		_wbin_conf="
+## Use a specific Wine path: yes (1), no (0).
+use_winepath=$use_winepath
+## where is your custom Wine binary, if any 
+wine_path=\"$wine_path\"
+## custom Wine binary name
+wine_ver='$wine_ver'"
+		printf "$_wbin_conf\n" >> $tmp_conf
+		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
 	}
 	reconf_install(){
 		if [[ $_val == TRUE ]]||[[ $_val == FALSE ]]; then
@@ -931,6 +980,7 @@ opti_VBLK=$opti_VBLK"
 		main_tab_text="$bf Select settings by theme$end$nf\\n \
  Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end"
 		msg_wine="Set a new Wine prefix (mandatory)"
+		msg_wcfg="Set a custom Wine binary"
 		msg_tricks="Winetricks packages install (Windows packages)"
 		msg_install="Install a Windows Software (experimental)"
 		msg_reged="Configure associated Wine registry sets (useful)"
@@ -960,17 +1010,18 @@ $nf Check here the sections you would like to configure.$end"
 		"1;;;;;LBL;;;"
 		"2;;;;$wine_tip0;LBL"
 		"3;$_wine;_wine;Wine;$msg_wine;CHK;;;fn_wine_config;$img_wine_cfg"
-		"4;$_install;_install;Install*Software;$msg_install;CHK;;;fn_install_soft;$img_install"
-		"5;$_tricks;_tricks;Install*tricks;$msg_tricks;CHK;;;fn_winetricks;$img_tricks"
-		"6;$_reged;_reged;Regedit;$msg_reged;CHK;;;fn_regedit_config;$img_reged"
-		"7;;;;;LBL;;;"
-		"8;;;;$w_title1;LBL"
-		"9;$_nvidia_1;_nvidia_1;Nvidia*(common);$msg_nvidia1;CHK;;;fn_nvidia_config_1;$img_nv_cm"
-		"10;$_nvidia_2;_nvidia_2;Nvidia*(optional);$msg_nvidia2;CHK;;;fn_nvidia_config_2;$img_nv_ext"
-		"11;;;;;LBL;;;"
-		"12;;;;$w_title2;LBL"
-		"13;$_xrandr;_xrandr;Monitor;$msg_xrandr;CHK;;;fn_xrandr_config;$img_xrandr"
-		"14;$_optimus;_optimus;Optimus;$msg_optimus;CHK;;;fn_optimus_config;$img_opti")
+		"4;$_wbin;_wbin;Extra*binary;$msg_wcfg;CHK;;;fn_wine_binary;$img_wine_cfg"
+		"5;$_install;_install;Install*Software;$msg_install;CHK;;;fn_install_soft;$img_install"
+		"6;$_tricks;_tricks;Install*tricks;$msg_tricks;CHK;;;fn_winetricks;$img_tricks"
+		"7;$_reged;_reged;Regedit;$msg_reged;CHK;;;fn_regedit_config;$img_reged"
+		"8;;;;;LBL;;;"
+		"9;;;;$w_title1;LBL"
+		"10;$_nvidia_1;_nvidia_1;Nvidia*(common);$msg_nvidia1;CHK;;;fn_nvidia_config_1;$img_nv_cm"
+		"11;$_nvidia_2;_nvidia_2;Nvidia*(optional);$msg_nvidia2;CHK;;;fn_nvidia_config_2;$img_nv_ext"
+		"12;;;;;LBL;;;"
+		"13;;;;$w_title2;LBL"
+		"14;$_xrandr;_xrandr;Monitor;$msg_xrandr;CHK;;;fn_xrandr_config;$img_xrandr"
+		"15;$_optimus;_optimus;Optimus;$msg_optimus;CHK;;;fn_optimus_config;$img_opti")
 		# window style and function
 		win_type=0
 		ignore_loop=1
@@ -1005,44 +1056,46 @@ $nf Check here the sections you would like to configure.$end"
 		w_wine_game_dir="$vB Set full Wine style game/appli directory (if already existing):$end"
 		w_wine_game_exe="$vB Set the Wine game/appli executable to launch (if already existing):$end"
 		w_wine_game_spl="$vb Set if the app have to be started from the app directory:$end"
-		w_wine_use_winepath="$vB Set if you want to use a custom Wine binary path:$end"
-		w_wine_binary_title="$bf Configure custom Wine binaries$end"
-		w_wine_wine_path="$vB Set full path of customs Wine binaries repository:$end"
-		w_wine_wine_ver="$vB Set the custom Wine directory name:$end"
-		w_wine_wine_pol="$vb Download a binary package from PlayOnLinux repo:$end"
+		w_wine_elf="$vb Set if the app elf type is in 64 bits (experimental):$end"
+#		w_wine_use_winepath="$vB Set if you want to use a custom Wine binary path:$end"
+#		w_wine_binary_title="$bf Configure custom Wine binaries$end"
+#		w_wine_wine_path="$vB Set full path of customs Wine binaries repository:$end"
+#		w_wine_wine_ver="$vB Set the custom Wine directory name:$end"
+#		w_wine_wine_pol="$vb Download a binary package from PlayOnLinux repo:$end"
 		w_text="$bf Configure the Wine environement$end"
 		# check already setted variables
-		track_list="user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
+#		track_list="user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
+		track_list="user_prefix bottle_prefix game_path game_dir game_exe special_cmd wine_elf"
 		wineset_list=$track_list
-		wine_bin_cmd="bash $bash_opt \"select_win_bin\""
-		
+#		wine_bin_cmd="bash $bash_opt \"select_win_bin\"" 
 		if [ $from_config = 1 ]; then
 			ifs=$IFS
 			IFS=$(echo -en "\n\b")
+			if [ $wine_elf = 1 ]; then elf_ext=' (x86)'; else elf_ext=''; fi
 			bottle_prefix="$user_prefix/$bottle_prefix"
 			if [ -d $bottle_prefix/drive_c/$game_dir ]; then
 				game_dir="$bottle_prefix/drive_c/$game_dir"
 			else
-				game_dir="$bottle_prefix/drive_c/Program Files/$game_dir"
+				game_dir="$bottle_prefix/drive_c/Program Files$elf_ext/$game_dir"
 			fi
 			game_exe="$game_dir/$game_exe"
-			if [[ $wine_ver != '' ]]; then wine_ver="$wine_path/$wine_ver"; else wine_ver="$HOME/"; fi
-			if [[ $wine_path == '' ]]; then wine_path="$HOME/"; fi
+#			if [[ $wine_ver != '' ]]; then wine_ver="$wine_path/$wine_ver"; else wine_ver="$HOME/"; fi
+#			if [[ $wine_path == '' ]]; then wine_path="$HOME/"; fi
 			if [[ $game_path == '' ]]; then game_path="$HOME/"; fi
 			IFS=$ifs
 		else
 			for trk_set in ${track_list[@]}; do
 				unset local_set
-				if [[ $trk_set == use_winepath || $trk_set == special_cmd ]]; then trk_box=0; else trk_box="$HOME/"; fi
+				if [[ $trk_set == wine_elf || $trk_set == special_cmd ]]; then trk_box=0; else trk_box="$HOME/"; fi
 				local_set+=("$trk_set=$trk_box")
 				local $local_set
 			done
 		fi
-		export wine_path=$wine_path	
+#		export wine_path=$wine_path	
 		
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
-		
+
 		basic_sets=(
 		"1;;;;;LBL;;;"
 		"2;;;;$w_wine_user_prefix;LBL;;;"
@@ -1056,19 +1109,64 @@ $nf Check here the sections you would like to configure.$end"
 		"10;;;;$w_wine_game_exe;LBL;;;"
 		"11;$game_exe;game_exe;;$nf EXE file$end;FL;;;"
 		"12;;;;$w_wine_game_spl;LBL;;;"
-		"13;$special_cmd;special_cmd;; execute the binary file inside the directory;CHK;;;"
-		"14;;;;;LBL;;;"
-		"15;;;;$w_wine_binary_title;LBL;;;"
-		"16;$use_winepath;use_winepath;; use Wine binaries path (default:$HOME/.winebin);CHK;;;"
-		"17;;;;$w_wine_wine_path;LBL;;;"
-		"18;$wine_path;wine_path;;$nf Wine binaries dir\t\t$end;DIR;;;"
-		"19;;;;$w_wine_wine_ver;LBL;;;"
-		"20;$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;;"
-		"21;$wine_bin_cmd;;;$vb or select a PoL wine package to download$end;FBTN;;;"
+		"13;$special_cmd;special_cmd;;execute the binary file inside the directory;CHK;;;"
+		"14;;;;$w_wine_elf;LBL;;;"
+		"15;$wine_elf;wine_elf;;App type is 64 bits;CHK;;;"
 		)
 #		"19;;;;$w_wine_wine_pol;LBL;;;"
 #		"20;^unset;wine_bin;;$nf Select package$end;CB;$wine_bin_list;;"
 #		)
+		IFS=$ifs
+		# window style and function
+		win_type=1
+		ignore_loop=0
+		default_win_design
+	}
+	fn_wine_binary(){
+		unset basic_sets field_list chk_list track_list track_sets conf_dat pol_bin_list local_bin_list
+		w_wine_use_winepath="$vb Set if you want to use a custom Wine binary path:$end"
+		w_wine_binary_title="$vb You can choose and activate here a custom Wine binary directory if it's helpful for your app. Datas are provided by PlayOnLinux Wine server.$end"
+		w_wine_wine_path="$vb Set full path of customs Wine binaries repository:$end"
+		w_wine_wine_ver="$vb Set the custom Wine directory name:$end"
+		w_wine_wine_pol="$vb Download a binary package from PlayOnLinux repo:$end"
+		w_wine_wconfig="$vb When set, new Wine binary will setup new environment, this set will allow winecfg to start at boot:$end"
+		w_text="$bf Configure an extra Wine binary path$end"
+		# check already setted variables
+		track_list="use_winepath wine_path wine_ver"
+		wineset_list=$track_list
+		wine_bin_cmd="bash $bash_opt \"select_win_bin\""
+		if [ $from_config = 1 ]; then
+			ifs=$IFS
+			IFS=$(echo -en "\n\b")
+			if [[ $wine_ver != '' ]]; then wine_ver="$wine_path/$wine_ver"; else wine_ver="$HOME/"; fi
+			if [[ $wine_path == '' ]]; then wine_path="$HOME/"; fi
+			IFS=$ifs
+		else
+			for trk_set in ${track_list[@]}; do
+				unset local_set
+				if [[ $trk_set == use_winepath ]]; then trk_box=0; else trk_box="$HOME/"; fi
+				local_set+=("$trk_set=$trk_box")
+				local $local_set
+			done
+		fi
+		export wine_path=$wine_path
+		
+		ifs=$IFS
+		IFS=$(echo -en "\n\b")
+		
+		basic_sets=(
+		"1;;;;;LBL;;;"
+		"2;;;;$w_wine_binary_title;LBL;;;"
+		"3;$use_winepath;use_winepath;;use Wine binaries path (default:$HOME/.winebin);CHK;;;"
+		"4;;;;$w_wine_wine_path;LBL;;;"
+		"5;$wine_path;wine_path;;$nf Wine binaries dir\t\t\t$end;DIR;;;"
+		"6;;;;$w_wine_wine_ver;LBL;;;"
+		"7;$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;;"
+		"8;$wine_bin_cmd;;;$vb or select a PoL Wine package to download$end;FBTN;;;"
+		"9;;;;;LBL;;;"
+		"10;;;;$w_wine_wconfig;LBL;;;"
+		"11;$w_config;w_config;;Start Winecfg at app launch;CHK;;;"
+		)
 		IFS=$ifs
 		# window style and function
 		win_type=1
@@ -1082,13 +1180,6 @@ $nf Check here the sections you would like to configure.$end"
 $vB Set here the most usual register Direct3D graphic options$end\\n \
 $vB or edit a file manualy (will be merge with others sets)$end\\n \
 $rb WARNNG:$end$vb Direct3D register config is only usable under WindowsXP bottle$end"
-		w_reg_strict=""
-		w_reg_direct=""
-		w_reg_mode=""
-		w_reg_offscreen=""
-		w_reg_rendertarget=""
-		w_reg_useglsl=""
-		w_reg_memory=""
 		w_reg_manual1="$vB Custom register (manual edit).$end"
 		w_reg_manual2="$rb Warning:$end$vb Remove all custom (set by yourself) or empty lines$end"
 
@@ -1183,8 +1274,6 @@ $vb Set the most common Windows packages available in Winetricks needed by your 
 		w_tricks_trk_launch="$st Launch Winetricks separatly$end"
 		w_tricks_trk_dll="$vb or launch Winetricks$end $rb(can't be used at first config edition)$end"
 		w_tricks_trk_dlls="$vb Add an additional DLL component$end"
-		w_tricks_="$vb $end"
-		w_tricks_="$vb $end"
 		# config file preset
 		if [ -x /usr/bin/winetricks ]||[ -x /usr/local/bin/winetricks ]; then
 			tricks_dll=$(winetricks dlls list| grep "downloadable"| \
@@ -1705,7 +1794,7 @@ If your using a Optimus Laptop, you can set here the dedicated commands and opti
 		if [ ${#inactive_export} -gt 0 ]; then local "${inactive_export[@]}"; fi
 		IFS=$ifs	
 	fi
-	check_list=("$_wine,_wine" "$_nvidia_1,_nvidia_1" "$_nvidia_2,_nvidia_2"
+	check_list=("$_wine,_wine" "$_wbin,_wbin" "$_nvidia_1,_nvidia_1" "$_nvidia_2,_nvidia_2"
 			"$w_install_exe,_install" "$_reged,_reged" "$_tricks,_tricks"
 			"$_xrandr,_xrandr" "$_optimus,_optimus")
 	for c in ${check_list[@]}; do
@@ -1823,7 +1912,7 @@ edit_desktop(){
 	_img_set=$_path_set/png
 	emblem_png=$_path_set/emblems/wine_emblem.png
 	## define the basic vars to create a desktop file
-	desk_var_list=('user_prefix' 'bottle_prefix' 'game_dir' 'game_exe')
+	desk_var_list=('user_prefix' 'bottle_prefix' 'game_dir' 'game_exe' 'wine_elf')
 	for d_var in ${desk_var_list[@]}; do
 		_conf_set=$(cat $config_file| grep -w "$d_var"| sed -n "s/^.*=//p"|sed -n "s/[']\|[\"]//g;p")
 		appli_dir_set+=("$d_var=$_conf_set")
@@ -1834,7 +1923,8 @@ edit_desktop(){
 	ifs=$IFS
 	IFS=$(echo -en "\n\b")
 	# set the exe path and bin
-	exe_path="$user_prefix/$bottle_prefix/drive_c/Program Files/$game_dir/$game_exe"
+	if [ $wine_elf = 1 ]; then elf_ext=' (x86)'; else elf_ext=''; fi
+	exe_path="$user_prefix/$bottle_prefix/drive_c/Program Files$elf_ext/$game_dir/$game_exe"
 	# set the icon type to extract
 	ico_type=14
 	# extract the icon
@@ -1982,11 +2072,11 @@ $vb You can create or modify every main fields of a desktop file$end"
 		# if emblem overlay is selected, check vlaue first before telling to script to create 
 		# the overlay at the next loop.
 		if [ "$fld_entry" == TRUE ]; then
-			if [ $fld_var == emblem ]; then convert_icon=1; else convert_icon=0; fi
-			if [ $fld_var == dsk_menu ]; then menu_entry=1; else menu_entry=0; fi
+			if [ "$fld_var" == emblem ]; then convert_icon=1; else convert_icon=0; fi
+			if [ "$fld_var" == dsk_menu ]; then menu_entry=1; else menu_entry=0; fi
 		fi
 		# next loop create the overlay if set.
-		if [ $fld_var == Icon ]&&[ $convert_icon = 1 ]; then
+		if [[ "$fld_var" == Icon && $convert_icon = 1 ]]; then
 			for l_png in ${icon_def[@]}; do
 				png=$(printf "$l_png"| cut -d',' -f1)
 				def=$(printf "$l_png"| cut -d',' -f2)
@@ -1998,6 +2088,7 @@ $vb You can create or modify every main fields of a desktop file$end"
 			done
 			/usr/bin/convert $fld_entry $emblem_png $scale -composite $_img_set/$exe_name.png
 			fld_entry=$_img_set/$exe_name.png
+			keys="$fld_var=$fld_entry"
 		fi
 		# control if this is an edit from existing file and then apply correct filter
 		if [ -a $XDG_DESKTOP_DIR/$exe_name.desktop ]; then
@@ -2007,16 +2098,18 @@ $vb You can create or modify every main fields of a desktop file$end"
 				$HOME/.local/share/applications/$exe_name.desktop
 			fi
 		else
-			if [ $keys != emblem ]|| $keys != dsk_menu ]; then printf "$keys\n" >> $temp3; fi
+			if ! [[ $fld_var == emblem || $fld_var == dsk_menu ]]; then printf "$keys\n" >> $temp3; fi
 		fi
 	done
 	# for complete new desktop file entry creation add first line headers in first place. 
 	if [ ! -f $XDG_DESKTOP_DIR/$exe_name.desktop ]; then
 		printf "[Desktop Entry]\nEncoding=UTF-8\nType=Application\n" > $XDG_DESKTOP_DIR/$exe_name.desktop
 		cat $temp3 >> $XDG_DESKTOP_DIR/$exe_name.desktop
+		chmod 755 $XDG_DESKTOP_DIR/$exe_name.desktop
 		if [ $menu_entry = 1 ]; then
 			touch $HOME/.local/share/applications/$exe_name.desktop
 			cat $XDG_DESKTOP_DIR/$exe_name.desktop > $HOME/.local/share/applications/$exe_name.desktop
+			chmod 755 $HOME/.local/share/applications/$exe_name.desktop
 		fi
 	fi
 	# all done, bye bye.
