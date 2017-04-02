@@ -306,6 +306,7 @@ To the all community and contributors of **WineHQ** that make the world goes rou
  - Add a "working" popup. Script work could be long.
  - Devel comments and adds are still uncleaned.
  - A few fixes.
+
 ( 30/03/17 ) v0.91 
  - Add 64bits start feature
  - Put Wine custom binary in a separate tab
