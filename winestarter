@@ -71,32 +71,33 @@ fn_regedit(){
 	fi
 }
 fn_use_winepath(){
-	if ! [ -n $wine_path ]; then mkdir -p $HOME/.winebin; fi
-	if [ -d $wine_path/$wine_ver ]; then
+	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; else ftp_elf='x86'; fi
+	if ! [ -n $wine_path/$ftp_elf ]; then mkdir -p $HOME/.winebin/$ftp_elf; fi
+	if [ -d $wine_path/$ftp_elf/$wine_ver ]; then
 		_use_winepath_env=1
 	else
 		printf "# No special Wine path found: Try to download.\n"
 		## control if wine bin dir exist. If not create it from default
-		if ! [ -d $wine_path/ ]; then mkdir -p $wine_path; fi
+		if ! [ -d $wine_path/$ftp_elf/ ]; then mkdir -p $wine_path/$ftp_elf; fi
 		## PoL server address
-		pol_address='http://wine.playonlinux.com/binaries/linux-x86/'
+		pol_address="http://wine.playonlinux.com/binaries/linux-$ftp_elf/"
 		## create tmp dir for package download
 		dl_dir=$(mktemp --tmpdir -d wine_pol.XXXXXXXX)
 		w_title="Winestarter"
-		w_text="<span weight=\"bold\" font=\"10\">Downloading $wine_ver from PoL server. Please wait</span>"
+		w_text="<span weight=\"bold\" font=\"10\">Downloading $wine_ver $ftp_elf from PoL server. Please wait</span>"
 		## Analyse and parse wget stdout field, then display it in a yad window
 		track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $wine_ver [\1] time left: \3\t\2\/s/"; }
-		dl_cmd(){ wget $pol_address/PlayOnLinux-wine-$wine_ver-linux-x86.pol $dl_dir/ 2>&1; }
+		dl_cmd(){ wget $pol_address/PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol $dl_dir/ 2>&1; }
 		cd $dl_dir
 		## yad progress bar
 		dl_cmd | track | yad --width=450 --title "$w_title" --text-align=center --text="$w_text" \
 		--window-icon=filesave --image=filesave --progress --auto-close
-		if [ -s $dl_dir/PlayOnLinux-wine-$wine_ver-linux-x86.pol ]; then
-			e_text="<span weight=\"bold\" font=\"10\">Extracting $wine_ver to $wine_path</span>"
-			( tar -xf PlayOnLinux-wine-$wine_ver-linux-x86.pol 
+		if [ -s $dl_dir/PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol ]; then
+			e_text="<span weight=\"bold\" font=\"10\">Extracting $wine_ver $ftp_elf to $wine_path</span>"
+			( tar -xf PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol 
 			)| yad --width=400 --title "$w_title" --text-align=center --text="$e_text" \
 			--window-icon=filesave --progress --pulsate --auto-close
-			cp -Rf wineversion/$wine_ver/ $wine_path/
+			cp -Rf wineversion/$wine_ver/ $wine_path/$ftp_elf
 			_use_winepath_env=1
 		else
 			printf "# Downloaded package missing. Using defautl Wine.\n"
@@ -323,9 +324,9 @@ fi
 ifs=$IFS
 IFS=$(echo -en "\n\b")
 if [ $wine_elf = 1 ]; then
-	elf=64; elf_ext=' (x86)'; w_elf_ext='\ (86)'
+	elf=64; elf_ext=' (x86)'; w_elf_ext='\ (86)'; ftp_elf='amd64'; libs="lib$elf"
 else
-	elf=32; elf_ext=''; w_elf_ext=''
+	elf=32; elf_ext=''; w_elf_ext=''; ftp_elf='x86'; libs='lib'
 fi
 ## export env variable, usually "env WINEARCH=wine32 WINEPREFIX=~/wine_prefix" before wine cmd 
 export WINEARCH=win$elf
@@ -340,17 +341,23 @@ fn_game_dir_exist
 #fn_extract_lnk
 fn_convert_desktop_file
 if [ $_use_winepath_env -gt 0 ]; then
-	export WINELOADER=$wine_path/$wine_ver/bin/wine
-	export WINESERVER=$wine_path/$wine_ver/bin/wineserver
-	export WINEDLLPATH=$wine_path/$wine_ver/lib/wine
-	PATH="$PATH:$wine_path/$wine_ver/bin"
-	LD_LIBRARY_PATH="$wine_path/$wine_ver/lib" #:/usr/lib:/usr/lib64:/lib:/lib64
+	export WINELOADER=$wine_path/$ftp_elf/$wine_ver/bin/wine
+	export WINESERVER=$wine_path/$ftp_elf/$wine_ver/bin/wineserver
+	if [ $wine_elf = 1 ]; then
+		export WINEDLLPATH=$wine_path/$ftp_elf/$wine_ver/$libs/wine
+		LD_LIBRARY_PATH="$wine_path/$ftp_elf/$wine_ver/lib:$wine_path/$ftp_elf/$wine_ver/$libs"
+		#:/usr/lib:/usr/lib64:/lib:/lib64	
+	else
+		export WINEDLLPATH=$wine_path/$ftp_elf/$wine_ver/lib/wine
+		LD_LIBRARY_PATH="$wine_path/$ftp_elf/$wine_ver/lib"
+	fi
+	PATH="$PATH:$wine_path/$ftp_elf/$wine_ver/bin"
 	export LD_LIBRARY_PATH
 	export PATH
 	echo "$LD_LIBRARY_PATH"
 	wine_bin=$WINELOADER
 	wineboot -u
-	wine --version
+#	wine --version
 fi
 if [ $w_config = 1 ]; then fn_wineconf ; fi
 
@@ -402,8 +409,8 @@ sleep 5
 #exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*\/\(\w*\([A-Z]\|[a-z]\).exe\).*$/\1/;s/^\(.\{3\}\).*/\1/g;1p")
 exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*[\/\|\\\]//;s/^\(.\{3\}\).*/\1/g;p")
 #bin_pid="pgrep ^\(\s*$exe_short.*$\)"
-bin_pid="pgrep ^$exe_short.*$"
-#A_PID=`$bin_pid`
+bin_pid="pgrep ^$exe_short.*.exe$"
+A_PID=`$bin_pid`
 ## if script is launched from winestarter configurator, ger Yad pid and kill it
 #if [ $YAD_PID ]; then killall -9 yad ; fi
 if [ $YAD_PID ]; then kill $YAD_PID $(($YAD_PID+1)) ; fi

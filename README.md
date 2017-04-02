@@ -4,7 +4,16 @@ A not very simple script to start wine emulated applications
 ![winestarter logo](/png/defaults/winestarter_128.png)
 
 -------
-## Introduction
+# Basics
+The project comes with 2 scripts:
+ - `winestarter`: the command line base.
+ - `winestarter_conf`: the Yad graphical interface
+
+Config file and configuration UI are completly independent and script can work without the UI.
+
+Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards.
+
+## History
 For everyboby using Wine know that launching a Wine emulated application could by real nightmare.
 
 When you surf over **WineHQ**, there is often many tricks, "env" variables, register edits not very fun for both newbies or old Wine user guys.
@@ -20,25 +29,17 @@ I turn around the right solution since a while, but finally got this one and I'm
 
 Note to MAC users: The script will probably works for you (don't know for Yad), but it need somme desktop environnent I don't have or know. So, if you want it, give a hand !
 
-# Basics
-The project comes with 2 scripts:
- - `winestarter`: the command line base.
- - `winestarter_conf`: the Yad graphical interface
-
-Config file and configuration UI are completly independent and script can work without the UI
-
-Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards
-
 # OS Depencies
  - Yad (zenity fork)
- - lftp (for PoL packages download)
- - ImageMagick (for image convertion, mostly by default in all distros)
- - strings (for MS Icons reading, mostly by default in all distros)
+ - wget (for PoL packages download, usualy by default in all distros)
+ - ImageMagick (for image convertion, usualy by default in all distros)
+ - strings (for Wine/Ms lnk file reading, usualy by default in all distros)
  - icoutils (for MS Icons png extraction, name can vary by distro)
+ - Winetricks (for dlls downlaod and install, usualy in non-free distros repos)
  
 --------
 ## Features
- - Create and configure a basic Wine bottle
+ - Create and configure a basic Wine bottle (32 or 64)
  - Configure a custom Wine binaries directory
  - Install Winestricks packages
  - Create and configure a Wine registry
@@ -47,6 +48,8 @@ Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards
  - Configure Nvidia apps enviroment options
  - Configure Xrandr behaviour
  - Set Optimus Bumblebee/Primusrun variables
+ 
+Look to change log at the end of the page.
  
 --------
 To simplefy usage description, we will use a full working example for config from Final Fantasy XIV game.
@@ -80,10 +83,10 @@ To uninstall without remove precious conf files :
 The `makefile` will install launcher and configarator in `/usr/local/bin` and the per game/app config file template in `~/.winestarter/configs` user hidden dir.
 
 ## Usage
-At the very beginning, this was just a app launcher. There's now a tested app install feature and it also can download and install custom Wine binaries and libs from the PlayOnlinux project. Plus, it can convert or modify the desktop file entry (from software installation process or already existing)
+At the very beginning, this was just a app launcher. There's now a tested app install feature and it also can download and install custom Wine binaries and libs from the PlayOnlinux project. Plus, it can convert or modify the desktop file entry (from software installation process or already existing or a complete new one)
 
 Note that winestarter_conf doesn't need any template to start, because it create it from scratch.
-Edit and rename the `winestarter` conf file as you wish, then :
+The the `winestarter` conf file template is only a model for those wanting to use the script only :
 
 ```sh
 	winestart game.conf
@@ -95,7 +98,7 @@ or
 or simply from the menu : Wine > winestarter configurator
 
 ## Config file edit
-If don't use `winestarter_conf`, you can edit the config file as you wish. It is a per game/app file, so you can create many conf files as you want.
+If don't use `winestarter_conf`, you can edit the config file as you wish. It is a per game/app file, so you can create many conf files as you want. I will add a few other example in the repository ( You could contribute by adding yours, if you like)
 
 This is a working example for *Final Fantasy XIV*:
 
@@ -106,23 +109,23 @@ This is a working example for *Final Fantasy XIV*:
 ## comments with '#' are unset feature
 
 ## default is /home/$USER
-user_prefix=/home/games
+## default is /home/mike
+user_prefix=/home/mike
 ## game/appli prefix name
-bottle_prefix=".wine.FFXIV_2"
+bottle_prefix=".wine.FFXIV_64"
 ## default system path of the game/appli if not in the chosen Wine prefix
-game_path=/home/games/FFXIV/SquareEnix
+game_path="/home/games/FFXIV/SquareEnix"
 ## Full game dir name in Progrma Files (including Program Files dir name)
 game_dir="SquareEnix/FINAL FANTASY XIV - A Realm Reborn"
 game_exe="boot/ffxivboot.exe"
-## Use a specific Wine path: yes (1), no (0).
-use_winepath=0
-## where is your custom Wine binary, if any 
-wine_path=/home/games/.winebin
-## custom Wine binary name
-wine_ver='2.0-rc3-staging'
+## if classic wine command fail, execute .exe inside the directory
+special_cmd=0
+## set a 64 bits bottle: false (0), true (1)
+wine_elf=1
+
 ## to lauch winecfg at first launch
 w_config=0
-## config sets from winestarter configurator
+## Do not remove or edit below except if you don't use winestarter configurator.
 _wine=1
 
 ## first install launch and prefix creation (0) already set, (1) first launch
@@ -257,7 +260,7 @@ Sometimes is better to set the desktop to the gameplay definition, this way you 
 
 This option use the game *PID* to know when the game start and stop. This way it can reset the screen at your normal display res.
 
-*Final Fantasy XIV* has 3 screen mode: *fullscreen, windowed and borderless window*. This is in the last case the **xrandr** trick is very very useful for small mobile Nvidia GPU.
+*Final Fantasy XIV* has 3 screen modes: *fullscreen, windowed and borderless window*. This is in the last case the **xrandr** trick is very very useful for small mobile Nvidia GPU.
 
 Hope it would be for you too.
 
@@ -287,12 +290,26 @@ There is short user help displayed
 `winestarter_conf` will procduce many codes lines in the terminal at this point slowing it, this is intentional for my debug purpose. It wont in final release.
 
 ### Experienced
-STEAM was fully installed and configured by the basic script on my desktop.
-
-TERA Online was installed successfuly too.
-
-FF was installed earlier, but I spend my time to change many things for my debug purpose: desktop file, icons, game directory, Wine binary, etc... And it still work great. 
+ - STEAM was fully installed and configured by the basic script on my desktop (32 and 64).
+ - TERA Online was installed successfuly too. But the game wont start because of a network issue.
+ - FF was installed earlier, but I spend my time to change many things for my debug purpose: desktop file,  icons, game directory, Wine binary, etc... And it still work great. It also work in Wine 64 with DX9, sadly it wont in DX11 because of a DX version check issue.
+ - COD 4 MW was reconfigured by the script in 64. Perfect.
 
 ## Special thanks and Dedicates
 To the all community and contributors of **WineHQ** that make the world goes round and made this work possible.
+
+-----------
+### Change Log
+( 02/04/17 ) v0.92
+ - Allowed Wine Custom binary to download and use 64bits. ltfp is not used anymore.
+ - Add an initial window for fresh/import install. This is more confortable now to choose a custom app directory by init the new wine bottle first and preconfigure to choose the app dir and exe at the next step.
+ - Add a "working" popup. Script work could be long.
+ - Devel comments and adds are still uncleaned.
+ - A few fixes.
+( 30/03/17 ) v0.91 
+ - Add 64bits start feature
+ - Put Wine custom binary in a separate tab
+ - A few fixes.
+
+
 
