@@ -282,24 +282,18 @@ fn_convert_desktop_file(){
 fn_install_exe(){
 	if [ -e $w_exe_path ]; then
 		msi=$(printf "$w_exe_path"| grep -c "\.msi")
-#		if [[ $(printf "$w_exe_path"| grep -o "\.msi") ]]; then
-#			msi=" msiexec /i"
-#		fi
 		if [ $msi = 0 ]; then
 			$wine_bin $w_exe_path $w_exe_opts
 		else
 			$wine_bin msiexec \/i $w_exe_path $w_exe_opts
 		fi
 		fn_extract_lnk
-#		if [ -e $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; then
-			perl -ni -pe "s|(w_install_exe)=[0-9]|\1=0|i" $config_file
-#		fi
+		perl -ni -pe "s|(w_install_exe)=[0-9]|\1=0|i" $config_file
 		sleep 2
 	else
 		printf "# EXE path was not found.\n# Define the right install executable path is mandatory.\n# EXIT.\n"
 		exit 0
 	fi
-	
 }
 fn_game_dir_exist(){
 	## search where is the "Prgram Files" dir and type.
