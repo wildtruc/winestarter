@@ -1,6 +1,6 @@
 #! /bin/bash
 
-PATH=$PATH
+#PATH=$PATH
 
 colors(){
 main='#005400'
@@ -378,7 +378,7 @@ $nf\winetstarter $conf_target.conf$end"
 					fi
 				else
 					if [ $(printf "$_val"| grep -c "Program\ Files") -gt 0 ]; then
-						_val=$(printf "$_val"| sed -n "s|^.*\(Program\ Files/\)\(.*\)$|\2|g;p")
+						_val=$(printf "$_val"| sed -n "s|^.*\(Program\ Files$elf_ext/\)\(.*\)$|\2|p")
 					else
 						_val=$(printf "$_val"| sed -n "s|^.*\(drive_c/\)\(.*\)$|\2|g;p")
 					fi
@@ -436,26 +436,6 @@ $nf\winetstarter $conf_target.conf$end"
 			new_config_file=$HOME/.winestarter/configs/$(printf "$bottle_prefix"| sed -n "s/^.//p")
 			## print headers in config file
 			printf "$conf_headers" > $tmp_conf
-#			_wine_conf="
-### default is $HOME
-#user_prefix=$user_prefix
-### game/appli prefix name
-#bottle_prefix=\".$bottle_prefix\"
-### default system path of the game/appli if not in the chosen Wine prefix
-#game_path=\"$game_path\"
-### Full game dir name in Progrma Files (including Program Files dir name)
-#game_dir=\"$game_dir\"
-#game_exe=\"$game_exe\"
-### if classic wine command fail, execute .exe inside the directory
-#special_cmd=$special_cmd\n
-### Use a specific Wine path: yes (1), no (0).
-#use_winepath=$use_winepath
-### where is your custom Wine binary, if any 
-#wine_path=\"$wine_path\"
-### custom Wine binary name
-#wine_ver='$wine_ver'\n
-### to lauch winecfg at first launch
-#w_config=1"
 			_wine_conf="
 ## default is $HOME
 user_prefix=$user_prefix
@@ -572,12 +552,19 @@ w_exe_path=\"$w_exe_path\""
 		if [[ $_val == TRUE ]]; then 
 			if [ $_var == ie8 ]; then _var='ie8 wininet winhttp'; fi
 			_tricks_var+=("$_var")
+			A=1
+		else
+			A=0
 		fi
 		if [[ $_var == plus_dll ]]; then
 			_var=w_tricks_list
 			_val=$(printf "${_tricks_var[*]}"|tr ' ' ',')
 			((M++))
+			A=1
+		else
+			A=0
 		fi
+		if [ $A -gt 0 ]; then activ_mod+=("w_install_tricks,$A"); fi
 		new_conf_list+=("$_var=$_val")
 		echo "5555555555555"
 	}
@@ -640,7 +627,6 @@ w_tricks_list=\"$w_tricks_list\""
 				cat $reg_move | sort -u | sed -ne '/\[.*\]/{h;!H;d}; $G;p'| tac > $reg_edit
 				((M++))
 			else
-#				_val="$_reg_header"
 				_val=''
 			fi			
 		fi
@@ -2320,8 +2306,8 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 	exit 0
 }
 ## Script debug options
-#bash_opt='-x -c'
-bash_opt='-c'
+bash_opt='-x -c'
+#bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""

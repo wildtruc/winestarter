@@ -292,14 +292,25 @@ There is short user help displayed
 ### Experienced
  - STEAM was fully installed and configured by the basic script on my desktop (32 and 64).
  - TERA Online was installed successfuly too. But the game wont start because of a network issue.
- - FF was installed earlier, but I spend my time to change many things for my debug purpose: desktop file,  icons, game directory, Wine binary, etc... And it still work great. It also work in Wine 64 with DX9, sadly it wont in DX11 because of a DX version check issue.
+ - FFXIV was installed earlier, but I spend my time to change many things for my debug purpose: desktop file,  icons, game directory, Wine binary, etc... And it still work great. It also work in Wine 64 with DX9, sadly it wont in DX11 because of a DX version check issue.
  - COD 4 MW was reconfigured by the script in 64. Perfect.
+ - BF 3 installed with a few tricks. Work only over 64bits and DX11 (wine 2.4-staging). App launch in Wine windowed mode, alas, implementation of DX11 in Wine is not enough strong to manage many shaders and render is a crap.
+ - FFXIV tested over DX11 succefuly by installing the DX redist package. Unfortunatly, when you go in the game itself occur the same shader issues. All the ATH is loaded, but no colors rendering. 
 
 ## Special thanks and Dedicates
 To the all community and contributors of **WineHQ** that make the world goes round and made this work possible.
 
 -----------
 ### Change Log
+( 04/04/17 ) v0.93
+ - Modified and fix winetricks dlls installer in winestarter (fn_install_tricks). This way, installer just install missing dlls or newly added.
+ - Modified and fix the way the script detect and link app dir to manage those installed in root (c:).
+ - Fixed forgotten dir elf type in winestarter_conf reconf_wine function.
+ - Usually, the app start independantly from the script. However, in some case it doesn't and mess up the pid detection. I fix it, now it does all the time.
+ - Add a new filter for pid detection. I did test BF Bad Compagny 2. It appears this games needs to be launch to the desktop resolution to work properly and doesn't exit as Wine usaully do, that why I needed to do the above fix.
+ - Winestarter's 'fn_game_dir_exist' wasn't reading custom app path as expected. Reworked on it and fix. Add a yad file chooser at this point to select .exe and dir when launched from Winestarter only.
+ - Devel comments and adds are still uncleaned.
+
 ( 02/04/17 ) v0.92
  - Allowed Wine Custom binary to download and use 64bits. ltfp is not used anymore.
  - Add an initial window for fresh/import install. This is more confortable now to choose a custom app directory by init the new wine bottle first and preconfigure to choose the app dir and exe at the next step.
@@ -307,9 +318,10 @@ To the all community and contributors of **WineHQ** that make the world goes rou
  - Devel comments and adds are still uncleaned.
  - A few fixes.
 
-( 30/03/17 ) v0.91 
- - Add 64bits start feature
- - Put Wine custom binary in a separate tab
+( 30/03/17 ) v0.91
+ - Started the versioning steps where v1.0 will be stable without known bugs.
+ - Add 64bits start feature.
+ - Put Wine custom binary in a separate tab.
  - A few fixes.
 
 
