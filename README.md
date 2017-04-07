@@ -302,7 +302,7 @@ To the all community and contributors of **WineHQ** that make the world goes rou
 
 -----------
 ### Change Log
-( 04/04/17 ) v0.93
+( 0/04/17 ) v0.93
  - Modified and fix winetricks dlls installer in winestarter (fn_install_tricks). This way, installer just install missing dlls or newly added.
  - Modified and fix the way the script detect and link app dir to manage those installed in root (c:).
  - Fixed forgotten dir elf type in winestarter_conf reconf_wine function.
