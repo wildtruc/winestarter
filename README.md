@@ -295,14 +295,18 @@ There is short user help displayed
  - FFXIV was installed earlier, but I spend my time to change many things for my debug purpose: desktop file,  icons, game directory, Wine binary, etc... And it still work great. It also work in Wine 64 with DX9, sadly it wont in DX11 because of a DX version check issue.
  - COD 4 MW was reconfigured by the script in 64. Perfect.
  - BF 3 installed with a few tricks. Work only over 64bits and DX11 (wine 2.4-staging). App launch in Wine windowed mode, alas, implementation of DX11 in Wine is not enough strong to manage many shaders and render is a crap.
- - FFXIV tested over DX11 succefuly by installing the DX redist package. Unfortunatly, when you go in the game itself occur the same shader issues. All the ATH is loaded, but no colors rendering. 
+ - FFXIV tested over DX11 succefuly by installing the DX redist package. Unfortunatly, when you go in the game itself occur the same shader issues. All the ATH is loaded, but no colors rendering in the game itself. 
 
 ## Special thanks and Dedicates
 To the all community and contributors of **WineHQ** that make the world goes round and made this work possible.
 
 -----------
 ### Change Log
-( 0/04/17 ) v0.93
+*( 10/04/17 ) v0.94*
+ - Added a 'more packages' features to 'Install Software' section. This way, user could install associated dll packages or apps (ex: DX redist) without restart the configurator or the script a second times or more.
+ - Add a scroll to the winestarter_conf window to gain place. There is alas a bug with optimus and xrandr tab (will fix ASAP)
+ 
+*( 08/04/17 ) v0.93*
  - Modified and fix winetricks dlls installer in winestarter (fn_install_tricks). This way, installer just install missing dlls or newly added.
  - Modified and fix the way the script detect and link app dir to manage those installed in root (c:).
  - Fixed forgotten dir elf type in winestarter_conf reconf_wine function.
@@ -311,14 +315,14 @@ To the all community and contributors of **WineHQ** that make the world goes rou
  - Winestarter's 'fn_game_dir_exist' wasn't reading custom app path as expected. Reworked on it and fix. Add a yad file chooser at this point to select .exe and dir when launched from Winestarter only.
  - Devel comments and adds are still uncleaned.
 
-( 02/04/17 ) v0.92
+*( 02/04/17 ) v0.92*
  - Allowed Wine Custom binary to download and use 64bits. ltfp is not used anymore.
  - Add an initial window for fresh/import install. This is more confortable now to choose a custom app directory by init the new wine bottle first and preconfigure to choose the app dir and exe at the next step.
  - Add a "working" popup. Script work could be long.
  - Devel comments and adds are still uncleaned.
  - A few fixes.
 
-( 30/03/17 ) v0.91
+*( 30/03/17 ) v0.91*
  - Started the versioning steps where v1.0 will be stable without known bugs.
  - Add 64bits start feature.
  - Put Wine custom binary in a separate tab.

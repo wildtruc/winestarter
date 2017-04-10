@@ -68,6 +68,7 @@ main_code(){
 			if [ $c_box == 'DIR' ]; then chk_box="$c_set"; fi
 			if [ $c_box == 'CDIR' ]; then chk_box="$c_set"; fi
 			if [ $c_box == 'FL' ]; then chk_box="$c_set"; fi
+			if [ $c_box == 'MFL' ]; then chk_box="$c_set"; fi
 			if [ $c_box == 'SFL' ]; then chk_box="$c_set"; fi
 			if [ $c_box == 'TXT' ]; then chk_box="$c_set"; fi
 			if [ $c_box == 'FBTN' ]; then chk_box="$c_set"; fi
@@ -97,7 +98,7 @@ main_code(){
 			form_win=$(printf "${default_win[@]}"|tr ';' '\n')			
 		fi
 		if [ $win_type = 1 ]; then
-			yad --width=450 $t_plug --text="$w_text" --form \
+			yad --width=550 $t_plug --text="$w_text" --form $extended_opts \
 			"${field_list[@]}" "${chk_list[@]}" --separator=';' > $temp &
 #			YAD_03=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
 		fi
@@ -167,7 +168,7 @@ main_code(){
 		done
 		if [ $win_type = 1 ]; then
 		kill $WAIT_UI_1
-			yad --width=550 --title "$w_title" --window-icon=$img_wine_desk_ui \
+			yad --width=700 --title "$w_title" --window-icon=$img_wine_desk_ui $main_opts \
 			--center --notebook --key=$key --tab-pos=right \
 			--tab-border=2 --text="$main_tab_text" \
 			"${t_display[@]}"
@@ -320,7 +321,7 @@ main_code(){
 	}
 	fn_end_game_1(){
 		# --field="$vb New Wine prefix $end"!$img_wine_add!"Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \
-		unset basic_sets field_list chk_list track_list track_sets conf_dat
+		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
 		res_action="bash $bash_opt \"winestarter "$conf_target".conf\""
 		res_launch="$vb Launch Winetarter$end"
 		res_special="$vb Launch or relaunch boot features:$end"
@@ -344,7 +345,7 @@ $nf\winetstarter $conf_target.conf$end"
 		# create main window variables
 	}
 	fn_end_game_2(){
-		unset basic_sets field_list chk_list track_list track_sets conf_dat
+		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
 		w_text="Blabla"
 		w_res_1="Blobloblo"
 		basic_sets=(
@@ -358,6 +359,7 @@ $nf\winetstarter $conf_target.conf$end"
 	}
 	reconf_wine(){		
 		# "user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
+		echo "2222222222222"
 #		if [[ $_var == special_cmd || $_var == wine_elf ]]; then
 		if [[ $_var == special_cmd ]]; then
 			if [[ $_val == TRUE ]]; then _val=1; else _val=0; fi
@@ -404,7 +406,6 @@ $nf\winetstarter $conf_target.conf$end"
 		new_conf_list+=("$_var=$_val")
 		IFS=$ifs
 		((M++))
-		echo "2222222222222"
 	}
 	newconf_wine(){
 		## create temp file and insert script headers at first config step
@@ -457,6 +458,7 @@ w_config=1"
 		fi
 	}
 	reconf_wbin(){
+		echo "3333333333333"
 		if [[ $_val == TRUE || $_val == FALSE ]]; then
 			if [[ $_val == TRUE ]]; then _val=1; else _val=0; fi	
 		fi
@@ -485,7 +487,6 @@ w_config=1"
 		new_conf_list+=("$_var=$_val")
 		IFS=$ifs
 		((M++))
-		echo "3333333333333"
 	}
 	newconf_wbin(){
 		_wbin_conf="
@@ -499,6 +500,7 @@ wine_ver='$wine_ver'"
 		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
 	}
 	reconf_install(){
+		echo "4444444444444"
 		if [[ $_val == TRUE ]]||[[ $_val == FALSE ]]; then
 			if [[ $_var == w_tricks_opts ]]; then
 				if [[ $_val == TRUE ]]; then _val='--no-isolate'; else _val='';fi
@@ -512,15 +514,40 @@ wine_ver='$wine_ver'"
 		fi
 		if [[ $_var == w_exe_path ]]; then
 			exe_key=$(printf "$_val"| sed -n "s|^.*/||g;p")
-			if [ -n $exe_key ]&&[ $(printf "$_val"| grep -c ".exe\|.msi") -gt 0 ]; then
+			if [[ -n $exe_key && $(printf "$_val"| grep -c ".exe\|.msi") -gt 0 ]]; then
 				((M++))
+			else
+				_val=''
+			fi
+		fi
+		if [[ $_var == w_more_pkgs ]]; then
+			if [ "$_val" != '' ]; then
+				conf_edit=$(mktemp --tmpdir pkg.XXXXXXXX)
+				_val=$(printf "$_val"| tr '!' '*')
+				if [[ $from_config = 1 && $insert_section = 0 ]]; then
+					if [ $old_val -gt 0 ]; then
+						cat $config_file > $conf_edit
+					else
+						cat $config_file | sed -n "/^w_more_pkgs='/,/'/{;s/.*/w_more_pkgs=''/};p"| \
+						uniq > $conf_edit
+					fi
+					perl -ni -pe "s|^(w_more_pkgs)='.*'|\1='$(printf $_val| tr '*' '\n')'|p" $conf_edit
+					if [ $insert_section = 0 ]; then
+						cat $conf_edit > $config_file
+					fi
+					discard=1
+				else
+					_val=$(printf $_val| tr '*' '\n')
+				fi
+				((M++))
+			else
+				_val=''
 			fi
 		fi
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
 		new_conf_list+=("$_var=$_val")
 		IFS=$ifs
-		echo "4444444444444"
 		}
 	newconf_install(){
 		_install_conf="
@@ -528,13 +555,16 @@ wine_ver='$wine_ver'"
 w_install_exe=$w_install_exe
 ## Winetricks options, if any
 w_tricks_opts='$w_tricks_opts'
-## Full path of the exe/msi file
-w_exe_path=\"$w_exe_path\""
+## Full path of the software exe/msi file to install
+w_exe_path=\"$w_exe_path\"
+## Additional associated dlls or app packages list to install (if any)
+w_more_pkgs='$w_more_pkgs'"
 		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
 		printf "$_install_conf\n" >> $tmp_conf
 		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
 	}
 	reconf_tricks(){
+		echo "5555555555555"
 		if [[ $_val != TRUE ]]&&[[ $_val != FALSE ]]; then
 			if [[ $_val != unset ]]; then
 				_tricks_var+=("$_val")
@@ -566,7 +596,7 @@ w_exe_path=\"$w_exe_path\""
 		fi
 		if [ $A -gt 0 ]; then activ_mod+=("w_install_tricks,$A"); fi
 		new_conf_list+=("$_var=$_val")
-		echo "5555555555555"
+		
 	}
 	newconf_tricks(){
 		_tricks_conf="
@@ -579,6 +609,7 @@ w_tricks_list=\"$w_tricks_list\""
 		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
 	}
 	reconf_reged(){
+		echo "6666666666666"
 		if [[ $_val != unset ]]; then
 			if [[ $(printf "$_val" | grep -o "HKEY") == '' ]]; then
 				if [ $(cat $reg_file| grep -c "$_var") -eq 0 ]; then
@@ -630,7 +661,6 @@ w_tricks_list=\"$w_tricks_list\""
 				_val=''
 			fi			
 		fi
-		echo "6666666666666"
 	}
 	newconf_reged(){
 		_reged_conf="
@@ -655,6 +685,7 @@ user_reg=''"
 		fi
 	}
 	reconf_nvidia_1(){
+		echo "777777777777"
 		unset _FSAA_list
 		if [[ $_val != unset ]]; then
 			if [[ $_val =~ [a-z]+ ]]; then
@@ -731,7 +762,6 @@ user_reg=''"
 				
 			done
 		fi
-		echo "777777777777"
 	}
 	newconf_nvidia_1(){
 #		nvtemp1=$(mktemp --tmpdir nv1.XXXXXXXX)
@@ -780,6 +810,7 @@ export __GL_OpenGLImageSettings=$__GL_OpenGLImageSettings"
 		cat $nvtemp1 >> $tmp_conf
 	}
 	reconf_nvidia_2(){
+		echo "88888888888"
 		if [[ $_val != unset ]]; then
 			if [ $_fn_exist -gt 0 ]; then
 				if [[ $_val =~ [A-Z]+ ]]; then
@@ -803,8 +834,6 @@ export __GL_OpenGLImageSettings=$__GL_OpenGLImageSettings"
 				new_conf_list+=("$_var=unset")
 			fi
 		fi
-		
-		echo "88888888888"
 	}
 	newconf_nvidia_2(){
 #		nvtemp2=$(mktemp --tmpdir nv2.XXXXXXXX)
@@ -849,6 +878,7 @@ export __GL_IGNORE_GLSL_EXT_REQS=$__GL_IGNORE_GLSL_EXT_REQS"
 		cat $nvtemp2 >> $tmp_conf
 	}
 	reconf_xrandr(){
+		echo "9999999999"
 		if [[ $_var == bck_mode ]]||[[ $_var == set_mode ]]; then
 			
 			if [[ $_val != unset ]]; then
@@ -905,7 +935,6 @@ export __GL_IGNORE_GLSL_EXT_REQS=$__GL_IGNORE_GLSL_EXT_REQS"
 		IFS=$(echo -en "\n\b")
 		new_conf_list+=("$_var=$_val")
 		IFS=$ifs
-		echo "9999999999"
 	}
 	newconf_xrandr(){
 		_xrandr_conf="
@@ -935,6 +964,7 @@ mouse_btn='$mouse_btn'"
 		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
 	}
 	reconf_optimus(){
+		echo "1010101010"
 		if [[ $_val != TRUE ]]&&[[ $_val != FALSE ]]; then
 			if [ $_val != unset ]; then
 				if [[ $_var == opti_starter ]]; then ((M++)); A=1; fi
@@ -973,7 +1003,7 @@ opti_VBLK=$opti_VBLK"
 		printf "$_optimus_conf\n" >> $tmp_conf
 		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
 	}
-
+################################
 ## Yad UI messages and main text	
 	messages(){
 		main_tab_text="$bf Select settings by theme$end$nf\\n \
@@ -1029,6 +1059,7 @@ $nf Check here the sections you would like to configure.$end"
 		win_type=0
 		ignore_loop=1
 		w_width='420'
+		main_opts='--height=420 --vscroll-policy=allways'
 		default_win_design
 		# create main window variables
 		default_tab_design
@@ -1069,7 +1100,7 @@ $nf Check here the sections you would like to configure.$end"
 		default_tab_create
 	}
 	fn_wine_basics(){
-		unset basic_sets field_list chk_list track_list track_sets conf_dat
+		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
 		# window messages
 		w_wine_basic_tip=""
 		w_wine_user_prefix="$vB\\\Set user prefix if not the user's default one:$end"
@@ -1164,7 +1195,7 @@ $nf Check here the sections you would like to configure.$end"
 			fn_create_prefix
 	}	 
 	fn_wine_config(){
-		unset basic_sets field_list chk_list track_list track_sets conf_dat pol_bin_list local_bin_list
+		unset basic_sets field_list chk_list track_list pol_bin_list local_bin_list #conf_dat #track_sets
 		if [ $wine_elf = 1 ]; then elf='64'; else elf='32'; fi
 		# window messages
 		w_wine_user_prefix="$vB Set user prefix if not the user's default one:$end"
@@ -1225,10 +1256,11 @@ $nf Check here the sections you would like to configure.$end"
 		win_type=1
 		ignore_loop=0
 #		w_width='420'
+		extended_opts="--height=450 --scroll"
 		default_win_design
 	}
 	fn_wine_binary(){
-		unset basic_sets field_list chk_list track_list track_sets conf_dat pol_bin_list local_bin_list
+		unset basic_sets field_list chk_list track_list #conf_dat pol_bin_list local_bin_list #track_sets
 		w_wine_use_winepath="$vb Set if you want to use a custom Wine binary path:$end"
 		w_wine_binary_title="$vb\\You can choose and activate here a custom Wine binary directory. Some apps (particulary old ones) could need old Wine versions. Datas are provided by PlayOnLinux Wine server.$end"
 		w_wine_wine_path="$vb Set full path of customs Wine binaries repository:$end"
@@ -1279,7 +1311,7 @@ $nf Check here the sections you would like to configure.$end"
 		default_win_design
 	}
 	fn_regedit_config(){
-		unset basic_sets field_list chk_list track_list track_sets conf_dat
+		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
 		# window messages
 		w_text="$bf Edit the Wine register$end\\n \
 $vB Set here the most usual register Direct3D graphic options$end\\n \
@@ -1346,6 +1378,7 @@ $rb\\WARNNG:$end$nf Direct3D register config is only usable under WindowsXP bott
 		# start form display
 		win_type=1
 		ignore_loop=0
+		extended_opts="--height=450 --scroll"
 		default_win_design
 		# create main window variables
 	}
@@ -1453,24 +1486,46 @@ $vb Set the most common Windows packages available in Winetricks needed by your 
 		# start form display
 		win_type=1
 		ignore_loop=0
+#		extended_opts='--scroll --columns=2 --output-by-row'
+#		main_opts='--height=500 --vscroll-policy=allways'
+		extended_opts='--height=450 --scroll'
 		default_win_design
 		# window style and function
 	}
 	fn_install_soft(){
-		unset basic_sets field_list chk_list
+		unset basic_sets chk_list field_list
 		# window messages
-		w_text="$bf Software install$end\\n \
+		w_text="$bf\\Software install$end\\n \
 $vb\This feature allow you to install a software at WineStarter launch$end\\n \
 $vb\It will work in most cases, but could fail before the end of process$end"
 		w_tricks_trk_exe="check here to activate install process"
-		w_tricks_ins_exe="$vb Select the .exe or .msi package to install$end"
+		w_tricks_ins_exe="$vb Select the .exe/.msi package to install$end"
 		w_tricks_trk_opt="$vb Winetricks command line options:$end"
 		w_tricks_trk_opt0="option (--no-isolate): force Winetricks to not create its own prefix"
 		w_tricks_trk_tip0="$vb User prefix and wine bottle have to be set in Wine tab first.$end"
 		w_tricks_trk_tip1="$nf Note:$end Steam Winetricks package is usualy broken, download it by your own if needed."
+		w_more_pkgs0="$bf\\More packages$end"
+		w_more_pkgs1="$vb\\If you have to install associated package or other dlls from separate source and not available in Winetricks, select them here$end"
+		w_more_pkgs2="$nf Select one or more$end"
+		
 		if [ $from_config = 0 ]||[[ $w_install_exe == '' ]]; then w_install_exe=0; fi
 		if [[ $w_tricks_opts != '' ]]; then w_tricks_opts=1; else w_tricks_opts=0; fi
 		if [[ $w_exe_path == '' ]]; then w_exe_path="$HOME/"; fi
+		if [ "$w_more_pkgs" == '' ]; then
+			w_more_pkgs="$HOME/"
+		else
+#			old_val_multi=$(cat $config_file|sed -n "/w_more_pkgs='/,/'/p"| grep -c .)
+			old_val=$(cat $config_file|sed -n "/w_more_pkgs='.*'/p"| grep -c .)
+#			if [ $(cat $config_file| grep -c "$w_more_pkgs") -gt 1 ]; then
+			if [ $(cat $config_file|sed -n "/w_more_pkgs='.*'/p"| grep -c .) -gt 0 ]; then
+				local $(cat $config_file|sed -n "/^w_more_pkgs='.*'/p"| sed -n "s/'//g;p")
+			else
+				local $(cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' '!'| \
+				sed -n "s/'//g;s/!$//p")
+			fi
+#			old_val="$w_more_pkgs"
+#			w_more_pkgs=$(printf "$w_more_pkgs"|tr '\n' '!')
+		fi
 		pre_list=0
 		# var list sets
 		basic_sets=(
@@ -1482,9 +1537,13 @@ $vb\It will work in most cases, but could fail before the end of process$end"
 		"6;;;;$w_tricks_trk_opt;LBL;;;"
 		"7;$w_tricks_opts;w_tricks_opts;;$w_tricks_trk_opt0;CHK;;;"
 		"8;;;;;LBL;;;"
-		"9;;;;$w_tricks_trk_tip0;LBL;;;"
-		"10;;;;;LBL;;;"
-		"11;;;;$w_tricks_trk_tip1;LBL;;;"
+		"9;;;;$w_more_pkgs0;LBL;;;"
+		"10;;;;$w_more_pkgs1;LBL;;;"
+		"11;$w_more_pkgs;w_more_pkgs;;$w_more_pkgs2;MFL;;;"
+		"12;;;;;LBL;;;"
+		"13;;;;$w_tricks_trk_tip0;LBL;;;"
+		"14;;;;;LBL;;;"
+		"15;;;;$w_tricks_trk_tip1;LBL;;;"
 		)
 		# start form display
 		win_type=1
@@ -1492,7 +1551,7 @@ $vb\It will work in most cases, but could fail before the end of process$end"
 		# window style and function
 	}
 	fn_nvidia_config_1(){
-		unset basic_sets field_list chk_list track_list track_sets conf_dat
+		unset basic_sets field_list chk_list conf_dat track_list #track_sets
 		# window messages
 		w_nv_tip0="$vB All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
 #		w_nv_fsaamod0="$vB Full Scene Anti Aliasing, from 0 (off) to 5 (16x) : (1) 2x (2xMS)[1], (2) 4x (4xMS)[5], (3) 8x (4xSS/2xMS)[9], (4) 8x (8xMS)[10], (5) 16x (4xSS/4xMS)[11]$end"
@@ -1565,7 +1624,7 @@ $vb\It will work in most cases, but could fail before the end of process$end"
 		"6;;;;$w_nv_fsaactrl1;LBL;;;"
 		"7;$__GL_FSAA_CTRL;__GL_FSAAA_CTRL;;$nf FSAA control type$end;CB;full control!enhanced!ignored;FSAA_ctrl;"
 		"8;;;;$w_nv_fxaa0;LBL;;;"
-		"9;$__GL_ALLOW_FXAA_USAGE;__GL_ALLOW_FXAA_USAGE;;$nf Fast approximate antialiasing (FXAA)\t\t\t$end;CB;0!1;FXAA_use;"
+		"9;$__GL_ALLOW_FXAA_USAGE;__GL_ALLOW_FXAA_USAGE;;$nf Fast approximate antialiasing (FXAA)$end;CB;0!1;FXAA_use;"
 		"10;;;;$w_nv_aniso;LBL;;;"
 		"11;$__GL_LOG_MAX_ANISO;__GL_LOG_MAX_ANISO;;$nf Anisotropic texture filtering$end;NUM;0..4;ANISO;"
 		"12;;;;$w_nv_vblank;LBL;;;"
@@ -1578,11 +1637,12 @@ $vb\It will work in most cases, but could fail before the end of process$end"
 		# start form display
 		win_type=1
 		ignore_loop=0
+#			extended_opts='--height=450 --scroll'
 		default_win_design
 		# window style and function
 	}
 	fn_nvidia_config_2(){
-		unset basic_sets field_list chk_list track_list track_sets conf_dat
+		unset basic_sets field_list chk_list track_list conf_dat #track_sets
 		# window messages
 		w_nv_tip0="$vB All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
 		w_nv_display="$vB VBLANK can't bet set separatly when using multi screen, choose one here if needed:$end"
@@ -1627,7 +1687,7 @@ $vb\It will work in most cases, but could fail before the end of process$end"
 		"8;;;;$w_nv_yield1;LBL;;;"
 		"9;$__GL_YIELD;__GL_YIELD;;$nf Window yield:$end;CB;normal!NOTHING!USLEEP;yield;"
 		"10;;;;$w_nv_unofficial0;LBL;;;"
-		"11;$__GL_ALLOW_UNOFFICIAL_PROTOCOL;__GL_ALLOW_UNOFFICIAL_PROTOCOL;;$nf Unofficial GL implementation\t\t\t$end;CB;0!1;UNOF_proto;"
+		"11;$__GL_ALLOW_UNOFFICIAL_PROTOCOL;__GL_ALLOW_UNOFFICIAL_PROTOCOL;;$nf Unofficial GL implementation$end;CB;0!1;UNOF_proto;"
 		"12;;;;$w_nv_gsync;LBL;;;"
 		"13;$__GL_GSYNC_ALLOWED;__GL_GSYNC_ALLOWED;;$nf G-Sync$end;CB;0!1;GSYNC;"
 		"14;;;;$w_nv_glsl0;LBL;;;"
@@ -1636,6 +1696,7 @@ $vb\It will work in most cases, but could fail before the end of process$end"
 		# start form display
 		win_type=1
 		ignore_loop=0
+#		extended_opts='--height=450 --scroll'
 		default_win_design
 		# window style and function
 	}
@@ -1681,8 +1742,7 @@ $vb\It will work in most cases, but could fail before the end of process$end"
 			done
 			}
 	fn_xrandr_config(){
-		unset basic_sets field_list chk_list track_list input_list
-		unset field_line
+		unset basic_sets field_list chk_list track_list conf_dat input_list field_line
 		# create the basic_sets data to display in the yad tab
 		display_field_set(){
 			X=0; x=1; l=3
@@ -1703,7 +1763,7 @@ $vb\It will work in most cases, but could fail before the end of process$end"
 				# multidisplay at this state. Then, the below conditional filter is added to only
 				# manage one display, the primary.
 				if [ $m_prim -gt 0 ]; then
-				field_msg1="$nf Choose the app desired resolution$end"
+				field_msg1="$nf Choose app resolution$end"
 				field_line+=("$[ $l+$x ];$bck_mode;bck_mode;;$field_msg0;CB;$reso_list;$monitor;")
 				field_line+=("$[ $l+(($x+1)) ];$set_mode;set_mode;;$field_msg1;CB;$reso_list;$monitor;")
 				x=$[ $x+2 ]; X=$[ $X+1 ]
@@ -1779,22 +1839,22 @@ $vb\It will work in most cases, but could fail before the end of process$end"
 		get_pointer_list
 		# window messages
 		w_text="$bf Configure XRandr Wine app resolution$end\\n \
-$vb If you meet issues when going to fullscreen set. This feature will change \
+$vb\\If you meet issues when going to fullscreen set. This feature will change \
 the default desktop resolution before the app start and then back to default \
 when it stop. (Mostly useful for Optimus display behaviour).$end"
-		w_xrandr_tip0="$vb Desktop primary monitor resolution is currently set to$end $nf$current_res$end"
-		w_xrandr_def_dsp="$vb Select the output to switch to and resolution to switch back$end"
+		w_xrandr_tip0="$vb\\Desktop primary monitor resolution is currently set to$end $nf$current_res$end"
+		w_xrandr_def_dsp="$vb\\Select the output to switch to and resolution to switch back$end"
 		w_xrandr_tip1="$nf Note: Prefer primary monitor, secondary is untested.$end"
 	
-		w_xrandr_res_to="Choose the app desired resolution"
+		w_xrandr_res_to="Choose app resolution"
 		w_xrandr_res_bk="Choose the resolution to swith back"
 		w_xrandr_tip2="$bf Compositing$end"
-		w_xrandr_tip3="$vb If your desktop manager slow down graphic performance, you can try to replace the default window manager by a lighter one. Default replacement is set to Openbox (you have to install it first)$end"
+		w_xrandr_tip3="$vb\\If your desktop manager slow down graphic performance, you can try to replace the default window manager by a lighter one. Default replacement is set to Openbox (you have to install it first)$end"
 		w_xrandr_tip6="$nf Note:$end In cinnamon, desactivate compositing in fullscreen mode in System Settings menu: Preferences > General"
-		w_xrandr_compo1="$nf Select the default desktop manager$end"
-		w_xrandr_compo2="$nf Select the desktop manager to use$end"
-		w_xrandr_tip4="$bf Mouse buttons setting$end"
-		w_xrandr_tip5="$vb If you have change the mouse button placement, replacement window manager can reverse your set. This option allow you to preserve it$end"
+		w_xrandr_compo1="$nf Select the default manager$end"
+		w_xrandr_compo2="$nf Select the replacement manager$end"
+		w_xrandr_tip4="$bf\\Mouse buttons setting$end"
+		w_xrandr_tip5="$vb\\If you have change the mouse button placement, replacement window manager can reverse your set. This option allow you to preserve it$end"
 		w_xrandr_mouse="$nf Select the mouse device$end"
 		w_xrandr_buttons="$nf Select the button preset$end"
 
@@ -1817,19 +1877,23 @@ when it stop. (Mostly useful for Optimus display behaviour).$end"
 		# start form display
 		win_type=1
 		ignore_loop=0
+#		main_opts='--height=420 --vscroll-policy=allways'
+		extended_opts='--height=400 --scroll'
+#		extended_opts='--scroll'
 		default_win_design
 		# window style and function
 		
 	}
 	fn_optimus_config(){
-		unset basic_sets field_list chk_list track_list
+		unset basic_sets field_list chk_list track_list conf_dat 
 		# window messages
 		w_text="$bf Optimus special options and sets$end$vb \\n \
-If your using a Optimus Laptop, you can set here the dedicated commands and options usualy use by Linux Optimus manager to launch a app.$end$nf\\nNote:$end For games, we strongly recommand to use Nvidia-Prime instead of Bumblebee. there's a few tools on the Web, Google them!"	
-		w_opti_tip0="$vb In Bumblebee, you can choose between \'primus\' and \'virtualgl\' as virtualizer.$end"
+If your using a Optimus Laptop, you can set here the dedicated commands and options usualy use by Linux Optimus manager to launch a app.$end$nf
+Note:$end For games, we strongly recommand to use Nvidia-Prime instead of Bumblebee. there's a few tools on the Web, Google them!"	
+		w_opti_tip0="$vb\\In Bumblebee, you can choose between \'primus\' and \'virtualgl\' as virtualizer.$end"
 		w_opti_tip1="$nf Note: unset will use Bumblebee default virtualizer$end"
-		w_opti_tip2="$vb Primus SYNC environment option is sometime useful in bad frame render$end"
-		w_opti_tip3="$vb Vertical Sync to vblank is usualy not use because of a virtualizer issue$end"
+		w_opti_tip2="$vb\\Primus SYNC environment option is sometime useful in bad frame render$end"
+		w_opti_tip3="$vb\\Vertical Sync to vblank is usualy not use because of a virtualizer issue$end"
 		w_opti_starter="$nf Select the Optimus launcher$end"
 		w_opti_opts="Set the Bumblebee (b) option"
 		w_opti_accel="$nf Set the virtualizer$end"
@@ -1866,6 +1930,7 @@ If your using a Optimus Laptop, you can set here the dedicated commands and opti
 		# start form display
 		win_type=1
 		ignore_loop=0
+		extended_opts='height=400 --scroll'
 		default_win_design
 		# window style and function
 		
@@ -1979,7 +2044,10 @@ select_wine_bin(){
 		fi
 	fi
 }
-## main ui buttons functions
+### main ui buttons functions
+## manage configs and bottles
+#delete_conf(){}
+## manage ui font colors
 change_fonts_colors(){
 	unset font_color color_fonts
 	sleep 1
@@ -2007,6 +2075,7 @@ Change font UI colors at will, but keep in mind the sens of each of them: main, 
 	fi
 	exit 0
 }
+## get configured bottles list mandatory for ohter modules use.
 colors ; icons_set
 list_bottles(){
 	if [ -d $HOME/.winestarter/configs ]; then
@@ -2024,6 +2093,7 @@ list_bottles(){
 		fi
 	fi
 }
+## edit or create a new desktop file entry.
 edit_desktop(){
 	## clear all lists
 	unset desk_var_list def_list icon_id icon_def

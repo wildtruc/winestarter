@@ -280,7 +280,7 @@ fn_convert_desktop_file(){
 	else echo "»»»» WARNING: IMAGEMAGIK CONVERT NOT FOUND. PASSED."; fi
 }
 fn_install_exe(){
-	if [ -e $w_exe_path ]; then
+	if [ "$w_exe_path" != '' ]; then
 		msi=$(printf "$w_exe_path"| grep -c "\.msi")
 		if [ $msi = 0 ]; then
 			$wine_bin $w_exe_path $w_exe_opts
@@ -288,11 +288,29 @@ fn_install_exe(){
 			$wine_bin msiexec \/i $w_exe_path $w_exe_opts
 		fi
 		fn_extract_lnk
-		perl -ni -pe "s|(w_install_exe)=[0-9]|\1=0|i" $config_file
-		sleep 2
+		sleep 1
 	else
+		abort_0=$?
+#		exit 0
+	fi
+	if [ $(printf "$w_more_pkgs"| grep -c .) -gt 0 ]; then
+		for pkg in ${w_more_pkgs[@]}; do
+			msi=$(printf "$pkg"| grep -c "\.msi")
+			if [ $msi = 0 ]; then
+				$wine_bin $pkg $w_exe_opts
+			else
+				$wine_bin msiexec \/i $pkg $w_exe_opts
+			fi
+			printf $(echo -e "$pkg"| sed -n "s/^.*\///g;p") >> $user_prefix/$bottle_prefix/extra_pcks.log
+		done
+	else
+		abort_1=$?
+	fi
+	if [[ $abort_0 = 1 && $abort_1 = 1 ]]; then
 		printf "# EXE path was not found.\n# Define the right install executable path is mandatory.\n# EXIT.\n"
 		exit 0
+	else
+		perl -ni -pe "s|(w_install_exe)=[0-9]|\1=0|i" $config_file
 	fi
 }
 fn_game_dir_exist(){
@@ -446,7 +464,8 @@ else
 	win_prog="Program Files$elf_ext\\"; fi
 fi
 #exit 0
-
+## capture app exe for pid discovering and before cmd line conversion
+game_exe_only=$(echo "$game_exe"| perl -pe "s/^.*\///p")
 ## execute
 if [ $special_cmd -gt 0 ]; then
 	cd $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir
@@ -463,12 +482,12 @@ IFS=$ifs
 ## find .exe pid file and let some time for exe too launch before
 sleep 5
 #exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*\/\(\w*\([A-Z]\|[a-z]\).exe\).*$/\1/;s/^\(.\{3\}\).*/\1/g;1p")
-game_exe_only=$(echo "$game_exe"| perl -pe "s/^.*\///p")
 if [ $(ps -A | grep -c "$game_exe_only") -gt 0 ]; then
 	exe_short=$(echo "$game_exe_only"|sed -n "s/^\(.\{3\}\).*/\1/g;p")
 else
-	exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"| \
-	sed -n "s/^.*[\/\|\\\]//;s/^\(.\{3\}\).*/\1/g;p")
+	exe_short=$(echo "$game_exe_only"|sed -n "s/^\(.\{3\}\).*/\1/g;p")
+#	exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"| \
+#	sed -n "s/^.*[\/\|\\\]//;s/^\(.\{3\}\).*/\1/g;p")
 fi
 #bin_pid="pgrep ^\(\s*$exe_short.*$\)"
 bin_pid="pgrep ^$exe_short.*.exe$"
