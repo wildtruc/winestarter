@@ -45,7 +45,7 @@ Note to MAC users: The script will probably works for you (don't know for Yad), 
  - Create and configure a Wine registry
  - Install a MS software.
  - Create or modify a desktop file entry
- - Configure Nvidia apps enviroment options
+ - Configure Nvidia apps environment options
  - Configure Xrandr behaviour
  - Set Optimus Bumblebee/Primusrun variables
  
@@ -302,6 +302,10 @@ To the all community and contributors of **WineHQ** that make the world goes rou
 
 -----------
 ### Change Log
+*( 15/04/17 ) v0.95*
+ - Added multi install type to winestarter_conf ```_install``` section. This way, we can install now a software from an extractible (or auto-extractible) compressed format (zip, rar, 7z. Take care to have them installed)
+ - Note: extraction command line for rar and 7zip could faulty, I have no samples to test.
+  
 *( 10/04/17 ) v0.94*
  - Added a 'more packages' features to 'Install Software' section. This way, user could install associated dll packages or apps (ex: DX redist) without restart the configurator or the script a second times or more.
  - Add a scroll to the winestarter_conf window to gain place. There is alas a bug with optimus and xrandr tab (will fix ASAP)

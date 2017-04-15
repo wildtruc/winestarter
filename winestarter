@@ -289,8 +289,9 @@ fn_install_exe(){
 		fi
 		fn_extract_lnk
 		sleep 1
+		abort=0
 	else
-		abort_0=$?
+		abort=$?
 #		exit 0
 	fi
 	if [ $(printf "$w_more_pkgs"| grep -c .) -gt 0 ]; then
@@ -303,10 +304,45 @@ fn_install_exe(){
 			fi
 			printf $(echo -e "$pkg"| sed -n "s/^.*\///g;p") >> $user_prefix/$bottle_prefix/extra_pcks.log
 		done
+		abort=0
 	else
-		abort_1=$?
+		abort=$?
 	fi
-	if [[ $abort_0 = 1 && $abort_1 = 1 ]]; then
+	if [ $(printf "$w_install_zip"| grep -c .) -gt 0 ]; then
+		target_dir=$user_prefix/$bottle_prefix/drive_c/Program\ Files"$w_elf_ext"/$w_install_dir
+		mkdir -p $target_dir
+		game_dir=$w_install_dir
+		if [ $(printf "$w_install_zip"| grep -c ".zip") -gt 0 ]; then
+#			unzip -o -D ISO-8859-15 $w_install_zip -d $w_install_dir
+			unzip -o $w_install_zip -d $target_dir
+		elif [ $(printf "$w_install_zip"| grep -c ".rar") -gt 0 ]; then
+			cd $target_dir
+			unrar x y o+ inul $w_install_zip
+		elif [ $(printf "$w_install_zip"| grep -c ".7z") -gt 0 ]; then
+			7z x -y -d$target_dir $w_install_zip
+		elif [ $(printf "$w_install_zip"| grep -c ".exe") -gt 0 ]; then
+			$wine_bin $w_install_zip $wine_opts
+		fi
+		if [ -x /usr/bin/yad ]; then
+			exe_text="$vb\\Please, select the executable to launch in $game_dir.$end"
+			exe_seek=$(yad --width=400 --title "$w_title" --form --image=stock_dialog_question \
+			--window-icon=filesave --separator="" \
+			--field="$exe_text":LBL '' --field="":FL "$target_dir")
+			abort=$?
+			if [ $abort = 0 ]; then
+				game_exe=$(printf "$exe_seek"|sed -n "s/^.*\///g;p")
+				if [ -s $config_file ]; then
+					sed -ni "s|^\(\w*game_dir=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_dir\4|i;p" $config_file
+					sed -ni "s|^\(\w*game_exe=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_exe\4|i;p" $config_file	
+				fi
+			fi
+		fi		
+	fi
+	if [ $(printf "$w_extra_script"| grep -c .) -gt 0 ]; then
+		chmod 755 $w_extra_script
+		cp -f $w_extra_script $user_prefix/$bottle_prefix/drive_c/Program\ Files"$w_elf_ext"/$game_dir/
+	fi	
+	if [ $abort = 1 ]; then
 		printf "# EXE path was not found.\n# Define the right install executable path is mandatory.\n# EXIT.\n"
 		exit 0
 	else
@@ -396,7 +432,7 @@ fi
 ifs=$IFS
 IFS=$(echo -en "\n\b")
 if [ $wine_elf = 1 ]; then
-	elf=64; elf_ext=' (x86)'; w_elf_ext='\ (86)'; ftp_elf='amd64'; libs="lib$elf"
+	elf=64; elf_ext=' (x86)'; w_elf_ext='\ (x86)'; ftp_elf='amd64'; libs="lib$elf"
 else
 	elf=32; elf_ext=''; w_elf_ext=''; ftp_elf='x86'; libs='lib'
 fi
@@ -470,7 +506,7 @@ game_exe_only=$(echo "$game_exe"| perl -pe "s/^.*\///p")
 if [ $special_cmd -gt 0 ]; then
 	cd $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir
 #	$opti_run $wine_bin "$user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe"
-	$opti_run $wine_bin $game_exe &
+	$opti_run $wine_bin $game_exe $wine_opts &
 else
 	## Replace Linux slash by Windows backslash
 	game_dir=$(printf "$game_dir"|sed -n "s/\//\\\/g;p")
