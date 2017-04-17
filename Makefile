@@ -15,6 +15,7 @@ install:
 	cp -f ./winestarter_conf /usr/local/bin/
 	cp -f ./winestarter.desktop /usr/local/share/applications/
 	cp -f ./png/defaults/winestarter_128.png /usr/local/share/pixmaps/
+	chown -R $(USER):$(USER) $(CONF_DIR)
 	
 uninstall:
 	rm -Rf $(CONF_DIR)
