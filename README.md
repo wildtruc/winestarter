@@ -283,28 +283,37 @@ The one with a res is your default(s). You just have now to set it in the conf f
 ----------
 
 ## Configurator UI
-Configurator can do more than the default config file, but doesn't change it except for dedicated configurator needed line.
+Configurator can do more than the default config file, but doesn't change it except for dedicated configurator needs lines.
 
 There is short user help displayed 
 
-`winestarter_conf` will procduce many codes lines in the terminal at this point slowing it, this is intentional for my debug purpose. It wont in final release.
+`winestarter_conf` could produce many codes lines in the terminal if the code line ```#bash_opt='-x -c'``` is uncomment. This is intentional for my debug purpose and I can forgot to comment it when pushing on git. Just comment it and uncomment the next.
 
 ### Experienced
- - STEAM was fully installed and configured by the basic script on my desktop (32 and 64).
+ - STEAM was fully installed and configured by the basic script on my desktop (32 and 64 bits Wine version).
  - TERA Online was installed successfuly too. But the game wont start because of a network issue.
  - FFXIV was installed earlier, but I spend my time to change many things for my debug purpose: desktop file,  icons, game directory, Wine binary, etc... And it still work great. It also work in Wine 64 with DX9, sadly it wont in DX11 because of a DX version check issue.
  - COD 4 MW was reconfigured by the script in 64. Perfect.
  - BF 3 installed with a few tricks. Work only over 64bits and DX11 (wine 2.4-staging). App launch in Wine windowed mode, alas, implementation of DX11 in Wine is not enough strong to manage many shaders and render is a crap.
- - FFXIV tested over DX11 succefuly by installing the DX redist package. Unfortunatly, when you go in the game itself occur the same shader issues. All the ATH is loaded, but no colors rendering in the game itself. 
+ - FFXIV tested over DX11 succefuly by installing the DX redist package. Unfortunatly, when you go in the game itself occur the same shader issues. All the ATH is loaded, but no colors rendering in the game itself.
+ - BF 2 Bad company, installed and working with a few tricks. Near perfect.
+ - GTA IV installed and working. A few isuues with fps and images jump some times. Fully playable.
+ - Interstellar Marines tested and working over STEAM64 bottle. Images jump some times, but render is almost better than the linux native build.
+ 
 
 ## Special thanks and Dedicates
 To the all community and contributors of **WineHQ** that make the world goes round and made this work possible.
 
 -----------
 ### Change Log
+*( 17/04/17 ) v0.96*
+ - winestarter - fixed winetricks function - merged winetricks log and winestarter log, this ways config file display all the dlls packages installed and not only thoses defined in the config file.
+ - winestarter - added a info yad box on error or info.
+ - winestarter_conf - fixed bad filter in install section - empty line was returning user home instead of nothing.
+ 
 *( 15/04/17 ) v0.95*
  - Added multi install type to winestarter_conf ```_install``` section. This way, we can install now a software from an extractible (or auto-extractible) compressed format (zip, rar, 7z. Take care to have them installed)
- - Note: extraction command line for rar and 7zip could faulty, I have no samples to test.
+ - Note: extraction command line for rar and 7zip could be faulty, I have no samples to test.
   
 *( 10/04/17 ) v0.94*
  - Added a 'more packages' features to 'Install Software' section. This way, user could install associated dll packages or apps (ex: DX redist) without restart the configurator or the script a second times or more.

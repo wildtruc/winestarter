@@ -544,24 +544,20 @@ wine_ver='$wine_ver'"
 				_val=''
 			fi
 		fi
-		if [[ $_var == w_install_dir ]]; then
+		if [[ $_var == w_install_zip ]]; then if [ "$_val" == $HOME ]; then _val=''; fi; fi
+		if [[ $_var == w_install_dir ]]; then 
 			if [[ "$_val" != '' ]]; then
-				if [[ "$w_install_zip" != '' && "$w_install_zip" != $HOME/ ]]; then
-				if [[ $(printf "$w_install_zip"| egrep -c "^.*-") -gt 0 ]]; then
-					exe_dir=$(printf "$w_install_zip"| sed -n "s/\([[:alnum:]]*\)-.*$/\1/;s/^.*\///g;p")
-	#				_val=$bottle_prefix/drive_c/"$root_key"$exe_dir
-					_val=$exe_dir
-#				else
-	#				if [ $(printf "$_val"| grep -c "$root_key") -eq 0 ]; then
-	#					_val=$bottle_prefix/drive_c/"$root_key"$w_install_dir
-				fi
-				((M++))
+				if [[ "$w_install_zip" != '' && "$w_install_zip" != $HOME ]]; then
+					if [[ $(printf "$w_install_zip"| egrep -c "^.*-") -gt 0 ]]; then
+						exe_dir=$(printf "$w_install_zip"| sed -n "s/\([[:alnum:]]*\)-.*$/\1/;s/^.*\///g;p")
+						_val=$exe_dir
+					fi
+					((M++))
 				fi
 			fi
 			if [ "$_val" == $HOME/ ]; then _val=''; fi
 		fi
-#		if [[ $_var == w_extra_script ]]; then
-#		fi
+		if [[ $_var == w_extra_script ]]; then if [ "$_val" == $HOME ]; then _val=''; fi; fi
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
 		new_conf_list+=("$_var=$_val")
@@ -584,8 +580,7 @@ w_install_dir=\"$w_install_dir\"
 ## user script: You can add here a personal or a community script (updater, logs, etc)
 ## It will be automaticaly pasted in the installed app directory.
 ## This is very optional and at your own risk
-w_extra_script=\"$w_extra_script\"
-"
+w_extra_script=\"$w_extra_script\""
 		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
 		printf "$_install_conf\n" >> $tmp_conf
 		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
@@ -1447,7 +1442,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 #		if [ -d $bottle_prefix ]; then
 		if [[ -d $bottle_prefix || $from_config = 1 ]]; then
 			st=$vb
-			trk_action="bash $bash_opt \"winetricks\""
+			trk_action="bash $bash_opt \"winetricks &>/dev/null\""
 			## set default arch
 			if [ $wine_elf = 1 ]; then winearch='win64'; else winearch='win32'; fi
 			## set default env
@@ -2234,6 +2229,7 @@ Change font UI colors at will, but keep in mind the sens of each of them: main, 
 		for colr in 'main' 'warning' 'freeze'; do
 			previous=${color_fonts[$C]}
 			perl -ni -pe "s|^($colr=['])(#\w*[0-9A-Z])(['])$|\1$previous\3|i" $base_script
+			perl -ni -pe "s|^($colr=['])(#\w*[0-9A-Z])(['])$|\1$previous\3|i" /usr/local/bin/winestarter
 			C=$[ $C+1 ]
 		done
 		bash $bash_opt $base_script

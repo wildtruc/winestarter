@@ -30,10 +30,29 @@ config_file=$scpt_dir/configs/$conf
 DESK_DIR=$(cat $HOME/.config/user-dirs.dirs| grep "XDG_DESKTOP_DIR"| \
 sed -n "s|\"||g;s|\$HOME|$HOME|p")
 DESK_DIR=("$DESK_DIR")
-## yad colorrs
+## yad fonts colors
 main='#005400'
-vb='<span weight="bold" font="10">'
+warn='#FF3300'
+freeze='#b6b6b6'
+
+vb='<span color="'$main'" weight="bold" font="10">'
+rb='<span color="'$warn'" weight="bold" font="10">'
+gb='<span color="'$freeze'" weight="bold" font="10">'
+bf='<span color="'$main'" weight="bold" font="14">'
+brf='<span color="'$warn'" weight="bold" font="14">'
+nf='<span weight="bold" font="10">'
 end='</span>'
+## yad warning messages
+warning='dialog-warning'
+inform='dialog-info'
+# text=""; dialog_list="$text;gtk-close;$inform"; yad_warnings
+yad_warnings(){
+#	d_txt=$(printf "$dialog_list"|cut -d';' -f1)
+	d_btt=$(printf "$dialog_list"|cut -d';' -f1)
+	d_img=$(printf "$dialog_list"|cut -d';' -f2)
+	yad --height=100 --title "" --button="$d_btt":1 --image=$d_img --text="$text" --timeout=3
+#	zenity --title='' --warning --window-icon=$d_img --text="$text" --timeout=3
+}
 ## optimus special sets
 fn_optimus(){
 	export vblank_mode=$opti_VBLK
@@ -106,28 +125,29 @@ fn_use_winepath(){
 			_use_winepath_env=1
 		else
 			printf "# Downloaded package missing. Using defautl Wine.\n"
+			text="$vb\\Downloaded package missing.\nUsing system default Wine$end"
+			dialog_list="gtk-close;$warning"; yad_warnings
 		fi
 	fi	
 }
 fn_install_tricks(){
 	## control winetricks installed
-	c_count=0
-	unset new_tricks_list
-	if [ -s $user_prefix/$bottle_prefix/tricks_install.log ]; then
-		c_tricks_list=( $(printf "$w_tricks_list"|tr ',' '\n') )
-		w_tricks_log=$(cat $user_prefix/$bottle_prefix/tricks_install.log | grep -c .)
-		for c_trk in ${c_tricks_list[@]}; do
-			if [ $(cat $user_prefix/$bottle_prefix/tricks_install.log| grep -c "$c_trk" ) -eq 0  ]; then
-				((c_count++))
-				new_tricks_list+=("$c_trk")
-			fi
-		done
-		if [ $c_count -gt 0 ]; then
-			w_install_tricks=1
-		fi
+#	c_count=0
+#	unset new_tricks_list
+	unset diff_tricks
+	i_list_file=$user_prefix/$bottle_prefix/tricks_install.log
+	w_list_file=$user_prefix/$bottle_prefix/winetricks.log
+	if [ -s $i_list_file ]; then
+		c_tricks_list=$(printf "$w_tricks_list"|tr ',' '\n')
+		diff_tricks=$(printf "$c_tricks_list" | grep -vFf "$i_list_file")
+		diff_count=$(printf "$diff_tricks" | egrep -c .)
+	else
+		diff_count=0
+		
 	fi
-	if [ $c_count -gt 0 ]; then
-		w_tricks_list=("${new_tricks_list[@]}")
+	
+	if [ $diff_count -gt 0 ]; then
+		w_tricks_list=( $diff_tricks )
 	else
 		w_tricks_list=( $(echo "$w_tricks_list"| sed -n "s/,/\n/g;p") )
 	fi
@@ -138,15 +158,35 @@ fn_install_tricks(){
 				(for w_list in "${w_tricks_list[@]}"; do
 					echo "# Installing $w_list"
 					$w_tricks $w_tricks_opts $w_list
-					printf "$w_list\n" >> $user_prefix/$bottle_prefix/tricks_install.log
+					printf "$w_list\n" >> $i_list_file
 				done
 				)| yad --width=250 --title "$w_title" --text-align=center --text="$e_text" \
 				--window-icon=filesave --progress --pulsate --auto-close --no-buttons
 				perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
-	#			$w_tricks ${w_tricks_list[@]}
 			else
 				printf "# Winetricks was not found, install it first\n"
+				text="$vb\\Winetricks was not found, install it first$end"
+				dialog_list="gtk-close;$warning"; yad_warnings
 				exit 0
+			fi
+		fi
+		## add winetricks already installed
+		if [ -s $w_list_file ]; then
+			w_tricks_res=$scpt_dir/resources/tricks_wo.txt
+			if ! [ -s $w_tricks_res ]; then
+				mkdir -p $scpt_dir/resources
+				$w_tricks settings list| awk '{print $1}' >$w_tricks_res
+			fi
+			diff_list=$(cat $w_list_file | grep -vFf $w_tricks_res |grep -vwFf $i_list_file | egrep -v "bug")
+			diff_c=$(echo "$diff_list"| grep -c .)
+			if [ $diff_c -gt 0 ]; then
+				if [ $diff_c -gt 1 ]; then
+					new_list=$(echo "$diff_list"| tr '\n' ','| sed -n "s/,$//p")
+				else
+					new_list=$diff_list
+				fi
+				printf "$diff_list\n" >>$i_list_file
+				sed -ni "s|^w_tricks_list=\"\(.*\)\"$|w_tricks_list=\"\1,$new_list\"|i;p" $config_file
 			fi
 		fi
 	fi
@@ -232,7 +272,10 @@ fn_convert_desktop_file(){
 					dsk_seek=$(yad --width=400 --title "$w_title" --form --image=stock_dialog_question \
 					--window-icon=filesave --timeout=10 --timeout-indicator=bottom --separator="" \
 					--field="$d_text0":LBL '' --field="":CB "$dsk_list")
-					! [ "$dsk_seek" = '' ]&& dsk_name=$dsk_seek
+					if ! [ "$dsk_seek" = '' ]; then dsk_name=$dsk_seek; else
+					text="$vb\\If you want a custom desktop file entry, launch winestarter_conf:$end$rb\nEdit or create a desktop file$end"
+					dialog_list="gtk-close;$warning"; yad_warnings
+					fi
 				fi
 			fi
 		fi
@@ -275,9 +318,15 @@ fn_convert_desktop_file(){
 		else
 			## not found
 			echo "»»»» NO DESKTOP FILE TO PROVIDE. PASSED."
+			text="$rb\\No desktop file found$end$vb.\nAuto desktop file entry creation can't process\nUse winestarter_conf instead$end"
+			dialog_list="gtk-close;$inform"; yad_warnings
 		fi		
 	fi
-	else echo "»»»» WARNING: IMAGEMAGIK CONVERT NOT FOUND. PASSED."; fi
+	else
+		echo "»»»» WARNING: IMAGEMAGIK CONVERT BINARY NOT FOUND. PASSED."
+		text="$rb\\ImageMagick converter not found.$end$vb\nIf you xant to have desktop file entry convertion you need to install ImageMagick first.$end"
+		dialog_list="gtk-close;$warning"; yad_warnings
+	fi
 }
 fn_install_exe(){
 	if [ "$w_exe_path" != '' ]; then
@@ -308,6 +357,7 @@ fn_install_exe(){
 	else
 		abort=$?
 	fi
+#	if [[ $(printf "$w_install_zip"| grep -c .) -gt 0 && "$w_install_zip" != $HOME/ ]]; then
 	if [ $(printf "$w_install_zip"| grep -c .) -gt 0 ]; then
 		target_dir=$user_prefix/$bottle_prefix/drive_c/Program\ Files"$w_elf_ext"/$w_install_dir
 		mkdir -p $target_dir
@@ -338,12 +388,15 @@ fn_install_exe(){
 			fi
 		fi		
 	fi
+#	if [[ $(printf "$w_extra_script"| grep -c .) -gt 0 && "$w_install_zip" != $HOME/ ]]; then
 	if [ $(printf "$w_extra_script"| grep -c .) -gt 0 ]; then
 		chmod 755 $w_extra_script
 		cp -f $w_extra_script $user_prefix/$bottle_prefix/drive_c/Program\ Files"$w_elf_ext"/$game_dir/
 	fi	
 	if [ $abort = 1 ]; then
-		printf "# EXE path was not found.\n# Define the right install executable path is mandatory.\n# EXIT.\n"
+		printf "# EXE path was not found.\n# Defining the right install executable path is mandatory.\n# EXIT.\n"
+		text="$rb\\EXE path was not found.$end$vb\nDefining the right install executable path is mandatory.\n\nEXIT.$end"
+		dialog_list="gtk-close;$warning"; yad_warnings
 		exit 0
 	else
 		perl -ni -pe "s|(w_install_exe)=[0-9]|\1=0|i" $config_file
@@ -474,10 +527,12 @@ if [ $w_config = 1 ]; then fn_wineconf ; fi
 ## check one last time that appli directory exist
 #if ! [ -s $user_prefix/$bottle_prefix/drive_c/Program\ Files/$game_dir/$game_exe ] || \
 if ! [ -s $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; then
-    IFS=$ifs 
-    echo "»»»» Can't find $game_exe for $user_prefix/$bottle_prefix
+	IFS=$ifs 
+	echo "»»»» Can't find $game_exe for $user_prefix/$bottle_prefix
 »»»» ABORT & EXIT"
-    exit 0
+	text="$vb\\Can't find an executable for:$end\n$rb\\$user_prefix/$bottle_prefix$end\n\n$vb\\Script will now end on exception.$end"
+	dialog_list="gtk-close;$warning"; yad_warnings
+	exit 0
 fi
 
 if [ $set_desktop_env = 1 ]; then fn_replace_env; fi
