@@ -1,4 +1,4 @@
-CONF_DIR = ~/home/$(USER)/.winestarter
+CONF_DIR = /home/$(USER)/.winestarter
 
 .PHONY: all install uninstall safeuninstall
 
