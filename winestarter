@@ -50,7 +50,7 @@ yad_warnings(){
 #	d_txt=$(printf "$dialog_list"|cut -d';' -f1)
 	d_btt=$(printf "$dialog_list"|cut -d';' -f1)
 	d_img=$(printf "$dialog_list"|cut -d';' -f2)
-	yad --height=100 --title "" --button="$d_btt":1 --image=$d_img --text="$text" --timeout=3
+	yad --width=400 --height=100 --title "" --button="$d_btt":1 --image=$d_img --text="$text" --timeout=3
 #	zenity --title='' --warning --window-icon=$d_img --text="$text" --timeout=3
 }
 ## optimus special sets
@@ -129,6 +129,7 @@ fn_use_winepath(){
 			dialog_list="gtk-close;$warning"; yad_warnings
 		fi
 	fi	
+#	exit 0
 }
 fn_install_tricks(){
 	## control winetricks installed
@@ -331,10 +332,15 @@ fn_convert_desktop_file(){
 fn_install_exe(){
 	if [ "$w_exe_path" != '' ]; then
 		msi=$(printf "$w_exe_path"| grep -c "\.msi")
-		if [ $msi = 0 ]; then
-			$wine_bin $w_exe_path $w_exe_opts
+		if [ $start_cmd = 0 ]; then
+			if [ $msi = 0 ]; then
+				$wine_bin $w_exe_path $w_exe_opts
+			else
+				$wine_bin msiexec \/i $w_exe_path $w_exe_opts
+			fi
 		else
-			$wine_bin msiexec \/i $w_exe_path $w_exe_opts
+			# pull wine start command line in unix style
+			$opti_run $wine_bin start /unix "$w_exe_path" $w_exe_opts
 		fi
 		fn_extract_lnk
 		sleep 1
@@ -509,7 +515,7 @@ if [ $_use_winepath_env -gt 0 ]; then
 	if [ $wine_elf = 1 ]; then
 		export WINEDLLPATH=$wine_path/$ftp_elf/$wine_ver/$libs/wine
 		LD_LIBRARY_PATH="$wine_path/$ftp_elf/$wine_ver/lib:$wine_path/$ftp_elf/$wine_ver/$libs"
-		#:/usr/lib:/usr/lib64:/lib:/lib64	
+		#:/usr/lib:/usr/lib64:/lib:/lib64
 	else
 		export WINEDLLPATH=$wine_path/$ftp_elf/$wine_ver/lib/wine
 		LD_LIBRARY_PATH="$wine_path/$ftp_elf/$wine_ver/lib"
@@ -522,6 +528,10 @@ if [ $_use_winepath_env -gt 0 ]; then
 #	wineboot -u
 #	wine --version
 fi
+reg_file=$(printf "$conf"| sed -n "s/\.conf//p")".reg"
+## create and insert registry entry if any.
+#if [[ $(printf "$user_reg"| sed -n '$p') != '' ]]; then fn_regedit; fi
+fn_regedit
 if [ $w_config = 1 ]; then fn_wineconf ; fi
 
 ## check one last time that appli directory exist
@@ -537,10 +547,7 @@ fi
 
 if [ $set_desktop_env = 1 ]; then fn_replace_env; fi
 #[ -e $user_prefix/$bottle_prefix/drive_c/$game_dir/$game_exe ]|| export $game_dir/$game_exe
-reg_file=$(printf "$conf"| sed -n "s/\.conf//p")".reg"
-## create and insert registry entry if any.
-#if [[ $(printf "$user_reg"| sed -n '$p') != '' ]]; then fn_regedit; fi
-fn_regedit
+
 if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then
 	win_prog=''
 else	
@@ -549,9 +556,9 @@ else
 #		win_prog='Program\ Files'$w_elf_ext
 #	else
 #	win_prog='Program Files'$w_elf_ext'\'; fi
-	if [ $special_cmd -gt 0 ]; then
-		win_prog="Program\ Files$w_elf_ext"
-	else
+if [[ $special_cmd -gt 0 || $start_cmd -gt 0 ]]; then
+	win_prog="Program\ Files$w_elf_ext"
+else
 	win_prog="Program Files$elf_ext\\"; fi
 fi
 #exit 0
@@ -562,6 +569,10 @@ if [ $special_cmd -gt 0 ]; then
 	cd $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir
 #	$opti_run $wine_bin "$user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe"
 	$opti_run $wine_bin $game_exe $wine_opts &
+elif [ $start_cmd -gt 0 ]; then
+	# pull wine start command line in unix syle
+	$opti_run $wine_bin start /unix \
+	"$user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe" $wine_opts &
 else
 	## Replace Linux slash by Windows backslash
 	game_dir=$(printf "$game_dir"|sed -n "s/\//\\\/g;p")

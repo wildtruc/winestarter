@@ -289,57 +289,6 @@ There is short user help displayed
 
 `winestarter_conf` could produce many codes lines in the terminal if the code line ```#bash_opt='-x -c'``` is uncomment. This is intentional for my debug purpose and I can forgot to comment it when pushing on git. Just comment it and uncomment the next.
 
-### Experienced
- - STEAM was fully installed and configured by the basic script on my desktop (32 and 64 bits Wine version).
- - TERA Online was installed successfuly too. But the game wont start because of a network issue.
- - FFXIV was installed earlier, but I spend my time to change many things for my debug purpose: desktop file,  icons, game directory, Wine binary, etc... And it still work great. It also work in Wine 64 with DX9, sadly it wont in DX11 because of a DX version check issue.
- - COD 4 MW was reconfigured by the script in 64. Perfect.
- - BF 3 installed with a few tricks. Work only over 64bits and DX11 (wine 2.4-staging). App launch in Wine windowed mode, alas, implementation of DX11 in Wine is not enough strong to manage many shaders and render is a crap.
- - FFXIV tested over DX11 succefuly by installing the DX redist package. Unfortunatly, when you go in the game itself occur the same shader issues. All the ATH is loaded, but no colors rendering in the game itself.
- - BF 2 Bad company, installed and working with a few tricks. Near perfect.
- - GTA IV installed and working. A few isuues with fps and images jump some times. Fully playable.
- - Interstellar Marines tested and working over STEAM64 bottle. Images jump some times, but render is almost better than the linux native build.
- 
-
 ## Special thanks and Dedicates
 To the all community and contributors of **WineHQ** that make the world goes round and made this work possible.
-
------------
-### Change Log
-*( 17/04/17 ) v0.96*
- - winestarter - fixed winetricks function - merged winetricks log and winestarter log, this ways config file display all the dlls packages installed and not only thoses defined in the config file.
- - winestarter - added a info yad box on error or info.
- - winestarter_conf - fixed bad filter in install section - empty line was returning user home instead of nothing.
- 
-*( 15/04/17 ) v0.95*
- - Added multi install type to winestarter_conf ```_install``` section. This way, we can install now a software from an extractible (or auto-extractible) compressed format (zip, rar, 7z. Take care to have them installed)
- - Note: extraction command line for rar and 7zip could be faulty, I have no samples to test.
-  
-*( 10/04/17 ) v0.94*
- - Added a 'more packages' features to 'Install Software' section. This way, user could install associated dll packages or apps (ex: DX redist) without restart the configurator or the script a second times or more.
- - Add a scroll to the winestarter_conf window to gain place. There is alas a bug with optimus and xrandr tab (will fix ASAP)
- 
-*( 08/04/17 ) v0.93*
- - Modified and fix winetricks dlls installer in winestarter (fn_install_tricks). This way, installer just install missing dlls or newly added.
- - Modified and fix the way the script detect and link app dir to manage those installed in root (c:).
- - Fixed forgotten dir elf type in winestarter_conf reconf_wine function.
- - Usually, the app start independantly from the script. However, in some case it doesn't and mess up the pid detection. I fix it, now it does all the time.
- - Add a new filter for pid detection. I did test BF Bad Compagny 2. It appears this games needs to be launch to the desktop resolution to work properly and doesn't exit as Wine usaully do, that why I needed to do the above fix.
- - Winestarter's 'fn_game_dir_exist' wasn't reading custom app path as expected. Reworked on it and fix. Add a yad file chooser at this point to select .exe and dir when launched from Winestarter only.
- - Devel comments and adds are still uncleaned.
-
-*( 02/04/17 ) v0.92*
- - Allowed Wine Custom binary to download and use 64bits. ltfp is not used anymore.
- - Add an initial window for fresh/import install. This is more confortable now to choose a custom app directory by init the new wine bottle first and preconfigure to choose the app dir and exe at the next step.
- - Add a "working" popup. Script work could be long.
- - Devel comments and adds are still uncleaned.
- - A few fixes.
-
-*( 30/03/17 ) v0.91*
- - Started the versioning steps where v1.0 will be stable without known bugs.
- - Add 64bits start feature.
- - Put Wine custom binary in a separate tab.
- - A few fixes.
-
-
 
