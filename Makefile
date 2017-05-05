@@ -1,4 +1,5 @@
-CONF_DIR = /home/$(USER)/.winestarter
+C_USER = $(shell ls -l "$(shell pwd)"| cut -d' ' -f3 | sed -n "2p")
+CONF_DIR = /home/$(C_USER)/.winestarter
 
 .PHONY: all install uninstall safeuninstall
 
@@ -18,7 +19,7 @@ install:
 	cp -f ./winestarter_conf /usr/local/bin/
 	cp -f ./winestarter.desktop /usr/local/share/applications/
 	cp -f ./png/defaults/winestarter_128.png /usr/local/share/pixmaps/
-	chown -R $(USER):$(USER) $(CONF_DIR)
+	chown -R $(C_USER):$(C_USER) $(CONF_DIR)
 	
 uninstall:
 	rm -Rf $(CONF_DIR)
