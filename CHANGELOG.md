@@ -1,13 +1,15 @@
 # Change log & reports
 -----------
 ### Change Log
+*( 05/05/17 ) v0.97* FIX
+ - Fixed bad Makefile end user behaviour (all my apology for this).
+ 
 *( 30/04/17 ) v0.97*
  - winestarter_conf - Beginnig to create a 'extended' check box option for extended features (not available to end user yet), it will strongly increase the capacities of the scritpt.
- - winestarter_conf - Added the 'csmt' feature to registry entries (wine 2.6 update), it avoid staging csmt feature. Added a few other features to the registry configuration. Preparing extended features for more editable options (user & system).
+ - winestarter_conf - Added the 'csmt' feature to registry entries (wine 2.6 update), it avoid staging csmt feature. Added a few other features to the registry configuration. Preparing extended features for more editable options (user & system).  It also possible now to add dword:xxxxxxxx class options.
  - winestarter_conf - Added a 'last wine version' info tag in may tab window.
  - Added a check box for "wine start" command. It's now possible to launch app from absolute path.
  - Color chooser now change also Script's popups.
- - winestarter_conf - Added the cmst registry option for classic 2.6 and above (replace csmt staging option). It also possible now to add dword:xxxxxxxx class options.
  - winestarter_conf - Fixed edit_desktop for apps installed in C: root.   
  - winestarter - moved fn_regedit before winecfg launch.
  - A few fixes on mistakes, buggy filters and directives.
