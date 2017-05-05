@@ -3,6 +3,11 @@ A not very simple script to start wine emulated applications
 
 ![winestarter logo](/png/defaults/winestarter_128.png)
 
+# IMPORTANT MESSAGE (05/05/17) :
+A huge mistake has been discovered in the Makefile preventing user directories and files to be installed correctly.
+
+This is fixed. ALL MY APOLOGIES.
+ 
 -------
 # Basics
 The project comes with 2 scripts:
@@ -30,7 +35,7 @@ I turn around the right solution since a while, but finally got this one and I'm
 Note to MAC users: The script will probably works for you (don't know for Yad), but it need somme desktop environnent I don't have or know. So, if you want it, give a hand !
 
 # OS Depencies
- - Yad (zenity fork, usualy by default is distros, but not Debian)
+ - Yad (zenity fork, usualy by default in distros, for Debian see **[here](https://packages.debian.org/sid/amd64/yad/download)**)
  - wget (for PoL packages download, usualy by default in all distros)
  - ImageMagick (for image convertion, usualy by default in all distros)
  - strings (for Wine/Ms lnk file reading, usualy by default in all distros)
@@ -67,7 +72,7 @@ Download the GIT repo wherever you want :
 ```sh
 	git clone https://github.com/wildtruc/winestart.git
 	cd winestart/
-	# as sudo in a terminal
+	# as sudo or su -c in a terminal
 	sudo make install
 ```
 
