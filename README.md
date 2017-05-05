@@ -30,12 +30,14 @@ I turn around the right solution since a while, but finally got this one and I'm
 Note to MAC users: The script will probably works for you (don't know for Yad), but it need somme desktop environnent I don't have or know. So, if you want it, give a hand !
 
 # OS Depencies
- - Yad (zenity fork)
+ - Yad (zenity fork, usualy by default is distros, but not Debian)
  - wget (for PoL packages download, usualy by default in all distros)
  - ImageMagick (for image convertion, usualy by default in all distros)
  - strings (for Wine/Ms lnk file reading, usualy by default in all distros)
  - icoutils (for MS Icons png extraction, name can vary by distro)
  - Winetricks (for dlls downlaod and install, usualy in non-free distros repos)
+ 
+ and obviously, Wine :)
  
 --------
 ## Features
@@ -64,9 +66,8 @@ I add, between others, a **xrandr** option that can be very useful in some case.
 Download the GIT repo wherever you want :
 ```sh
 	git clone https://github.com/wildtruc/winestart.git
-	# as su -c in a terminal or with sudo
-	su -c "make install"
-	# or
+	cd winestart/
+	# as sudo in a terminal
 	sudo make install
 ```
 
@@ -100,7 +101,7 @@ or simply from the menu : Wine > winestarter configurator
 ## Config file edit
 If don't use `winestarter_conf`, you can edit the config file as you wish. It is a per game/app file, so you can create many conf files as you want. I will add a few other example in the repository ( You could contribute by adding yours, if you like)
 
-This is a working example for *Final Fantasy XIV*:
+This is a working example for *Final Fantasy XIV* (march 2017):
 
 ```sh
 #! /bin/bash

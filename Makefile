@@ -6,8 +6,11 @@ all: install
 
 install:
 	mkdir -p $(CONF_DIR)
-	mkdir -p $(CONF_DIR)/{icons,configs,desktop}
-	mkdir -p /usr/local/share/{applications,pixmaps}
+	mkdir -p $(CONF_DIR)/icons
+	mkdir -p $(CONF_DIR)/configs
+	mkdir -p $(CONF_DIR)/desktop
+	mkdir -p /usr/local/share/applications
+	mkdir -p /usr/local/share/pixmaps
 #	cp -f ./winestarter.conf $(CONF_DIR)/
 	cp -Rf ./emblems $(CONF_DIR)/
 	cp -Rf ./png $(CONF_DIR)/
