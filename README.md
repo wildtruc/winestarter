@@ -35,7 +35,7 @@ I turn around the right solution since a while, but finally got this one and I'm
 Note to MAC users: The script will probably works for you (don't know for Yad), but it need somme desktop environnent I don't have or know. So, if you want it, give a hand !
 
 # OS Depencies
- - Yad (zenity fork, usualy by default in distros, for Debian see **[here](https://packages.debian.org/sid/amd64/yad/download)**)
+ - Yad (zenity fork, usualy by default in distros, for Debian look **[here](https://packages.debian.org/sid/amd64/yad/download)**)
  - wget (for PoL packages download, usualy by default in all distros)
  - ImageMagick (for image convertion, usualy by default in all distros)
  - strings (for Wine/Ms lnk file reading, usualy by default in all distros)
@@ -106,7 +106,7 @@ or simply from the menu : Wine > winestarter configurator
 ## Config file edit
 If don't use `winestarter_conf`, you can edit the config file as you wish. It is a per game/app file, so you can create many conf files as you want. I will add a few other example in the repository ( You could contribute by adding yours, if you like)
 
-This is a working example for *Final Fantasy XIV* (march 2017):
+This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example :
 
 ```sh
 #! /bin/bash

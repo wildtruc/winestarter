@@ -1,8 +1,11 @@
 # Change log & reports
 -----------
 ### Change Log
-*( 05/05/17 ) v0.97* FIX
- - Fixed bad Makefile end user behaviour (all my apology for this).
+*( 07/05/17 ) v0.97* (minor fix)
+ - winestarter_conf - Enhanced regedit regex filters to be more comprehensive with new dword csmt feature the old one erasing to much variables when modified.
+
+*( 05/05/17 ) v0.97* (major fix)
+ - Fixed bad Makefile end user behaviour (all my apology for this). I realize with the helping hand of a friend that install process was working nicely only on ma desktop :/
  
 *( 30/04/17 ) v0.97*
  - winestarter_conf - Beginnig to create a 'extended' check box option for extended features (not available to end user yet), it will strongly increase the capacities of the scritpt.

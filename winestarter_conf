@@ -198,7 +198,7 @@ main_code(){
 #	sleep 5
 	fn_plz_wait &
 	WAIT_UI_2=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
-	unset conf_prep _reg_var _uns_var
+	unset conf_prep _reg_var _unset_var _chg_var
 	for sets in "${tab_temp[@]}"; do
 		unset conf_prep new_conf_list
 		s_var=$(printf "$sets"| cut -d';' -f1)
@@ -258,6 +258,7 @@ main_code(){
 #									cat $conf_temp > $config_file
 #								fi
 #						else
+						if [ $insert = 1 ]; then
 							if [ "$_val" != discard ]; then
 								if [ "$_val" != '' ]; then
 									if [ $(cat "$config_file"| egrep -c "(^\s*$_var.*['\|\"])") -gt 0 ]; then
@@ -269,7 +270,7 @@ main_code(){
 									sed -ni "s|^\(\w*$_var=\)\(['\|\"]\)\(.*\)\(['\|\"]\)$|\1\2\4|i;p" $config_file
 								fi
 							fi
-#						fi
+						fi
 					fi
 				else
 					if [ $_fn_val = 1 ]; then
@@ -447,6 +448,7 @@ $nf\winetstarter $conf_target.conf$end"
 		new_conf_list+=("$_var=$_val")
 		IFS=$ifs
 		((M++))
+		insert=1
 	}
 	newconf_wine(){
 		## create temp file and insert script headers at first config step
@@ -537,6 +539,7 @@ w_config=1"
 		new_conf_list+=("$_var=$_val")
 		IFS=$ifs
 		((M++))
+		insert=1
 	}
 	newconf_wbin(){
 		_wbin_conf="
@@ -595,6 +598,7 @@ wine_ver='$wine_ver'"
 			if [ $insert_section = 0 ]; then
 				cat $conf_temp > $config_file
 			fi
+			insert=0
 		fi
 		
 		if [[ $_var == w_install_zip ]]; then if [ "$_val" == $HOME ]; then _val=''; fi; fi
@@ -615,6 +619,7 @@ wine_ver='$wine_ver'"
 		IFS=$(echo -en "\n\b")
 		new_conf_list+=("$_var=$_val")
 		IFS=$ifs
+		insert=1
 		}
 	newconf_install(){
 		if [ $(printf "$w_more_pkgs"| grep -c "*") -gt 0 ]; then w_more_pkgs=$(cat $conf_edit); fi
@@ -673,7 +678,7 @@ w_extra_script=\"$w_extra_script\""
 		fi
 		if [ $A -gt 0 ]; then activ_mod+=("w_install_tricks,$A"); fi
 		new_conf_list+=("$_var=$_val")
-		
+		insert=1
 	}
 	newconf_tricks(){
 		_tricks_conf="
@@ -725,11 +730,12 @@ w_tricks_list=\"$w_tricks_list\""
 			_reg_content=$(printf "$_val"| perl -pe "s|^(\[.*\])\*(.*)$|\2|p")
 			_reg_val=$(printf "${_reg_var[*]}"| sed -n "s| |*|g;p")
 			if [ $(printf "$_reg_content"| grep -c "option_set") = 0 ]; then
-				if [ $(printf "${_unset_var[*]}"| grep -c ".*") -gt 0 ]; then
+				if [ $(printf "${_unset_var[*]}"| grep -c .) -gt 0 ]; then
 					for _unset in "${_unset_var[@]}"; do
 						_reg_content=$(printf "$_reg_content"| \
 #						sed -n "s/\(\"$_unset\"\)=\(\"\w*[a-z]*\"\)\(*\|$\)//p")
-						sed -n "s/\"$_unset\"=.*$//g;p")
+						sed -n "s/\(\"$_unset\"\)=\(\(\"[a-z]*\"\)\|\([a-z]*:[0-9]*\)\)\(*\|$\)//p")
+#						sed -n "s/\"$_unset\"=.*$//g;p")
 					done
 				fi
 				if [ $(printf "${_chg_var[*]}"| grep -c .) -gt 0 ]; then
@@ -775,6 +781,7 @@ w_tricks_list=\"$w_tricks_list\""
 #				cat $reg_temp > $config_file
 #			fi			
 		fi
+		insert=0
 	}
 	newconf_reged(){
 		_reged_conf="
@@ -876,6 +883,7 @@ user_reg=''"
 				
 			done
 		fi
+		insert=1
 	}
 	newconf_nvidia_1(){
 #		nvtemp1=$(mktemp --tmpdir nv1.XXXXXXXX)
@@ -948,6 +956,7 @@ export __GL_OpenGLImageSettings=$__GL_OpenGLImageSettings"
 				new_conf_list+=("$_var=unset")
 			fi
 		fi
+		insert=1
 	}
 	newconf_nvidia_2(){
 #		nvtemp2=$(mktemp --tmpdir nv2.XXXXXXXX)
@@ -1049,6 +1058,7 @@ export __GL_IGNORE_GLSL_EXT_REQS=$__GL_IGNORE_GLSL_EXT_REQS"
 		IFS=$(echo -en "\n\b")
 		new_conf_list+=("$_var=$_val")
 		IFS=$ifs
+		insert=1
 	}
 	newconf_xrandr(){
 		_xrandr_conf="
@@ -1098,6 +1108,7 @@ mouse_btn='$mouse_btn'"
 		IFS=$(echo -en "\n\b")
 		new_conf_list+=("$_var=$_val")
 		IFS=$ifs
+		insert=1
 	}
 	newconf_optimus(){
 		_optimus_conf="
