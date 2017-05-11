@@ -1,10 +1,19 @@
 # Change log & reports
+
+### Issues
+*( 11/05/17 ) v0.97.2* - winestarter_conf - Status: fixed.
+ - Discovered with helping hand that Debian grep can't read some regex when a point (.) is not mark with a backslash (and also prefer egrep in place grep).
+
 -----------
 ### Change Log
-*( 07/05/17 ) v0.97* (minor fix)
+*( 11/05/17 ) v0.97.3* - winestarter_conf
+ - v0.97.2 isuues fixed
+ - extended feature for mime type association (winestarter_conf part). Adde mime-preset.lst and mime-type.lst to add to .winestarter/resource user directory for debug purpose (not usable yet)
+
+*( 07/05/17 ) v0.97.2* (minor fix)
  - winestarter_conf - Enhanced regedit regex filters to be more comprehensive with new dword csmt feature the old one erasing to much variables when modified.
 
-*( 05/05/17 ) v0.97* (major fix)
+*( 05/05/17 ) v0.97.1* (major fix)
  - Fixed bad Makefile end user behaviour (all my apology for this). I realize with the helping hand of a friend that install process was working nicely only on ma desktop :/
  
 *( 30/04/17 ) v0.97*

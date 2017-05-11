@@ -1,20 +1,23 @@
 # winestarter
-A not very simple script to start wine emulated applications
+A not very simple script to start and install wine emulated applications
 
 ![winestarter logo](/png/defaults/winestarter_128.png)
 
-# IMPORTANT MESSAGE (05/05/17) :
-A huge mistake has been discovered in the Makefile preventing user directories and files to be installed correctly.
+Consider this like a mix between PlayOnLinux and Wine usual command line. It use winetricks for DLLs and everything winetrciks can do.
 
-This is fixed. ALL MY APOLOGIES.
- 
+Config file and configuration UI are completly independent and script can work without the UI, but it can do a lot of thing to help you during your journey to install Wine emulated apps.  
+
+# Changelog and issues
+Look CHANGELOG.md. You can find too some experience reports about apps install test.
+
+# WARNINGS
+I'm still leaning and I often discover issues and bugs. If you can't install, see wierd things or everything else, feel free to xontact me and we will fix this together.
+
 -------
 # Basics
 The project comes with 2 scripts:
  - `winestarter`: the command line base.
  - `winestarter_conf`: the Yad graphical interface
-
-Config file and configuration UI are completly independent and script can work without the UI.
 
 Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards.
 
@@ -106,7 +109,7 @@ or simply from the menu : Wine > winestarter configurator
 ## Config file edit
 If don't use `winestarter_conf`, you can edit the config file as you wish. It is a per game/app file, so you can create many conf files as you want. I will add a few other example in the repository ( You could contribute by adding yours, if you like)
 
-This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example :
+This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example with full parts added for user leanring purpose:
 
 ```sh
 #! /bin/bash
@@ -126,8 +129,15 @@ game_dir="SquareEnix/FINAL FANTASY XIV - A Realm Reborn"
 game_exe="boot/ffxivboot.exe"
 ## if classic wine command fail, execute .exe inside the directory
 special_cmd=0
+## wine can use "start" command to launch apps or installer from absolute path
+## useful on old or recalcitrant buggy app.
+start_cmd=0
 ## set a 64 bits bottle: false (0), true (1)
 wine_elf=1
+
+## In some apps, it's possible to send extended options at the end of command line.
+## It can be some extra DLLs, game map, etc. Add them here.
+wine_opts="-opengl -whatmore and so on" # <- this is an example ->
 
 ## to lauch winecfg at first launch
 w_config=0
@@ -144,10 +154,18 @@ _tricks=1
 ## This option allow to install .exe or .msi directly (experimental) 
 w_install_exe=0
 ## Winetricks options, if any
-w_tricks_opts='--no-isolate'
+w_tricks_opts='--no-isolate' # <- this is an example ->
 ## Full path of the exe/msi file
-w_exe_path="/home/mike/.cache/winetricks/steam/SteamInstall_French.msi"
-## config set from winestarter configurator
+w_exe_path="/home/mike/.cache/winetricks/steam/SteamInstall_French.msi" # <- this is an example ->
+## In some cases, install is provided by extractible or auto-extractible package
+## This option will install them in the provided directory to the Program Files path
+w_install_zip=""
+w_install_dir=""
+## user script: You can add here a personal or a community script (updater, logs, etc)
+## It will be automaticaly pasted in the installed app directory.
+## This is very optional and at your own risk
+w_extra_script=""
+## Do not remove or edit below except if you don't use winestarter configurator.
 _install=1
 
 ## extra wine registry specific entry
@@ -163,7 +181,9 @@ _install=1
 user_reg='[HKEY_CURRENT_USER\Software\Wine\Direct3D]
 "StrictDrawOrdering"="disabled"
 "VideoMemorySize"="6072"'
-## config set from winestarter configurator
+## Allow local system apps to launch some file type:
+local_association="pdf,docx,doc" # <- this is an example ->
+## Do not remove or edit below except if you don't use winestarter configurator.
 _reged=1
 
 ## optimus starter with options

@@ -1017,7 +1017,7 @@ export __GL_YIELD=\"$__GL_YIELD\"
 ## allow unofficial GLX implmentation. Mostly for debug mode or test, but can be useful
 ## in some case like Wine : off [0], on [1]
 export __GL_ALLOW_UNOFFICIAL_PROTOCOL=$__GL_ALLOW_UNOFFICIAL_PROTOCOL
-## if monitor can manage G-SYNC behaviour, this could improove display performance: off [0], on [1].
+## if monitor can manage G-SYNC behaviour, this could impove display performance: off [0], on [1].
 ## Disable __GL_SYNC_TO_VBLANK to get faster performance and also xorg conf options \"stereo\", \"overlays\"
 export __GL_GSYNC_ALLOWED=$__GL_GSYNC_ALLOWED
 ## ignore GLGS extension check. Could be useful in case of some missing extension in appli GL sets.
@@ -1752,7 +1752,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		mfc40,mfc42,physx,corefonts,ie8,dotnet35,dotnet40"
 		track_list=$(printf "$track_list"|tr ',' '\ ')
 		if [ $from_config = 1 ]; then
-			track_sets=$(printf  "$w_tricks_list"|sed -n "s/^.*=\"//;s/\"$//g;p"|tr ',' '\ ')
+			track_sets=$(printf "$w_tricks_list"|sed -n "s/^.*=\"//;s/\"$//g;p"|tr ',' '\ ')
 		fi
 		for trk_set in ${track_list[@]}; do
 			if [ $from_config = 1 ]; then
@@ -1800,8 +1800,8 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_tricks_cm_vc_found="$vb\\MS Foundation Class (mfc), often called by Visual C++ apps$end"
 		w_tricks_cm_m40="mfc40 library"
 		w_tricks_cm_m42="mfc42 library"
-		w_tricks_cm_phy="$vb\\PHYSX Nvidia package: can be very useful to improove  performance$end"
-		w_tricks_cm_font="$vb\\Windows full corefonts package: improove Wine fonts display (very useful)$end"
+		w_tricks_cm_phy="$vb\\PHYSX Nvidia package: can be very useful to impove  performance$end"
+		w_tricks_cm_font="$vb\\Windows full corefonts package: impove Wine fonts display (very useful)$end"
 		w_tricks_alt_packs="$vb\\Alternative packages (needed in particular cases):$end"
 		w_tricks_alt_ie8="IE8 pack in case GECKO mozilla package failed to load HTML pages"
 		w_tricks_alt_dot3="Dot NET version 3.5"
@@ -2078,7 +2078,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		w_nv_yield0="$vB Updating window moves yield: can be useful if some window has refresh issues:$end"
 		w_nv_yield1="$nf normal yield (''), no yield (NOTHING), background (USLEEP)$end"
 		w_nv_unofficial0="$vB Allow unofficial GLX implementation from appli (very optional):$end"
-		w_nv_gsync="$vB If monitor can manage G-SYNC behaviour, this option could improove performance:$end"
+		w_nv_gsync="$vB If monitor can manage G-SYNC behaviour, this option could impove performance:$end"
 		w_nv_glsl0="$vB This option permit to recompile GLSL and could be useful if appli is missing some extension in OpenGL sets:$end"
 		# use 'get_xrandr_list' to set the connected monitor list.
 		monitors_list=$(printf "${connect_[@]}"|tr '\n' '!')
@@ -2870,8 +2870,8 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 }
 
 ## Script debug options
-bash_opt='-x -c'
-#bash_opt='-c'
+#bash_opt='-x -c'
+bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""
