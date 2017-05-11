@@ -58,6 +58,7 @@ main_code(){
 			if [[ $c_var == user_reg ]]; then
 				c_set=$(cat $reg_file| perl -pe "s|\\\|\\\\\\\|g;p"| tr '*' '\n')
 			fi
+			if [ $c_box == '' ]; then chk_box="$c_set"; fi 
 			if [ $c_box == 'CHK' ]; then 
 				if [ $c_set = 0 ]||[[ $c_set == unset ]]; then chk_box=FALSE;	else chk_box=TRUE; fi
 			fi
@@ -692,10 +693,12 @@ w_tricks_list=\"$w_tricks_list\""
 	}
 	reconf_reged(){
 		echo "6666666666666"
+#		fn_check_reg(){}
+#		fn_make_reg(){}
 		if [[ $_val != unset ]]; then
 			if [[ $_var == csmt ]]; then
 				if [[ $_val == enabled ]]; then _val='00000001'; else _val='00000000'; fi
-			fi 
+			fi
 			if [[ $(printf "$_val" | grep -o "HKEY") == '' ]]; then
 				if [ $(cat $reg_file| grep -c "$_var") -eq 0 ]; then
 					if ! [[ $_val =~ ^0{7}+ ]]; then
@@ -717,14 +720,6 @@ w_tricks_list=\"$w_tricks_list\""
 		else
 			if [ $(cat $reg_file| grep -c "$_var") -gt 0 ]; then _unset_var+=("$_var"); fi
 		fi
-					
-#							if [ $(cat $reg_file| grep "$reg_var"| grep -c "dword") -eq 0 ]; then
-#						reg_val=$(cat $reg_file| grep "$reg_var"| sed -n "s|^\"\($reg_var\)\"=\"\(.*\)\"|\2|p")
-#					else
-#						reg_val=$(cat $reg_file| grep "$reg_var"| sed -n "s|^\"\($reg_var\)\"=dword:\(.*\)|\2|p")
-#						if [[ $reg_val == '00000000' ]]; then reg_val=('disabled'); else reg_val="enabled"; fi
-#					fi
-					
 		if [[ $_var == user_reg ]]; then
 			_reg_header=$(printf "$_val"| perl -pe "s|^(\[.*\])\*(.*)$|\1|p")
 			_reg_content=$(printf "$_val"| perl -pe "s|^(\[.*\])\*(.*)$|\2|p")
@@ -774,14 +769,62 @@ w_tricks_list=\"$w_tricks_list\""
 			if [ $insert_section = 0 ]; then
 				cat $reg_temp > $config_file
 			fi
-#			cat $config_file | sed -n "/^user_reg='/,/'/{;s/.*/user_reg=''/};p"| \
-#			uniq > $reg_temp
-#			perl -ni -pe "s|^user_reg=''|user_reg='$(cat $reg_edit)'|i" $reg_temp
-#			if [ $insert_section = 0 ]; then
-#				cat $reg_temp > $config_file
-#			fi			
+		
 		fi
 		insert=0
+		## register file type and create preset. reg creation managed by winestarter
+		if [ $_extended = 1 ]; then
+			if [[ $_val != unset ]]; then
+				if [[ $_var == Selected_Files ]]; then
+					unset FileType_list selected_files_list
+					selected_files_list=( $(printf "$Selected_Files"| tr '!' ' ') )
+					for Files in ${selected_files_list[@]}; do
+						if [ $(printf "$local_association"| grep -c .) -gt 0  ]; then
+							prev_asso="$local_association,"
+							file_ext=$(printf "$Files"| sed -n "s/^.*\.//g;p")
+							if [ $(printf "$local_association"| grep -c "$file_ext") -eq 0 ]; then
+								mime_type=$(xdg-mime query filetype $Files)
+								if [ $(printf "$mime_type"| grep -c .) -gt 0 ]; then
+									## define the the reg mime type elements
+									_filetype=$(printf "$Files"|sed -n "s/^.*\.//g;p")
+									_doctype=$(printf "$_filetype"|sed -n "s/.*/\U&/p")'file'
+									## add them to the resource list
+									res_mime=$HOME/.winestarter/resources/mime-type.lst
+									if [ $(cat $res_mime |grep -c "_doctype") -eq 0 ]; then
+										printf "$_filetype:$_doctype:$mime_type\n" >> $res_mime
+									fi
+									## add the file extension to the config file type section
+									FileType_list+=( "$_filetype" )
+								fi
+							fi
+						else
+							FileType_list+=( $(printf "$Files"|sed -n "s/^.*\.//g;p") )
+						fi
+					done
+					_val=$prev_asso$(printf "${FileType_list[*]}"| tr ' ' ',')
+					
+				fi
+				if [[ $_var == mime_preset ]]; then
+					unset mime_preset_list mime_preset_add
+					mime_preset_list=( $(printf "$mime_preset"| tr ',' ' ') )
+					if [ $(printf "$local_association"| grep -c .) -gt 0  ]; then
+						for preset in ${mime_preset_list[@]}; do
+							if [ $(printf "$local_association"| grep -c "$preset") -eq 0 ]; then
+								mime_preset_add+=("$preset")
+							fi
+						done
+						if [ ${#mime_preset_add[@]} -gt 0 ]; then _sep=','; fi
+						prev_asso="$local_association$_sep"
+						_val=$prev_asso$(printf "${mime_preset_add[*]}"| tr ' ' ',')
+					fi
+				fi
+				_var='local_association'
+			else
+				if [ $(printf "$local_association"| grep -c .) -eq 0 ]; then _var='local_association'; fi
+				_val=''
+			fi
+			insert=1
+		fi
 	}
 	newconf_reged(){
 		_reged_conf="
@@ -795,7 +838,9 @@ w_tricks_list=\"$w_tricks_list\""
 ## \"RenderTargetLockMode\"=\"auto\"
 ## \"UseGLSL\"=\"readtex\"
 ## \"VideoMemorySize\"=\"(memory size of your graphic card)\"
-user_reg=''"
+user_reg=''
+## Allow local system apps to launch some file type:
+local_association=\"$local_association\""
 		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
 		printf "$_reged_conf\n" >> $tmp_conf
 		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
@@ -1143,7 +1188,7 @@ opti_VBLK=$opti_VBLK"
 		msg_xrandr="Set XRandr game display geometry (optional)"
 		msg_optimus="Set optimus specific options (optional)"
 		msg_wine_opts="Set Wine specific options (optional)"
-		msg_extended="Set extended features (very ooptional)"
+		msg_extended="Set extended features (very optional)"
 		_warn_text="## Do not remove or edit below except if you don't use winestarter configurator."
 	}
 ## Main Yad function
@@ -1552,7 +1597,7 @@ $nf Check here the sections you would like to configure.$end"
 		# convert temp reg file data in usable variables
 		reg_values=('StrictDrawOrdering' 'csmt' 'DirectDrawRenderer' 'OffscreenRenderingMode' \
 		'UseGLSL' 'CheckFloatConstants' 'VideoMemorySize' 'Nonpower2Mode' 'RenderTargetLockMode' )
-		edit_button="bash $bash_opt \"edit_reg_bin\""
+#		edit_button="bash $bash_opt \"edit_reg_bin\""
 		for reg_var in ${reg_values[@]}; do
 			unset reg_variable
 			if [ -s $reg_file ]; then
@@ -1572,15 +1617,34 @@ $nf Check here the sections you would like to configure.$end"
 			reg_variable+=($reg_var=$reg_val)
 			local $reg_variable
 		done
-		
+		if [ -s $HOME/.winestarter/resources/mime-preset.lst ]; then
+			res_mime_preset=$(cat $HOME/.winestarter/resources/mime-preset.lst| tr '\n' '!')
+		fi
 		# window messages
 		w_text="$bf Edit the Wine registry$end\\n\
 $vB\\Set here the most usual registry Direct3D graphic options$end\\n\
 $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_reg_manual0="$rb\\WARNNG:$end$vn Direct3D registry config is only usable under WindowsXP bottle$end"
-		w_reg_manual1="$vB Custom registering (manual edit).$end"
+		w_reg_manual1="$vB Custom Direct3D registering (manual edit).$end"
 		w_reg_manual2="$rb\\WARNING:$end$vn Remove all custom (set by yourself) or empty lines$end"
 		w_reg_manual3="$bf\\Unusual registry commands and options$end"
+		w_reg_2_title="$bf\\Associate mime type to local system$end"
+		w_reg_2_tip0="$vb\\In many case, user must install subsidiary software to run some file type directly from the bottle (avi, mp4, txt, doc, etc). You can set here those files types to be launch by your local system apps.$end"
+		w_reg_2_warn0="$rb\\ATTENTION$end:$vn File will be open with default environment set$end"
+		w_reg_2_setted="$vb\\Already associated:$end $(printf "$local_association"| sed -n 's/,/, /g;p')"
+		w_reg_2_set_tip0="$vb\\Use presets or edit manually$end:$vn (will be added to presets)$end"
+		w_reg_2_set_tip1="$rb\\WARNING$end$vb:$end"
+		w_reg_2_set_tip2="$vn\\Manual edit need to be from the same file type, this is mandatory.$end"
+		w_reg_2_set_1="$nf Choose a document name (ex: DOCfile)$end"
+		w_reg_2_set_2="$nf Select some files to set the type$end"
+		w_reg_2_set_3="$nf or pick a preset in the list$end"
+		w_reg_2_set_4="Set local program to use"
+		
+		w_reg_2_=""
+		w_reg_2_=""
+		w_reg_2_=""
+		w_reg_2_=""
+		w_reg_2_=""
 		w_reg_3_tip0="$vb\\In some cases, it could be necessary to use specific system reg file, DLLs registration/unregistration to set properly a bottle.$end"
 		w_reg_3_warn0="$rb\\WARNING$end$vn: Doing something nasty here can strongly compromise your bottle.$end"
 		w_reg_3_titl0="$vb\\Register, unregister DLLs from the system$end"
@@ -1618,29 +1682,40 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		"13;;user_reg;;$w_reg_manual2;TXT;;;"
 		)
 		misc_sets=(
-		"12;;;;;LBL;;;"
-		"13;;;;$w_reg_manual3;LBL;;;"
-		"14;;;;$w_reg_3_tip0;LBL;;;"
-		"15;;;;$w_reg_3_warn0;LBL;;;"
-		"16;;;;;LBL;;;"
-		"17;;;;$w_reg_3_titl0;LBL;;;"
-		"18;unset;;;$w_reg_3_cmd0;CB;register!unregister;;"
-		"19;unset;;;$w_reg_3_cmd1;CB;wine32!wine64!both;;"
-		"20;$bottle_prefix/drive_c/windows;;;$w_reg_3_cmd2;MFL;;;"
-		"21;;;;;LBL;;;"
-		"22;;;;$w_reg_3_titl1;LBL;;;"
-		"23;unset;;;$w_reg_3_cmd3;CB;user!system;;"
-		"24;;misc_reg;;$w_reg_3_cmd4;TXT;;;"
-		${previous_reg[@]}
+		"14;;;;;LBL;;;"
+		"15;;;;$w_reg_2_title;LBL;;;"
+		"16;;;;$w_reg_2_tip0;LBL;;;"
+		"17;;;;$w_reg_2_warn0;LBL;;;"
+		"18;;;;$w_reg_2_set_tip5;LBL;;;"
+		"19;;;;$w_reg_2_set_tip6;LBL;;;"
+		"20;;;;$w_reg_2_set_tip0;LBL;;;"
+		"21;;;;$w_reg_2_setted;LBL;;;"
+		"22;unset;Selected_Files;;$w_reg_2_set_2;MFL;;;"
+		"23;unset;mime_preset;;$w_reg_2_set_3;CB;$res_mime_preset;;"
 		)
+#		"21;;;;;LBL;;;"
+#		"22;;;;$w_reg_manual3;LBL;;;"
+#		"23;;;;$w_reg_3_tip0;LBL;;;"
+#		"24;;;;$w_reg_3_warn0;LBL;;;"
+#		"25;;;;;LBL;;;"
+#		"26;;;;$w_reg_3_titl0;LBL;;;"
+#		"27;unset;;;$w_reg_3_cmd0;CB;register!unregister;;"
+#		"28;unset;;;$w_reg_3_cmd1;CB;wine32!wine64!both;;"
+#		"29;$bottle_prefix/drive_c/windows;;;$w_reg_3_cmd2;MFL;;;"
+#		"30;;;;;LBL;;;"
+#		"31;;;;$w_reg_3_titl1;LBL;;;"
+#		"32;unset;;;$w_reg_3_cmd3;CB;user!system;;"
+#		"33;;misc_reg;;$w_reg_3_cmd4;TXT;;;"
+#		${previous_reg[@]}
+#		)
 #		"11;$edit_button;user_reg;;$w_reg_manual1;FBTN;;;"
 #		)
-#		if [ $_extended = 1 ]; then
-#			basic_sets=(
-#			"${basic_sets[@]}"
-#			"${misc_sets[@]}"
-#			)
-#		fi
+		if [ $_extended = 1 ]; then
+			basic_sets=(
+			"${basic_sets[@]}"
+			"${misc_sets[@]}"
+			)
+		fi
 		# start form display
 		win_type=1
 		ignore_loop=0
@@ -2493,11 +2568,11 @@ Change font UI colors at will, but keep in mind the sens of each of them: main, 
 colors ; icons_set
 list_bottles(){
 	if [ -d $HOME/.winestarter/configs ]; then
-		if [ $(ls -1 $HOME/.winestarter/configs/|grep -c "\w*[.conf]$") -gt 0 ]; then
-			config_list=$(ls -1 $HOME/.winestarter/configs/|grep "\w*[.conf]$")
+		if [ $(ls -1 $HOME/.winestarter/configs/| egrep -c "*[.conf]$") -gt 0 ]; then
+			config_list=$(ls -1 $HOME/.winestarter/configs/| egrep "*[.conf]$")
 			for config in ${config_list[@]}; do
 				b_conf=$config
-				b_name=$(cat $HOME/.winestarter/configs/$config| grep -w "bottle_prefix="|sed -n "s/^.*=\".//;s/\"//p" )
+				b_name=$(cat $HOME/.winestarter/configs/$config| grep -w "bottle_prefix="|sed -n "s/^.*=\"\.//;s/\"//p" )
 				bottle_list+=("$b_name")
 				bottle+=("$b_name;$b_conf")
 			done
@@ -2795,8 +2870,8 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 }
 
 ## Script debug options
-#bash_opt='-x -c'
-bash_opt='-c'
+bash_opt='-x -c'
+#bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""
