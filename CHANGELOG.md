@@ -1,6 +1,9 @@
 # Change log & reports
 
 ### Issues
+*( 11/05/17 ) v0.97.3* - winestarter_conf - Status: on it.
+ - new extended feature for local mime-type launch display uncorrectly (add a unwanted horiz scrollbar).
+ 
 *( 11/05/17 ) v0.97.2* - winestarter_conf - Status: fixed.
  - Discovered with helping hand that Debian grep can't read some regex when a point (.) is not mark with a backslash (and also prefer egrep in place grep).
 
