@@ -1,12 +1,10 @@
 #! /bin/bash
 
 #PATH=$PATH
-
 colors(){
 main='#005400'
 warn='#FF3300'
 freeze='#b6b6b6'
-
 vb='<span color="'$main'" weight="bold" font="10">'
 vn='<span color="'$main'" weight="normal" font="10">'
 rb='<span color="'$warn'" weight="bold" font="10">'
@@ -36,7 +34,6 @@ icons_set(){
 	img_wine_restart='stock_refresh'
 }
 main_code(){
-	
 		default_win_design(){
 		for sets in "${basic_sets[@]}"; do
 			c_tab=$(printf "$sets"| cut -d';' -f1)
@@ -87,7 +84,7 @@ main_code(){
 		done
 		# ne pas tenir compte des labels
 		if [ $win_type = 0 ]; then
-			def_win=$(yad --width=$w_width --title "$w_title" --image=$img_wine_ui \
+			def_win=$($yad_bin --width=$w_width --title "$w_title" --image=$img_wine_ui \
 			--window-icon=$img_desktop \
 			--form "${field_list[@]}" "${chk_list[@]}" --separator=';' \
 			--align=left --text "$bf$w_text$end" \
@@ -99,7 +96,7 @@ main_code(){
 			form_win=$(printf "${default_win[@]}"|tr ';' '\n')			
 		fi
 		if [ $win_type = 1 ]; then
-			yad --width=594 $t_plug --text="$w_text" --form $extended_opts \
+			$yad_bin --width=594 $t_plug --text="$w_text" --form $extended_opts \
 			"${field_list[@]}" "${chk_list[@]}" --separator=';' > $temp &
 #			YAD_03=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
 		fi
@@ -178,7 +175,7 @@ main_code(){
 		done
 		if [ $win_type = 1 ]; then
 		kill $WAIT_UI_1
-			yad --width=700 --title "$w_title" --window-icon=$img_wine_desk_ui $main_opts \
+			$yad_bin --width=700 --title "$w_title" --window-icon=$img_wine_desk_ui $main_opts \
 			--notebook --key=$key --tab-pos=right --tab-border=2 --text="$main_tab_text" \
 			"${t_display[@]}"
 			e_exit=$?
@@ -331,7 +328,7 @@ main_code(){
 	}
 	## wait patiently window
 	fn_plz_wait(){
-		yad --width=200 --title "" --text-align=center --no-buttons --progress --pulsate --auto-close \
+		$yad_bin --width=200 --title "" --text-align=center --no-buttons --progress --pulsate --auto-close \
 		--text="$vb\\WORKING$end" --progress-text=""
 #		WAIT_=$YAD_PID
 	}
@@ -1570,8 +1567,10 @@ $nf Check here the sections you would like to configure.$end"
 		# créer une option de suppression
 		# config file preset
 		vid_mem="256!512!768!1024!2048!3072!4096!6144"
-		if [ -x /usr/bin/nvidia-smi ]||[ -x /usr/local/bin/nvidia-smi ] ; then
-			mem_set=$(nvidia-smi --query|grep -w "^.*Total.*[KMG]iB"|sed -n "s/^.*\ \([0-9]*\) [A-Z].*$/\1/;1p")
+		nv_smi=$(find /usr/{bin,local/bin} -name nvidia-smi)
+		if [ -x $nv_smi ]; then
+#		if [ -x /usr/bin/nvidia-smi ]||[ -x /usr/local/bin/nvidia-smi ] ; then
+			mem_set=$($nv_smi --query|grep -w "^.*Total.*[KMG]iB"|sed -n "s/^.*\ \([0-9]*\) [A-Z].*$/\1/;1p")
 		else
 			mem_set='unset'
 		fi
@@ -1727,10 +1726,12 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 	fn_winetricks(){
 		unset basic_sets field_list chk_list track_list track_sets conf_dat
 		# change wintricks button color for first edition or missing, then confiug presets
-		if [[ -x "/usr/bin/winetricks" || -x "/usr/local/bin/winetricks" ]]; then
+		w_tricks_bin=$(find /usr/{bin,local/bin} -name winetricks)
+		if [ -x "$w_tricks_bin" ]; then
+#		if [[ -x "/usr/bin/winetricks" || -x "/usr/local/bin/winetricks" ]]; then
 			if [[ -d $bottle_prefix || $from_config = 1 ]]; then
 				st=$vb
-				trk_action="bash $bash_opt \"winetricks &>/dev/null\""
+				trk_action="bash $bash_opt \"$w_tricks_bin &>/dev/null\""
 				## set default arch
 				if [ $wine_elf = 1 ]; then winearch='win64'; else winearch='win32'; fi
 				## set default env
@@ -1738,7 +1739,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 				export WINEPREFIX="$bottle_prefix"
 				## now look for already setted and put them in a tmp file
 				trk_file=$(mktemp --tmpdir trk.XXXXXXXX)
-				winetricks dlls list| grep "downloadable" >$trk_file
+				$w_tricks_bin dlls list| grep "downloadable" >$trk_file
 				dlls_list=$(cat $trk_file| awk '{print $1}'| tr '\n' '!')
 			fi
 		else
@@ -1808,7 +1809,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_tricks_alt_dot4="Dot NET version 4.0"
 		w_tricks_alt_dot4_tip="$nf\\Note$end: .NET 4.x need an extra additional packges for clean install. Follow Winetrciks instruction during install without stopping the process."
 		w_tricks_winetricks="$bf More from Winetricks$end"
-		w_tricks_trk_launch="$st Launch Winetricks separatly$end"
+		w_tricks_trk_launch="$vb Launch Winetricks separatly$end"
 		w_tricks_trk_dll="$vb\\or launch Winetricks$end $nf(one or more packages)$end"
 		w_tricks_trk_dlls="$vb Add an additional DLL component$end"
 		w_tricks_ald_list="$vb\\Already installed:$end $already_there"
@@ -2458,6 +2459,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 	
 }
 ########### MAIN ###########
+export yad_bin=$(find /usr/{bin,local/bin} -name yad)
 # PlayOnLinux packages download window
 select_win_bin(){ colors ; icons_set ; select_wine_bin; }
 edit_reg_bin(){ colors ; icons_set ; edit_regfile; }
@@ -2473,7 +2475,7 @@ $nf\\All custom maunal changes in the text area will be merge with others preset
 	w_com1="$rb\\Warning:$end$vb Remove all custom (set by yourself) or empty lines$end"
 
 	reg_popup=$(
-	yad --width=400 --title "$w_title" --image="$img_wine_desk_ui" \
+	$yad_bin --width=400 --title "$w_title" --image="$img_wine_desk_ui" \
 	--window-icon="$img_wine_desk_ui" --form --text="$w_text" --separator=" " \
 	--field="$w_com1":LBL '' --field="$w_com0":TXT "$reg_display")
 	
@@ -2499,7 +2501,7 @@ select_wine_bin(){
 		p_text="$vb\Retrieving Wine PlayOnLinux server information$end"
 #		( /usr/bin/lftp -c "cd $pol_address; ls > $ftp_temp; sleep 3" 2>&1
 #		( wget -o $ftp_temp $pol_address 2>&1
-#		)| yad --with=400 --text-align=center --text="$p_text" --progress --pulsate \
+#		)| $yad_bin --with=400 --text-align=center --text="$p_text" --progress --pulsate \
 #		--auto-close --progress-text="please, wait..." 
 		wget -O $ftp_temp $pol_address
 #		cat $ftp_temp| egrep -v "(^\s*.*sha1)"| awk '{print $5}'| \
@@ -2519,7 +2521,7 @@ select_wine_bin(){
 		wine_bin_list=$(cat $loc_temp)
 		
 		wine_bin=$(
-		yad --width=300 --title "$w_title" --image="$img_wine_desk_ui" \
+		$yad_bin --width=300 --title "$w_title" --image="$img_wine_desk_ui" \
 		--window-icon="$img_wine_desk_ui" --form --text="$w_text" --separator=" " \
 		--field="$vb Select $ftp_elf package$end":CB "$wine_bin_list")
 		
@@ -2542,7 +2544,7 @@ change_fonts_colors(){
 	kill $YAD_PID
 	w_text="$bf Basic font colors$end$vb \\n \
 Change font UI colors at will, but keep in mind the sens of each of them: main, warning, unavialable.$end"
-	font_color=$(yad --width=480 --height=300 --title "$w_title" --image="$img_wine_colors" \
+	font_color=$($yad_bin --width=480 --height=300 --title "$w_title" --image="$img_wine_colors" \
 			--window-icon=$img_wine_desk_ui --text "$w_text" --form --separator=" " \
 			--field="":LBL '' \
 			--field="$vb Main messages color\t\t$end":CLR "$main" \
@@ -2564,7 +2566,7 @@ Change font UI colors at will, but keep in mind the sens of each of them: main, 
 	fi
 	exit 0
 }
-## get configured bottles list mandatory for ohter modules use.
+## get configured bottles list mandatory for other modules use.
 colors ; icons_set
 list_bottles(){
 	if [ -d $HOME/.winestarter/configs ]; then
@@ -2694,7 +2696,7 @@ $vb You can create or modify every main fields of a desktop file$end"
 	# editable categories list for Category entry combo box
 	categories='Games;!Office;!Applications;!Games;!Multimedia;!Video;!Graphics;'
 	# select_pan part
-	yad --width=370 --height=300 --plug=$key --tabnum=1 --form --image=$img_wine_desk_ui \
+	$yad_bin --width=370 --height=300 --plug=$key --tabnum=1 --form --image=$img_wine_desk_ui \
 			--field="":LBL '' \
 			--field="$w_tip0":LBL '' \
 			--field="":LBL '' \
@@ -2709,12 +2711,12 @@ $vb You can create or modify every main fields of a desktop file$end"
 			--field="Add a Wine sticky emblem in top right corner":CHK TRUE \
 			--separator=',' &> $temp1 &
 	# icon_pan part
-	yad --width=60 --height=300 --plug=$key --tabnum=2 --list \
+	$yad_bin --width=60 --height=300 --plug=$key --tabnum=2 --list \
 			--tooltip-column=3 --hide-column=3 --no-rules-hint --separator=',' \
 			--column='icon list':IMG --column='path':HD --column='tip':TIP \
 			"${icon_id[@]}" &> $temp2 &
 	# main paned window
-	yad --width=480 --height=300 --title "$w_title" --window-icon=$img_wine_desk_ui \
+	$yad_bin --width=480 --height=300 --title "$w_title" --window-icon=$img_wine_desk_ui \
 	--text "$w_text" --paned --key=$key --orient=hor --splitter=380
 	if [ $? = 1 ]; then exit 0; fi
 	## extract setted variable from temp files
@@ -2811,7 +2813,7 @@ edit_bottle(){
 		w_text="$bf Restart function system$end$vb\\n \
 You can here restart Winecfg or Winetricks at next Winestarter launch. This feature could be really useful after a Wine update or just to control Winecfg state$end"
 		win_icon=$img_wine_restart
-		edit_win=$(yad --width=420 --title "$w_title" --image=$win_icon \
+		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon \
 			--window-icon=$img_desktop --center --separator=';' --form \
 			--align=left --text "$w_text" --field="":LBL '' \
 			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
@@ -2821,7 +2823,7 @@ You can here restart Winecfg or Winetricks at next Winestarter launch. This feat
 		w_text="$bf Wine bottle desktop file edition$end$vb\\n \
 Select the bottle you would like for a desktop file$end"
 		win_icon=$img_wine_desk_ui
-		edit_win=$(yad --width=420 --title "$w_title" --image=$win_icon \
+		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon \
 			--window-icon=$img_desktop --center --separator=';' --form \
 			--align=left --text "$w_text" --field="":LBL '' \
 			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
@@ -2831,7 +2833,7 @@ Select the bottle you would like for a desktop file$end"
 		w_text="$bf Wine bottle edition$end$vb\\n \
 You can choose between edit a entire bottle or the Nvidia OpenGL environment options only$end"
 		win_icon=$img_wine_ui
-		edit_win=$(yad --width=420 --title "$w_title" --image=$win_icon \
+		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon \
 			--window-icon=$img_desktop --center --separator=';' --form \
 			--field="":LBL '' \
 			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
@@ -2870,8 +2872,8 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 }
 
 ## Script debug options
-#bash_opt='-x -c'
-bash_opt='-c'
+bash_opt='-x -c'
+#bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""
@@ -2892,7 +2894,7 @@ $vb\\What do you want to do?$end\\n$vn(Hover buttons show tooltips)$end"
 export -f colors icons_set
 export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_win_bin edit_reg_bin edit_regfile
 export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt"
-yad --width=482 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons \
+$yad_bin --width=482 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons \
 --form --text="$main_text0" --image=$the_big_button \
 --field="":LBL '' \
 --field="$main_text3":LBL '' \
