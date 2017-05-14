@@ -1,16 +1,25 @@
 # Change log & reports
 
 ### Issues
-*( 11/05/17 ) v0.97.3* - winestarter_conf - Status: on it.
- - new extended feature for local mime-type launch display uncorrectly (add a unwanted horiz scrollbar).
+*v0.97.3* - winestarter_conf - Status: on it.
+ - #1 ( 11/05/17 ) - new extended feature for local mime-type launch display uncorrectly (add a unwanted horiz scrollbar).
+ - #2 ( 12/05/17 ) - other distro than mine (fedora) seems to have difficulties to find mandatory binaries (yad, nvidia, wintricks, etc). Need to replace by a short 'find' command.
  
-*( 11/05/17 ) v0.97.2* - winestarter_conf - Status: fixed.
- - Discovered with helping hand that Debian grep can't read some regex when a point (.) is not mark with a backslash (and also prefer egrep in place grep).
+*v0.97.2* - winestarter_conf - Status: fixed.
+ - #1 ( 11/05/17 ) - Discovered with helping hand that Debian grep can't read some regex when a point (.) is not mark with a backslash (and also prefer egrep in place grep).
 
 -----------
 ### Change Log
+*( 14/05/17 ) v0.97.4* - winestarter_conf
+ - v0.97.3 issue #1 - fixed
+ - v0.97.3 issue #2 - fixed
+ - First "create prefix" windows were coming from the default "wine config" tab. Bottle name chooser were a DIR chooser and seems to confusing user when typing the name of the new bottle. DIR chooser is now replace by a simple text entry to avoid this.
+ - It appears that defaults gtk system icons are not displayed in some desktops. To fix this, icons are now include in git repo cloning or update (and maked them fancy for fun).
+ - wine options extended feature marked CHK boxes to 1 at first edition launch because of an unapropriate filter. This is fixed.
+ - comming next v0.97.5 (or v0.98, depends of issues and bugs state)- winestarter - mime asso process.
+
 *( 11/05/17 ) v0.97.3* - winestarter_conf
- - v0.97.2 isuues fixed
+ - v0.97.2 issue #1 fixed
  - extended feature for mime type association (winestarter_conf part). Adde mime-preset.lst and mime-type.lst to add to .winestarter/resource user directory for debug purpose (not usable yet)
 
 *( 07/05/17 ) v0.97.2* (minor fix)

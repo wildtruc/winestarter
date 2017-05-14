@@ -42,7 +42,7 @@ Note to MAC users: The script will probably works for you (don't know for Yad), 
  - wget (for PoL packages download, usualy by default in all distros)
  - ImageMagick (for image convertion, usualy by default in all distros)
  - strings (for Wine/Ms lnk file reading, usualy by default in all distros)
- - icoutils (for MS Icons png extraction, name can vary by distro)
+ - icoutils (for MS Icons png extraction, name can vary by distro like icotools)
  - Winetricks (for dlls downlaod and install, usualy in non-free distros repos)
  
  and obviously, Wine :)
@@ -263,7 +263,7 @@ _nvidia_1=1
 ## allow unofficial GLX implmentation. Mostly for debug mode or test, but can be useful
 ## in some case like Wine : off [0], on [1]
 #export __GL_ALLOW_UNOFFICIAL_PROTOCOL=1
-## if monitor can manage G-SYNC behaviour, this could improove display performance: off [0], on [1].
+## if monitor can manage G-SYNC behaviour, this couldimprove display performance: off [0], on [1].
 ## Disable __GL_SYNC_TO_VBLANK to get faster perfrormance and xorg conf options "stereo", "overlays"
 export __GL_GSYNC_ALLOWED=1
 ## ignore GLGS extension check. Could be useful in case of some missing extension in appli GL sets.

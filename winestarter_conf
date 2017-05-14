@@ -16,22 +16,28 @@ end='</span>'
 vB=$vb
 }
 icons_set(){
-	img_wine_add='stock_import'
-	img_wine_mod='stock_preferences'
-	img_wine_desk_bt="$HOME/.winestarter/png/defaults/wine16w.png"
-	img_wine_desk_ui="$HOME/.winestarter/png/defaults/wine48w.png"
-	img_wine_ui='winefile'
-	img_desktop="$HOME/.winestarter/png/defaults/wine48w.png"
-	img_wine_cfg='winecfg'
-	img_tricks='winhelp'
-	img_install='msiexec'
-	img_reged='regedit'
-	img_nv_cm='preferences-desktop-wallpaper'
-	img_nv_ext='preferences-desktop-screensaver'
-	img_xrandr='preferences-desktop-display'
-	img_opti='display'
-	img_wine_colors='applications-graphics'
-	img_wine_restart='stock_refresh'
+	png_stock=$HOME/.winestarter/png/defaults
+	img_wine_add=$png_stock/'new_bottle16.png'
+	img_wine_mod=$png_stock/'config16.png'
+	img_wine_desk_bt=$png_stock/'desktop16.png'
+	img_wine_desk_ui=$png_stock/'wine48w.png'
+	img_wine_ui=$png_stock/'wine-wine48.png'
+	img_wine_desktop=$png_stock/'colors48.png'
+	img_desktop="$png_stock/wine48w.png"
+	img_wine_cfg1=$png_stock/'wine-winecfg48.png'
+	img_wine_cfg2=$png_stock/'wine-msiexec48.png'
+	img_tricks=$png_stock/'wine-winetricks48.png'
+	img_tricks_bt=$png_stock/'wine16w.png'
+	img_install=$png_stock/'wine-install48.png'
+	img_reged=$png_stock/'wine-winefile48.png'
+	img_nv_cm=$png_stock/'nvidia48.png'
+	img_nv_ext=$png_stock/'graphic_set48.png'
+	img_xrandr=$png_stock/'display48.png'
+	img_opti=$png_stock/'optimus48.png'
+	img_wine_colors=$png_stock/'colors16.png'
+	img_wine_restart=$png_stock/'reload.png'
+	img_wine_reload=$png_stock/'reload48.png'
+	img_winepol_bt=$png_stock/'playonlinux16.png'
 }
 main_code(){
 		default_win_design(){
@@ -1212,8 +1218,8 @@ $nf Check here the sections you would like to configure.$end"
 		basic_sets=(
 		"1;;;;;LBL;;;"
 		"2;;;;$wine_tip0;LBL"
-		"3;$_wine;_wine;Wine*basics**;$msg_wine;CHK;;;fn_wine_config;$img_wine_cfg"
-		"4;$_wbin;_wbin;Extra*binary**;$msg_wcfg;CHK;;;fn_wine_binary;$img_wine_cfg"
+		"3;$_wine;_wine;Wine*basics**;$msg_wine;CHK;;;fn_wine_config;$img_wine_cfg1"
+		"4;$_wbin;_wbin;Extra*binary**;$msg_wcfg;CHK;;;fn_wine_binary;$img_wine_cfg2"
 		"5;$_install;_install;Install*Software;$msg_install;CHK;;;fn_install_soft;$img_install"
 		"6;$_tricks;_tricks;Install*tricks**;$msg_tricks;CHK;;;fn_winetricks;$img_tricks"
 		"7;$_reged;_reged;Registry*options*;$msg_reged;CHK;;;fn_regedit_config;$img_reged"
@@ -1284,7 +1290,7 @@ $nf Check here the sections you would like to configure.$end"
 		w_wine_basic_tip=""
 		w_wine_user_prefix="$vB\\\Set user prefix if not the user's default one:$end"
 		w_wine_prefix="$vB\\\Set the Wine Bottle prefix to use:$end"
-		w_wine_prefix_tip="$nf\\\Ex:$end wine.my_bottle, no space and \"wine.\" suffix is mandatory."
+		w_wine_prefix_tip="$vb\\\Example:$end$nf wine.my_bottle$end, no space and \"$nf\\wine.$end\" suffix is mandatory."
 		w_wine_game_path="$vB\\\Set the full game/appli directory if different from bottle:$end"
 		w_wine_elf_tip="$nf\\\Note:$end 32bits apps can be launch from a Wine 64bits install (from Wine 2.0 and above). In my own experience, it enhance globaly app performances. (Don't for XP 32bits apps)"
 		w_text="$bf\\Configure the Wine basic environment$end"
@@ -1306,7 +1312,7 @@ $nf Check here the sections you would like to configure.$end"
 		"3;$user_prefix;user_prefix;;$nf Default Wine user prefix$end;DIR;;;"
 		"4;;;;$w_wine_prefix;LBL;;;"
 		"5;;;;$w_wine_prefix_tip;LBL;;;"
-		"6;$bottle_prefix;bottle_prefix;;$nf Bottle prefix$end;CDIR;;;"
+		"6;;bottle_prefix;;$nf Bottle prefix$end;;;;"
 		"7;;;;$w_wine_game_path;LBL;;;"
 		"8;$game_path;game_path;;$nf Existing appli path$end;DIR;;;"
 		"9;;;;$w_wine_elf;LBL;;;"
@@ -1392,7 +1398,6 @@ $nf Check here the sections you would like to configure.$end"
 			fi
 			ifs=$IFS
 			IFS=$(echo -en "\n\b")
-#			if [ $wine_elf = 1 ]; then elf_ext=' (x86)'; else elf_ext=''; fi
 			bottle_prefix="$user_prefix/$bottle_prefix"
 			if [ -d $bottle_prefix/drive_c/$game_dir ]; then
 				game_dir="$bottle_prefix/drive_c/$game_dir"
@@ -1406,28 +1411,26 @@ $nf Check here the sections you would like to configure.$end"
 				w_args_list=( $wine_opts )
 				arg_n="${#w_args_list[@]}"
 				def_n="${#def_args[@]}"
-				if [[ $wine_opts != '' ]]; then
-					for val in ${def_args[@]}; do
-						_def=$(printf "$val"| cut -d',' -f1)
-						_arg=$(printf "$val"| cut -d',' -f2)
-						if [ $(echo "$wine_opts"| grep -Fc "$_arg") -gt 0 ]; then
-							def_arg=("$_def=1")
-							g_pat="$g_pat\-$_arg "
-						else
-							def_arg=("$_def=0")
-						fi
-						local $def_arg
-						if [[ $_def == wine_arg_msc ]]; then
-							# better to 'sed' here than anything else
+				for val in ${def_args[@]}; do
+					_def=$(printf "$val"| cut -d',' -f1)
+					_arg=$(printf "$val"| cut -d',' -f2)
+					if [ $(echo "$wine_opts"| grep -Fc "$_arg") -gt 0 ]; then
+						def_arg=("$_def=1")
+						g_pat="$g_pat\-$_arg "
+					else
+						def_arg=("$_def=0")
+					fi
+					local $def_arg
+					if [[ $_def == wine_arg_msc ]]; then
+						# better to 'sed' here than anything else
+						if [[ $_arg_msc != '' ]]; then
 							_arg_msc="\\$(echo -e "${w_args_list[*]}"| sed -n  "s/$g_pat//p")"
-							if [[ $_arg_msc != '' ]]; then
-								wine_arg_msc=$_arg_msc
-							else
-								wine_arg_msc=''
-							fi
+							wine_arg_msc=$_arg_msc
+						else
+							wine_arg_msc=''
 						fi
-					done
-				fi
+					fi
+				done
 			fi
 		else
 			special_cmd=0; start_cmd=0
@@ -1548,7 +1551,7 @@ $nf Check here the sections you would like to configure.$end"
 		"5;$wine_path;wine_path;;$nf Wine binaries dir\t\t\t\t\t\t\t$end;DIR;;;"
 		"6;;;;$w_wine_wine_ver;LBL;;;"
 		"7;$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;;"
-		"8;$wine_bin_cmd;;;$vb or select a PoL Wine package to download$end;FBTN;;;"
+		"8;$wine_bin_cmd;;;$vb or click here to download a PoL Wine package$end!$img_winepol_bt;FBTN;;;"
 		"9;;;;;LBL;;;"
 		"10;;;;$w_wine_wconfig;LBL;;;"
 		"11;$w_config;w_config;;Start Winecfg at app launch;CHK;;;"
@@ -1627,23 +1630,18 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_reg_manual1="$vB Custom Direct3D registering (manual edit).$end"
 		w_reg_manual2="$rb\\WARNING:$end$vn Remove all custom (set by yourself) or empty lines$end"
 		w_reg_manual3="$bf\\Unusual registry commands and options$end"
+
 		w_reg_2_title="$bf\\Associate mime type to local system$end"
 		w_reg_2_tip0="$vb\\In many case, user must install subsidiary software to run some file type directly from the bottle (avi, mp4, txt, doc, etc). You can set here those files types to be launch by your local system apps.$end"
-		w_reg_2_warn0="$rb\\ATTENTION$end:$vn File will be open with default environment set$end"
+
+		w_reg_2_warn0="$vn\\Files will be open with default xdg-open environment set$end"
 		w_reg_2_setted="$vb\\Already associated:$end $(printf "$local_association"| sed -n 's/,/, /g;p')"
 		w_reg_2_set_tip0="$vb\\Use presets or edit manually$end:$vn (will be added to presets)$end"
-		w_reg_2_set_tip1="$rb\\WARNING$end$vb:$end"
-		w_reg_2_set_tip2="$vn\\Manual edit need to be from the same file type, this is mandatory.$end"
-		w_reg_2_set_1="$nf Choose a document name (ex: DOCfile)$end"
-		w_reg_2_set_2="$nf Select some files to set the type$end"
-		w_reg_2_set_3="$nf or pick a preset in the list$end"
+		w_reg_2_set_tip1="$rb\\WARNING$end$vn : When picked up from a directory, files types need to be of the same kind (mp4, avi or doc, odf, etc), this is mandatory.$end"
+		w_reg_2_set_1="$nf Select one or more files for type$end"
+		w_reg_2_set_2="$nf or pick a preset in the list$end"
 		w_reg_2_set_4="Set local program to use"
-		
-		w_reg_2_=""
-		w_reg_2_=""
-		w_reg_2_=""
-		w_reg_2_=""
-		w_reg_2_=""
+
 		w_reg_3_tip0="$vb\\In some cases, it could be necessary to use specific system reg file, DLLs registration/unregistration to set properly a bottle.$end"
 		w_reg_3_warn0="$rb\\WARNING$end$vn: Doing something nasty here can strongly compromise your bottle.$end"
 		w_reg_3_titl0="$vb\\Register, unregister DLLs from the system$end"
@@ -1656,8 +1654,8 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_reg_3_tip=""
 		
 		w_reg_def_SDO="$nf StrictDrawOrdering$end$vn\tbelow Wine 2.6$end"
-		w_reg_def_CSMT="$nf CSMT$end$vn\t\t\t\t\tWine 2.6 and above$end"
-		w_reg_def_VID="$nf VideoMemorySize$end$vn\tunset to not use$end"
+		w_reg_def_CSMT="$nf CSMT$end$vn \t\t\t\tWine 2.6 and above$end"
+		w_reg_def_VID="$nf VideoMemorySize$end$vn     unset to not use$end"
 #		w_reg_def_=""
 #		w_reg_def_=""
 #		w_reg_def_=""
@@ -1685,12 +1683,11 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		"15;;;;$w_reg_2_title;LBL;;;"
 		"16;;;;$w_reg_2_tip0;LBL;;;"
 		"17;;;;$w_reg_2_warn0;LBL;;;"
-		"18;;;;$w_reg_2_set_tip5;LBL;;;"
-		"19;;;;$w_reg_2_set_tip6;LBL;;;"
-		"20;;;;$w_reg_2_set_tip0;LBL;;;"
-		"21;;;;$w_reg_2_setted;LBL;;;"
-		"22;unset;Selected_Files;;$w_reg_2_set_2;MFL;;;"
-		"23;unset;mime_preset;;$w_reg_2_set_3;CB;$res_mime_preset;;"
+		"18;;;;$w_reg_2_set_tip1;LBL;;;"
+		"19;;;;$w_reg_2_set_tip0;LBL;;;"
+		"20;;;;$w_reg_2_setted;LBL;;;"
+		"21;unset;Selected_Files;;$w_reg_2_set_1;MFL;;;"
+		"22;unset;mime_preset;;$w_reg_2_set_2;CB;$res_mime_preset;;"
 		)
 #		"21;;;;;LBL;;;"
 #		"22;;;;$w_reg_manual3;LBL;;;"
@@ -1809,7 +1806,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_tricks_alt_dot4="Dot NET version 4.0"
 		w_tricks_alt_dot4_tip="$nf\\Note$end: .NET 4.x need an extra additional packges for clean install. Follow Winetrciks instruction during install without stopping the process."
 		w_tricks_winetricks="$bf More from Winetricks$end"
-		w_tricks_trk_launch="$vb Launch Winetricks separatly$end"
+		w_tricks_trk_launch="$vb Click to launch Winetricks separatly$end"
 		w_tricks_trk_dll="$vb\\or launch Winetricks$end $nf(one or more packages)$end"
 		w_tricks_trk_dlls="$vb Add an additional DLL component$end"
 		w_tricks_ald_list="$vb\\Already installed:$end $already_there"
@@ -1848,7 +1845,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		"30;;;;$w_tricks_winetricks;LBL;;;"
 		"31;^unset;plus_dll;;$w_tricks_trk_dlls;CB;$dlls_list;;"
 		"32;;;;$w_tricks_trk_dll;LBL;;;"
-		"33;$trk_action;;;$w_tricks_trk_launch;FBTN;;;"
+		"33;$trk_action;;;$w_tricks_trk_launch!$img_tricks_bt;FBTN;;;"
 		)
 
 		# start form display
@@ -2281,7 +2278,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		w_xrandr_tip3="$vb\\If your desktop manager slow down graphic performance, you can try to replace the default one by a lighter. Default replacement is set to Openbox (you have to install it first)$end"
 		w_xrandr_tip6="$nf Note:$end In cinnamon, desactivate compositing in fullscreen mode in System Settings menu: Preferences > General"
 		w_xrandr_compo1="$nf Select the default manager$end"
-		w_xrandr_compo2="$nf Select the replacement manager\t\t$end"
+		w_xrandr_compo2="$nf Select the replacement manager\t$end"
 		w_xrandr_tip4="$bf\\Mouse buttons setting$end"
 		w_xrandr_tip5="$vb\\If you have change the mouse button placement, replacement window manager can reverse your set. This option allow you to preserve it$end"
 		w_xrandr_mouse="$nf Select the mouse device$end"
@@ -2544,7 +2541,7 @@ change_fonts_colors(){
 	kill $YAD_PID
 	w_text="$bf Basic font colors$end$vb \\n \
 Change font UI colors at will, but keep in mind the sens of each of them: main, warning, unavialable.$end"
-	font_color=$($yad_bin --width=480 --height=300 --title "$w_title" --image="$img_wine_colors" \
+	font_color=$($yad_bin --width=480 --height=300 --title "$w_title" --image="$img_wine_desktop" \
 			--window-icon=$img_wine_desk_ui --text "$w_text" --form --separator=" " \
 			--field="":LBL '' \
 			--field="$vb Main messages color\t\t$end":CLR "$main" \
@@ -2696,7 +2693,7 @@ $vb You can create or modify every main fields of a desktop file$end"
 	# editable categories list for Category entry combo box
 	categories='Games;!Office;!Applications;!Games;!Multimedia;!Video;!Graphics;'
 	# select_pan part
-	$yad_bin --width=370 --height=300 --plug=$key --tabnum=1 --form --image=$img_wine_desk_ui \
+	$yad_bin --width=370 --height=300 --plug=$key --tabnum=1 --form --image=$img_wine_desktop \
 			--field="":LBL '' \
 			--field="$w_tip0":LBL '' \
 			--field="":LBL '' \
@@ -2813,7 +2810,7 @@ edit_bottle(){
 		w_text="$bf Restart function system$end$vb\\n \
 You can here restart Winecfg or Winetricks at next Winestarter launch. This feature could be really useful after a Wine update or just to control Winecfg state$end"
 		win_icon=$img_wine_restart
-		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon \
+		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$img_wine_reload \
 			--window-icon=$img_desktop --center --separator=';' --form \
 			--align=left --text "$w_text" --field="":LBL '' \
 			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
@@ -2872,8 +2869,8 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 }
 
 ## Script debug options
-bash_opt='-x -c'
-#bash_opt='-c'
+#bash_opt='-x -c'
+bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""
