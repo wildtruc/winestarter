@@ -5,13 +5,23 @@ colors(){
 main='#005400'
 warn='#FF3300'
 freeze='#b6b6b6'
-vb='<span color="'$main'" weight="bold" font="10">'
-vn='<span color="'$main'" weight="normal" font="10">'
-rb='<span color="'$warn'" weight="bold" font="10">'
-gb='<span color="'$freeze'" weight="bold" font="10">'
-bf='<span color="'$main'" weight="bold" font="14">'
-brf='<span color="'$warn'" weight="bold" font="14">'
-nf='<span weight="bold" font="10">'
+font='Noto Sans'
+size='10'
+#vb='<span color="'$main'" weight="bold" font="'$font'" size="'$size'">'
+#vn='<span color="'$main'" weight="normal" font="'$font','$size'">'
+#rb='<span color="'$warn'" weight="bold" font="'$font','$size'">'
+#gb='<span color="'$freeze'" weight="bold" font="'$font','$size'">'
+#bf='<span color="'$main'" weight="bold" font="'$font','$(($size+4))'">'
+#brf='<span color="'$warn'" weight="bold" font="'$font','$(($size+4))'">'
+#nf='<span weight="bold" font="'$font $size'">'
+vb='<span color="'$main'" weight="bold" font="'$font' '$size'">'
+vn='<span color="'$main'" weight="normal" font="'$font' '$size'">'
+rb='<span color="'$warn'" weight="bold" font="'$font' '$size'">'
+gb='<span color="'$freeze'" weight="bold" font="'$font' '$size'">'
+bf='<span color="'$main'" weight="bold" font="'$font' '$(($size+4))'">'
+brf='<span color="'$warn'" weight="bold" font="'$font' '$(($size+4))'">'
+nf='<span weight="bold" font="'$font' '$size'">'
+
 end='</span>'
 vB=$vb
 }
@@ -54,7 +64,7 @@ main_code(){
 			t_img=$(printf "$sets"| cut -d';' -f10)
 			if [ $from_config = 1 ]&&[ $c_box != 'LBL' ]; then
 				if [ $c_box == 'CB' ]||[ $c_box == 'CBE' ]; then
-					if [ "$c_set" != 'unset' ]; then extend='!unset'; else extend=''; fi
+					if [ "$c_set" != 'unset' ]; then extend=$item_sep'unset'; else extend=''; fi
 				fi
 			fi
 			# regedit filter to parse full text in UI
@@ -65,10 +75,10 @@ main_code(){
 			if [ $c_box == 'CHK' ]; then 
 				if [ $c_set = 0 ]||[[ $c_set == unset ]]; then chk_box=FALSE;	else chk_box=TRUE; fi
 			fi
-			if [ $c_box == 'NUM' ]; then chk_box="$c_set!$c_opt"; fi
+			if [ $c_box == 'NUM' ]; then chk_box="$c_set$item_sep$c_opt"; fi
 			if [ $c_box == 'LBL' ]; then chk_box=''; fi
-			if [ $c_box == 'CB' ]; then chk_box="$c_set!$c_opt$extend"; fi
-			if [ $c_box == 'CBE' ]; then chk_box="$c_set!$c_opt$extend"; fi
+			if [ $c_box == 'CB' ]; then chk_box="$c_set$item_sep$c_opt$extend"; fi
+			if [ $c_box == 'CBE' ]; then chk_box="$c_set$item_sep$c_opt$extend"; fi
 			if [ $c_box == 'DIR' ]; then chk_box="$c_set"; fi
 			if [ $c_box == 'CDIR' ]; then chk_box="$c_set"; fi
 			if [ $c_box == 'FL' ]; then chk_box="$c_set"; fi
@@ -92,7 +102,7 @@ main_code(){
 		if [ $win_type = 0 ]; then
 			def_win=$($yad_bin --width=$w_width --title "$w_title" --image=$img_wine_ui \
 			--window-icon=$img_desktop \
-			--form "${field_list[@]}" "${chk_list[@]}" --separator=';' \
+			--form "${field_list[@]}" "${chk_list[@]}" --separator=';' --item-separator="$item_sep" \
 			--align=left --text "$bf$w_text$end" \
 			)
 #			YAD_02=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
@@ -103,7 +113,7 @@ main_code(){
 		fi
 		if [ $win_type = 1 ]; then
 			$yad_bin --width=594 $t_plug --text="$w_text" --form $extended_opts \
-			"${field_list[@]}" "${chk_list[@]}" --separator=';' > $temp &
+			"${field_list[@]}" "${chk_list[@]}" --separator=';' --item-separator="$item_sep" > $temp &
 #			YAD_03=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
 		fi
 #		if [ $win_type = 2 ]; then
@@ -354,7 +364,7 @@ main_code(){
 		default_tab_create
 	}
 	fn_end_game_1(){
-		# --field="$vb New Wine prefix $end"!$img_wine_add!"Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \
+		# --field="$vb New Wine prefix $end"#$img_wine_add#"Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \
 		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
 		res_action="bash $bash_opt \"winestarter "$conf_target".conf\""
 		res_launch="$vb Launch Winetarter$end"
@@ -520,12 +530,14 @@ w_config=1"
 		fi
 		if [[ $_var == wine_path ]]; then
 			if [[ $_val != $HOME ]]; then 
-				if [[ $wine_path != $user_prefix/.winebin ]]; then 
+				if [[ $_val != $user_prefix/.winebin ]]; then 
 					_val=$_val
 				else
 					_val=$user_prefix/.winebin
 				fi
-			else _val=''; fi
+			else
+				_val=$user_prefix/.winebin
+			fi
 		fi
 		if [[ $_var == wine_ver ]]; then
 			if [ -s /tmp/w_bin_tmp ]; then
@@ -580,8 +592,8 @@ wine_ver='$wine_ver'"
 		fi
 		if [[ $_var == w_more_pkgs ]]; then
 			if [[ "$_val" != '' && "$_val" != $HOME/ ]]; then				
-				if [ $(echo "$_val"| grep -c "\!") -gt 0 ]; then
-					_val=$(printf "$_val"| tr '!' '*')
+				if [ $(echo "$_val"| grep -c "\,") -gt 0 ]; then
+					_val=$(printf "$_val"| tr ',' '*')
 					printf "$_val"| tr '*' '\n' > $conf_edit
 					
 				else
@@ -655,7 +667,7 @@ w_extra_script=\"$w_extra_script\""
 			if [[ $_val != unset ]]; then
 				_tricks_var+=("$_val")
 			fi
-			if [ $(printf "${extra_sets[*]}"| grep -c ".*") -gt 0 ]; then
+			if [ $(printf "${extra_sets[*]}"| grep -c .) -gt 0 ]; then
 				if [ "${#extra_sets[*]}" -gt 1 ]; then
 					extra_dlls=$(printf "${extra_sets[*]}"| sed -n "s/\ /,/g;p")
 				else
@@ -780,7 +792,11 @@ w_tricks_list=\"$w_tricks_list\""
 			if [[ $_val != unset ]]; then
 				if [[ $_var == Selected_Files ]]; then
 					unset FileType_list selected_files_list
-					selected_files_list=( $(printf "$Selected_Files"| tr '!' ' ') )
+					ifs=$IFS
+					IFS=$(echo -en "\n\b")
+#					selected_files_list=$(echo "$Selected_Files"| tr ',' '\n')
+					selected_files_list=$(printf "$_val"| sed -n "s/,/ /g;p")
+					selected_files_list=( "$selected_files_list" )
 					for Files in ${selected_files_list[@]}; do
 						if [ $(printf "$local_association"| grep -c .) -gt 0  ]; then
 							prev_asso="$local_association,"
@@ -804,6 +820,7 @@ w_tricks_list=\"$w_tricks_list\""
 							FileType_list+=( $(printf "$Files"|sed -n "s/^.*\.//g;p") )
 						fi
 					done
+					IFS=$ifs
 					_val=$prev_asso$(printf "${FileType_list[*]}"| tr ' ' ',')
 					
 				fi
@@ -819,6 +836,8 @@ w_tricks_list=\"$w_tricks_list\""
 						if [ ${#mime_preset_add[@]} -gt 0 ]; then _sep=','; fi
 						prev_asso="$local_association$_sep"
 						_val=$prev_asso$(printf "${mime_preset_add[*]}"| tr ' ' ',')
+					else
+						_val=$mime_preset
 					fi
 				fi
 				_var='local_association'
@@ -826,7 +845,12 @@ w_tricks_list=\"$w_tricks_list\""
 				if [ $(printf "$local_association"| grep -c .) -eq 0 ]; then _var='local_association'; fi
 				_val=''
 			fi
-			insert=1
+			if [[ $from_config = 0 || $insert_section = 1 ]]; then
+				new_conf_list+=("$_var=$_val")
+#				local local_association="$_val"
+			else
+				insert=1
+			fi
 		fi
 	}
 	newconf_reged(){
@@ -848,7 +872,7 @@ local_association=\"$local_association\""
 		printf "$_reged_conf\n" >> $tmp_conf
 		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
 		
-		if [ $(printf "$_val"| grep -c ".*") -gt 0 ]; then
+		if [ $(printf "$_val"| grep -c .) -gt 0 ]; then
 			perl -ni -pe "s|^user_reg=''|user_reg='$(cat $reg_edit)'|i" \
 			$tmp_conf
 		fi
@@ -1237,7 +1261,7 @@ $nf Check here the sections you would like to configure.$end"
 		"19;$_extended;_extended;;$msg_extended;CHK;;;;")
 #		"14;$_optimus;_optimus;Optimus;$msg_optimus;CHK;;;fn_optimus_config;$img_opti"
 #		"15;$_xrandr;_xrandr;Monitor;$msg_xrandr;CHK;;;fn_xrandr_config;$img_xrandr")
-		
+		item_sep=","
 		# window style and function
 		win_type=0
 		ignore_loop=1
@@ -1261,6 +1285,7 @@ $nf Check here the sections you would like to configure.$end"
 		tab_set=(
 		"1;_nvidia_1;Nvidia*(common);fn_nvidia_config_1;$img_nv_cm"
 		"2;_nvidia_2;Nvidia*(optional);fn_nvidia_config_2;$img_nv_ext")
+		item_sep=","
 		# window style and function
 		win_type=1
 		ignore_loop=0
@@ -1277,6 +1302,7 @@ $nf Check here the sections you would like to configure.$end"
 		tab_set=(
 		"1;_wfirst;Basics;fn_wine_basics;$img_wine_desk_ui")
 #		"2;_resume;Warnings;fn_end_game_2;$img_wine_desk_ui")
+		item_sep=","
 		# window style and function
 		win_type=1
 		ignore_loop=0
@@ -1319,6 +1345,7 @@ $nf Check here the sections you would like to configure.$end"
 		"10;;;;$w_wine_elf_tip;LBL;;;"
 		"11;$wine_elf;wine_elf;;App type is 64 bits;CHK;;;"
 		)
+		item_sep=","
 		IFS=$ifs
 		# window style and function
 		win_type=1
@@ -1501,6 +1528,7 @@ $nf Check here the sections you would like to configure.$end"
 			"${misc_sets[@]}"
 			)
 		fi
+		item_sep=","
 #		echo "$wine_elf"; exit 0
 		IFS=$ifs
 		# window style and function
@@ -1548,15 +1576,16 @@ $nf Check here the sections you would like to configure.$end"
 		"2;;;;$w_wine_binary_title;LBL;;;"
 		"3;$use_winepath;use_winepath;;use Wine binaries path (default:$HOME/.winebin);CHK;;;"
 		"4;;;;$w_wine_wine_path;LBL;;;"
-		"5;$wine_path;wine_path;;$nf Wine binaries dir\t\t\t\t\t\t\t$end;DIR;;;"
+		"5;$wine_path;wine_path;;$nf Wine binaries dir\t\t\t\t$end;DIR;;;"
 		"6;;;;$w_wine_wine_ver;LBL;;;"
 		"7;$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;;"
-		"8;$wine_bin_cmd;;;$vb or click here to download a PoL Wine package$end!$img_winepol_bt;FBTN;;;"
+		"8;$wine_bin_cmd;;;$vb or click here to download a PoL Wine package$end,$img_winepol_bt;FBTN;;;"
 		"9;;;;;LBL;;;"
 		"10;;;;$w_wine_wconfig;LBL;;;"
 		"11;$w_config;w_config;;Start Winecfg at app launch;CHK;;;"
 		)
 		IFS=$ifs
+		item_sep=","
 		# window style and function
 		win_type=1
 		ignore_loop=0
@@ -1569,7 +1598,7 @@ $nf Check here the sections you would like to configure.$end"
 		# créer liste des dlls désenregistrés
 		# créer une option de suppression
 		# config file preset
-		vid_mem="256!512!768!1024!2048!3072!4096!6144"
+		vid_mem="256,512,768,1024,2048,3072,4096,6144"
 		nv_smi=$(find /usr/{bin,local/bin} -name nvidia-smi)
 		if [ -x $nv_smi ]; then
 #		if [ -x /usr/bin/nvidia-smi ]||[ -x /usr/local/bin/nvidia-smi ] ; then
@@ -1620,7 +1649,7 @@ $nf Check here the sections you would like to configure.$end"
 			local $reg_variable
 		done
 		if [ -s $HOME/.winestarter/resources/mime-preset.lst ]; then
-			res_mime_preset=$(cat $HOME/.winestarter/resources/mime-preset.lst| tr '\n' '!')
+			res_mime_preset=$(cat $HOME/.winestarter/resources/mime-preset.lst| tr '\n' '#')
 		fi
 		# window messages
 		w_text="$bf Edit the Wine registry$end\\n\
@@ -1666,13 +1695,13 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		basic_sets=(
 		"1;;;;;LBL;;;"
 		"2;;;;$w_reg_manual0;LBL;;;"
-		"3;$StrictDrawOrdering;StrictDrawOrdering;;$w_reg_def_SDO;CB;enabled!disabled;;"
-		"4;$csmt;csmt;;$w_reg_def_CSMT;CB;enabled!disabled;;"
-		"5;$DirectDrawRenderer;DirectDrawRenderer;;$nf DirectDrawRenderer$end;CB;opengl!gdi;;"
-		"6;$OffscreenRenderingMode;OffscreenRenderingMode;;$nf OffscreenRenderingMode$end;CB;backbuffer!fbo;;"
-		"7;$RenderTargetLockMode;RenderTargetLockMode;;$nf RenderTargetLockMode$end;CB;auto!disabled!readdraw!readtex!texdraw!textex;;"
-		"8;$UseGLSL;UseGLSL;;$nf UseGLSL$end;CB;enabled!disabled;;"
-		"9;$CheckFloatConstants;CheckFloatConstants;;$nf CheckFloatConstants$end;CB;enabled!disabled;;"
+		"3;$StrictDrawOrdering;StrictDrawOrdering;;$w_reg_def_SDO;CB;enabled,disabled;;"
+		"4;$csmt;csmt;;$w_reg_def_CSMT;CB;enabled,disabled;;"
+		"5;$DirectDrawRenderer;DirectDrawRenderer;;$nf DirectDrawRenderer$end;CB;opengl,gdi;;"
+		"6;$OffscreenRenderingMode;OffscreenRenderingMode;;$nf OffscreenRenderingMode$end;CB;backbuffer,fbo;;"
+		"7;$RenderTargetLockMode;RenderTargetLockMode;;$nf RenderTargetLockMode$end;CB;auto,disabled,readdraw,readtex,texdraw,textex;;"
+		"8;$UseGLSL;UseGLSL;;$nf UseGLSL$end;CB;enabled,disabled;;"
+		"9;$CheckFloatConstants;CheckFloatConstants;;$nf CheckFloatConstants$end;CB;enabled,disabled;;"
 		"10;$Nonpower2Mode;Nonpower2Mode;;$nf Nonpower2Mode$end;CB;repack;;"
 		"11;$mem_set;VideoMemorySize;;$w_reg_def_VID;CBE;$vid_mem;;"
 		"12;;;;$w_reg_manual1;LBL;;;"
@@ -1695,12 +1724,12 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 #		"24;;;;$w_reg_3_warn0;LBL;;;"
 #		"25;;;;;LBL;;;"
 #		"26;;;;$w_reg_3_titl0;LBL;;;"
-#		"27;unset;;;$w_reg_3_cmd0;CB;register!unregister;;"
-#		"28;unset;;;$w_reg_3_cmd1;CB;wine32!wine64!both;;"
+#		"27;unset;;;$w_reg_3_cmd0;CB;register#unregister;;"
+#		"28;unset;;;$w_reg_3_cmd1;CB;wine32#wine64#both;;"
 #		"29;$bottle_prefix/drive_c/windows;;;$w_reg_3_cmd2;MFL;;;"
 #		"30;;;;;LBL;;;"
 #		"31;;;;$w_reg_3_titl1;LBL;;;"
-#		"32;unset;;;$w_reg_3_cmd3;CB;user!system;;"
+#		"32;unset;;;$w_reg_3_cmd3;CB;user#system;;"
 #		"33;;misc_reg;;$w_reg_3_cmd4;TXT;;;"
 #		${previous_reg[@]}
 #		)
@@ -1712,6 +1741,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 			"${misc_sets[@]}"
 			)
 		fi
+		item_sep=","
 		# start form display
 		win_type=1
 		ignore_loop=0
@@ -1728,7 +1758,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 #		if [[ -x "/usr/bin/winetricks" || -x "/usr/local/bin/winetricks" ]]; then
 			if [[ -d $bottle_prefix || $from_config = 1 ]]; then
 				st=$vb
-				trk_action="bash $bash_opt \"$w_tricks_bin &>/dev/null\""
+				trk_action="bash $bash_opt \"$w_tricks_bin --gui &>/dev/null\""
 				## set default arch
 				if [ $wine_elf = 1 ]; then winearch='win64'; else winearch='win32'; fi
 				## set default env
@@ -1737,7 +1767,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 				## now look for already setted and put them in a tmp file
 				trk_file=$(mktemp --tmpdir trk.XXXXXXXX)
 				$w_tricks_bin dlls list| grep "downloadable" >$trk_file
-				dlls_list=$(cat $trk_file| awk '{print $1}'| tr '\n' '!')
+				dlls_list=$(cat $trk_file| awk '{print $1}'| tr '\n' ',')
 			fi
 		else
 			w_tricks_trk_launch="$rb Winetricks not found, install it first.$end"
@@ -1845,9 +1875,9 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		"30;;;;$w_tricks_winetricks;LBL;;;"
 		"31;^unset;plus_dll;;$w_tricks_trk_dlls;CB;$dlls_list;;"
 		"32;;;;$w_tricks_trk_dll;LBL;;;"
-		"33;$trk_action;;;$w_tricks_trk_launch!$img_tricks_bt;FBTN;;;"
+		"33;$trk_action;;;$w_tricks_trk_launch,$img_tricks_bt;FBTN;;;"
 		)
-
+		item_sep=","
 		# start form display
 		win_type=1
 		ignore_loop=0
@@ -1896,11 +1926,11 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		else
 #			if [ $(cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| grep -c .) -gt 0 ]; then
 			if [ $(cat $config_file|sed -n "/^w_more_pkgs='.*'/p"| grep -c .) -lt 1 ]; then
-				cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' '!'| \
-				sed -n "s/w_more_pkgs=//;s/'//g;s/!$//p" > $conf_old
+				cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' ','| \
+				sed -n "s/w_more_pkgs=//;s/'//g;s/,$//p" > $conf_old
 				local w_more_pkgs=$(cat $conf_old)
-#				cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' '!'| \
-#				sed -n "s/'//g;s/!$//p" > $conf_old
+#				cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' ','| \
+#				sed -n "s/'//g;s/,$//p" > $conf_old
 				old_val=2
 			else
 				printf "$w_more_pkgs" > $conf_old
@@ -1917,16 +1947,16 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 #				local $(cat $config_file|sed -n "/^w_more_pkgs='.*'/p"| sed -n "s/'//g;p")
 #				old_val=0
 #			else
-#				local $(cat $conf_old| tr '\n' '!')
-#				cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' '!'| \
-#				sed -n "s/'//g;s/!$//p" > $conf_old
-#				local $(cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' '!'| \
-#				sed -n "s/'//g;s/!$//p")
+#				local $(cat $conf_old| tr '\n' '#')
+#				cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' '#'| \
+#				sed -n "s/'//g;s/#$//p" > $conf_old
+#				local $(cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' '#'| \
+#				sed -n "s/'//g;s/#$//p")
 #				old_val=2
 #			fi
 #			exit 0
 #			old_val="$w_more_pkgs"
-#			w_more_pkgs=$(printf "$w_more_pkgs"|tr '\n' '!')
+#			w_more_pkgs=$(printf "$w_more_pkgs"|tr '\n' '#')
 		fi
 		if [ "$w_install_zip" == '' ]; then w_install_zip="$HOME/";	fi
 		if [ "$w_install_dir" == '' ]; then w_install_dir="$HOME/";	fi
@@ -1969,6 +1999,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		"${misc_sets[@]}"
 		)
 		fi
+		item_sep=","
 #		echo "${basic_sets[@]}"
 #		exit 0
 		# start form display
@@ -2048,18 +2079,19 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		"4;$__GL_FSAA_MODE;__GL_FSAA_MODE;;$nf Full scene antialiasing$end;NUM;0..5;FSAA_mod;"
 		"5;;;;$w_nv_fsaactrl0;LBL;;;"
 		"6;;;;$w_nv_fsaactrl1;LBL;;;"
-		"7;$__GL_FSAA_CTRL;__GL_FSAAA_CTRL;;$nf FSAA control type$end;CB;full control!enhanced!ignored;FSAA_ctrl;"
+		"7;$__GL_FSAA_CTRL;__GL_FSAAA_CTRL;;$nf FSAA control type$end;CB;full control,enhanced,ignored;FSAA_ctrl;"
 		"8;;;;$w_nv_fxaa0;LBL;;;"
-		"9;$__GL_ALLOW_FXAA_USAGE;__GL_ALLOW_FXAA_USAGE;;$nf Fast approximate antialiasing (FXAA)\t$end;CB;0!1;FXAA_use;"
+		"9;$__GL_ALLOW_FXAA_USAGE;__GL_ALLOW_FXAA_USAGE;;$nf Fast approximate antialiasing (FXAA)\t$end;CB;0,1;FXAA_use;"
 		"10;;;;$w_nv_aniso;LBL;;;"
 		"11;$__GL_LOG_MAX_ANISO;__GL_LOG_MAX_ANISO;;$nf Anisotropic texture filtering$end;NUM;0..4;ANISO;"
 		"12;;;;$w_nv_vblank;LBL;;;"
-		"13;$__GL_SYNC_TO_VBLANK;__GL_SYNC_TO_VBLANK;;$nf Sync to VBLANK$end;CB;0!1;_VBLK;"
+		"13;$__GL_SYNC_TO_VBLANK;__GL_SYNC_TO_VBLANK;;$nf Sync to VBLANK$end;CB;0,1;_VBLK;"
 		"14;;;;$w_nv_thread;LBL;;;"
 		"15;$__GL_THREADED_OPTIMIZATIONS;__GL_THREADED_OPTIMIZATIONS;;$nf Preload libpthread$end;CB;1;PTHREAD;"
 		"16;;;;$w_nv_perf;LBL;;;"
-		"17;$__GL_OpenGLImageSettings;__GL_OpenGLImageSettings;;$nf Nvidia graphic Performance set$end;CB;1!2!3;PERF;"
+		"17;$__GL_OpenGLImageSettings;__GL_OpenGLImageSettings;;$nf Nvidia graphic Performance set$end;CB;1,2,3;PERF;"
 		)
+		item_sep=","
 		# start form display
 		win_type=1
 		ignore_loop=0
@@ -2079,7 +2111,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		w_nv_gsync="$vB If monitor can manage G-SYNC behaviour, this option could impove performance:$end"
 		w_nv_glsl0="$vB This option permit to recompile GLSL and could be useful if appli is missing some extension in OpenGL sets:$end"
 		# use 'get_xrandr_list' to set the connected monitor list.
-		monitors_list=$(printf "${connect_[@]}"|tr '\n' '!')
+		monitors_list=$(printf "${connect_[@]}"|tr '\n' '#')
 		# check already setted variables
 		track_list=(
 		"__GL_SYNC_DISPLAY_DEVICE"
@@ -2108,17 +2140,18 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		"3;;;;$w_nv_display;LBL;;;"
 		"4;$__GL_SYNC_DISPLAY_DEVICE;__GL_SYNC_DISPLAY_DEVICE;;$nf VSync display$end;CB;$monitors_list;_SYNC;"
 		"5;;;;$w_nv_fbconfig;LBL;;;"
-		"6;$__GL_SORT_FBCONFIGS;__GL_SORT_FBCONFIGS;;$nf Xorg FBconfig$end;CB;0!1;FBconf;"
+		"6;$__GL_SORT_FBCONFIGS;__GL_SORT_FBCONFIGS;;$nf Xorg FBconfig$end;CB;0,1;FBconf;"
 		"7;;;;$w_nv_yield0;LBL;;;"
 		"8;;;;$w_nv_yield1;LBL;;;"
-		"9;$__GL_YIELD;__GL_YIELD;;$nf Window yield:$end;CB;normal!NOTHING!USLEEP;yield;"
+		"9;$__GL_YIELD;__GL_YIELD;;$nf Window yield:$end;CB;normal,NOTHING,USLEEP;yield;"
 		"10;;;;$w_nv_unofficial0;LBL;;;"
-		"11;$__GL_ALLOW_UNOFFICIAL_PROTOCOL;__GL_ALLOW_UNOFFICIAL_PROTOCOL;;$nf Unofficial GL implementation$end\t\t\t;CB;0!1;UNOF_proto;"
+		"11;$__GL_ALLOW_UNOFFICIAL_PROTOCOL;__GL_ALLOW_UNOFFICIAL_PROTOCOL;;$nf Unofficial GL implementation$end\t\t\t;CB;0,1;UNOF_proto;"
 		"12;;;;$w_nv_gsync;LBL;;;"
-		"13;$__GL_GSYNC_ALLOWED;__GL_GSYNC_ALLOWED;;$nf G-Sync$end;CB;0!1;GSYNC;"
+		"13;$__GL_GSYNC_ALLOWED;__GL_GSYNC_ALLOWED;;$nf G-Sync$end;CB;0,1;GSYNC;"
 		"14;;;;$w_nv_glsl0;LBL;;;"
-		"15;$__GL_IGNORE_GLSL_EXT_REQS;__GL_IGNORE_GLSL_EXT_REQS;;$nf Ignore GLGS extension check$end;CB;0!1;GLSL_rec;"
+		"15;$__GL_IGNORE_GLSL_EXT_REQS;__GL_IGNORE_GLSL_EXT_REQS;;$nf Ignore GLGS extension check$end;CB;0,1;GLSL_rec;"
 		)
+		item_sep=","
 		# start form display
 		win_type=1
 		ignore_loop=0
@@ -2161,7 +2194,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 			for dsp1 in ${connect_[@]}; do
 				query=$(xrandr -q| sed -n  "/$dsp1/,/\(\w*[A-Z]\{2,4\}\)/p"| sed -n "/\(\w*[A-Z]\{2,4\}\)/d;p"|awk '{print $1}')
 				# convert result to a YAD manageable list
-				query=$(printf "$query"| tr '\n' '!')
+				query=$(printf "$query"| tr '\n' ',')
 				dsp_res_+=("dsp_res_$d=$query")
 				dsp_res_list+=("$query")
 				d=$[ $d+1 ]
@@ -2201,7 +2234,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 			xinput_list=$(xinput list | grep "pointer"|grep -v "master\|XTEST"| \
 			perl -pe "s|^.* ([A-Z].*[a-z]) (\w*[A-Z]+.*id=[0-9]*)+.*$|\1 \2|;s|([ ]*)\t|;|p")
 			
-			mouse_list=$(printf "${xinput_list[@]}"|cut -d';' -f1|tr '\n' '!'|sed -n "s/!$//p")
+			mouse_list=$(printf "${xinput_list[@]}"|cut -d';' -f1|tr '\n' ','|sed -n "s/,$//p")
 		}
 		get_xrd_config(){
 			if [[ $trk_set == auto_set ]]; then
@@ -2233,7 +2266,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 			fi
 		}		
 		# define the most as possible desktop enviroment name
-		desktop_list="gnome-shell!cinnamon!kde!lxde!xfce!openbox"
+		desktop_list="gnome-shell,cinnamon,kde,lxde,xfce,openbox"
 		# first establish lists for seeked values
 		input_vars=('set_output' 'set_mode' 'bck_mode' \
 		'default_desktop' 'secondary_desktop' 'mouse_dev' 'set_buttons')
@@ -2257,7 +2290,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 				done
 			fi
 		done
-		if [[ $(printf "${input_list[0]}"| grep -c ".*") -gt 0 ]]; then export ${input_list[@]}; fi
+		if [[ $(printf "${input_list[0]}"| grep -c .) -gt 0 ]]; then export ${input_list[@]}; fi
 
 		# add xrandr field to basic_sets list
 		display_field_set
@@ -2300,8 +2333,9 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		"$[ $l+6 ];;;;$w_xrandr_tip4;LBL;;;"
 		"$[ $l+7 ];;;;$w_xrandr_tip5;LBL;;;"
 		"$[ $l+8 ];$mouse_dev;mouse_dev;;$w_xrandr_mouse;CB;$mouse_list;;"
-		"$[ $l+9 ];$set_buttons;set_buttons;;$w_xrandr_buttons;CB;1 2 3!3 2 1;;"
+		"$[ $l+9 ];$set_buttons;set_buttons;;$w_xrandr_buttons;CB;1 2 3,3 2 1;;"
 		)
+		item_sep=","
 		# start form display
 		win_type=1
 		ignore_loop=0
@@ -2350,16 +2384,17 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		# var list sets
 		basic_sets=(
 		"1;;;;;LBL;;;"
-		"2;$opti_starter;opti_starter;;$w_opti_starter;CB;optirun!primusrun;;"
+		"2;$opti_starter;opti_starter;;$w_opti_starter;CB;optirun,primusrun;;"
 		"3;;;;$w_opti_tip0;LBL;;;"
 		"4;;;;$w_opti_tip1;LBL;;;"
-		"5;$opti_accel;opti_accel;;$w_opti_accel;CB;virtualgl!primus;;"
+		"5;$opti_accel;opti_accel;;$w_opti_accel;CB;virtualgl,primus;;"
 		"6;;;;$w_opti_tip2;LBL;;;"
 		"7;$opti_SYNC;opti_SYNC;;$w_opti_sync;CHK;;;"
 		"8;;;;$w_opti_tip3;LBL;;;"
 		"9;$opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;;"
 		"10;;;;;LBL;;;"
 		"11;;;;$w_opti_warn;LBL;;;")
+		item_sep=","
 		# start form display
 		win_type=1
 		ignore_loop=0
@@ -2473,7 +2508,7 @@ $nf\\All custom maunal changes in the text area will be merge with others preset
 
 	reg_popup=$(
 	$yad_bin --width=400 --title "$w_title" --image="$img_wine_desk_ui" \
-	--window-icon="$img_wine_desk_ui" --form --text="$w_text" --separator=" " \
+	--window-icon="$img_wine_desk_ui" --form --text="$w_text" --separator=" " --item-separator="#" \
 	--field="$w_com1":LBL '' --field="$w_com0":TXT "$reg_display")
 	
 	if [ $? = 0 ]; then
@@ -2511,7 +2546,7 @@ select_wine_bin(){
 			for bins in ${local_bin_list[@]}; do
 				if [ $bins == $r_bins ]; then out=' *'; fi
 			done
-			printf "$r_bins$out!" >> $loc_temp
+			printf "$r_bins$out," >> $loc_temp
 		done
 		w_text="$vb Download a binary package from PlayOnLinux repo:$end"
 		## PlayOnLinux-wine-$r_bins-linux-x86.pol
@@ -2519,7 +2554,7 @@ select_wine_bin(){
 		
 		wine_bin=$(
 		$yad_bin --width=300 --title "$w_title" --image="$img_wine_desk_ui" \
-		--window-icon="$img_wine_desk_ui" --form --text="$w_text" --separator=" " \
+		--window-icon="$img_wine_desk_ui" --form --text="$w_text" --separator=" " --item-separator="," \
 		--field="$vb Select $ftp_elf package$end":CB "$wine_bin_list")
 		
 		if [ $? = 0 ]; then
@@ -2542,21 +2577,36 @@ change_fonts_colors(){
 	w_text="$bf Basic font colors$end$vb \\n \
 Change font UI colors at will, but keep in mind the sens of each of them: main, warning, unavialable.$end"
 	font_color=$($yad_bin --width=480 --height=300 --title "$w_title" --image="$img_wine_desktop" \
-			--window-icon=$img_wine_desk_ui --text "$w_text" --form --separator=" " \
+			--window-icon=$img_wine_desk_ui --text "$w_text" --form --separator="," --item-separator="" \
 			--field="":LBL '' \
 			--field="$vb Main messages color\t\t$end":CLR "$main" \
 			--field="$vb Warning messages color$end":CLR "$warn" \
-			--field="$vb Unavialable messages color$end":CLR "$freeze")
+			--field="$vb Unavialable messages color$end":CLR "$freeze" \
+			--field="$vb Change normal font type$end":FN 'Sans Regular 10' \
+			--field="$vn\\Smaller and bigger fonts will be increment by -1 and +1.$end":LBL '')
 	if [ $? = 1 ]; then bash $bash_opt $base_script; exit 0; fi
 	if [ $? = 0 ]; then
-		for i in ${font_color[@]}; do
+		font_color=( $(printf "${font_color[*]}"| sed -n "s/^,//;s/\(^.*,\),,/\1/;s/,/\n/g;p") )
+		echo "${font_color[*]}"
+		for i in "${font_color[@]}"; do
 			color_fonts+=("$i")
 		done
 		C=0
-		for colr in 'main' 'warning' 'freeze'; do
+		fields=( 'main' 'warning' 'freeze' 'face' )
+		
+		for colr in ${fields[@]}; do
 			previous=${color_fonts[$C]}
-			perl -ni -pe "s|^($colr=['])(#\w*[0-9A-Z])(['])$|\1$previous\3|i" $base_script
-			perl -ni -pe "s|^($colr=['])(#\w*[0-9A-Z])(['])$|\1$previous\3|i" /usr/local/bin/winestarter
+			if [[ $colr == face ]]; then
+				font=$(printf "$colr"| grep -o "[0-9]*")
+				size=$(printf "$colr"| sed -n "s/\(^.*\) [0-9]*/\1/p")
+				fields+=("$font")
+				fiedds+=("$size")
+				echo "${fields[*]}"
+			fi
+			for f in ${fields[@]}; do
+				perl -ni -pe "s|^($f=['])(#\w*[0-9A-Z])(['])$|\1$previous\3|i" $(basename "$base_script")
+#			   perl -ni -pe "s|^($f=['])(#\w*[0-9A-Z])(['])$|\1$previous\3|i" /usr/local/bin/winestarter
+			done
 			C=$[ $C+1 ]
 		done
 		bash $bash_opt $base_script
@@ -2575,7 +2625,7 @@ list_bottles(){
 				bottle_list+=("$b_name")
 				bottle+=("$b_name;$b_conf")
 			done
-			bottle_list=$(printf "${bottle_list[*]}"|sed -n "s/ /!/g;p")
+			bottle_list=$(printf "${bottle_list[*]}"|sed -n "s/ /#/g;p")
 		else
 			bottle_list="none"
 		fi
@@ -2691,16 +2741,16 @@ $vb You can create or modify every main fields of a desktop file$end"
 	temp1=$(mktemp --tmpdir tab1.XXXXXXXX)
 	temp2=$(mktemp --tmpdir tab2.XXXXXXXX)
 	# editable categories list for Category entry combo box
-	categories='Games;!Office;!Applications;!Games;!Multimedia;!Video;!Graphics;'
+	categories='Games;#Office;#Applications;#Games;#Multimedia;#Video;#Graphics;'
 	# select_pan part
 	$yad_bin --width=370 --height=300 --plug=$key --tabnum=1 --form --image=$img_wine_desktop \
-			--field="":LBL '' \
+			 --item-separator="#" --field="":LBL '' \
 			--field="$w_tip0":LBL '' \
 			--field="":LBL '' \
 			--field="$w_tip1":LBL '' \
 			--field="$vb Name$end":CBE "$default_name" \
 			--field="$vb Comment$end":CBE "$default_desc" \
-			--field="$vb Category$end":CBE "$cat_set!$categories" \
+			--field="$vb Category$end":CBE "$cat_set#$categories" \
 			--field="":LBL '' \
 			--field="$w_tip2":LBL '' \
 			--field="Add the dessktop entry to the dedicated type menu":CHK TRUE \
@@ -2811,7 +2861,7 @@ edit_bottle(){
 You can here restart Winecfg or Winetricks at next Winestarter launch. This feature could be really useful after a Wine update or just to control Winecfg state$end"
 		win_icon=$img_wine_restart
 		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$img_wine_reload \
-			--window-icon=$img_desktop --center --separator=';' --form \
+			--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
 			--align=left --text "$w_text" --field="":LBL '' \
 			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
 			--field="Relaunch Winecfg UI":CHK 'FALSE' \
@@ -2821,7 +2871,7 @@ You can here restart Winecfg or Winetricks at next Winestarter launch. This feat
 Select the bottle you would like for a desktop file$end"
 		win_icon=$img_wine_desk_ui
 		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon \
-			--window-icon=$img_desktop --center --separator=';' --form \
+			--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
 			--align=left --text "$w_text" --field="":LBL '' \
 			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
 			)
@@ -2831,7 +2881,7 @@ Select the bottle you would like for a desktop file$end"
 You can choose between edit a entire bottle or the Nvidia OpenGL environment options only$end"
 		win_icon=$img_wine_ui
 		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon \
-			--window-icon=$img_desktop --center --separator=';' --form \
+			--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
 			--field="":LBL '' \
 			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
 			--field="Edit the whole bottle":CHK TRUE \
@@ -2869,8 +2919,8 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 }
 
 ## Script debug options
-#bash_opt='-x -c'
-bash_opt='-c'
+bash_opt='-x -c'
+#bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""

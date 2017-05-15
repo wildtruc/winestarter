@@ -9,7 +9,11 @@
 ## define per game conf files dir
 #scpt_dir=$HOME/.user_scripts
 scpt_dir=$HOME/.winestarter
-w_tricks=/usr/local/bin/winetricks
+w_tricks=$(find /usr/{bin,local/bin} -name winetricks)
+yad_bin=$(find /usr/{bin,local/bin} -name yad)
+convert_bin=$(find /usr/{bin,local/bin} -name convert)
+wrestool_bin=$(find /usr/{bin,local/bin} -name wrestool)
+
 wine_bin='wine'
 conf=$1
 
@@ -50,7 +54,7 @@ yad_warnings(){
 #	d_txt=$(printf "$dialog_list"|cut -d';' -f1)
 	d_btt=$(printf "$dialog_list"|cut -d';' -f1)
 	d_img=$(printf "$dialog_list"|cut -d';' -f2)
-	yad --width=400 --height=100 --title "" --button="$d_btt":1 --image=$d_img --text="$text" --timeout=3
+	$yad_bin --width=400 --height=100 --title "" --button="$d_btt":1 --image=$d_img --text="$text" --timeout=2
 #	zenity --title='' --warning --window-icon=$d_img --text="$text" --timeout=3
 }
 ## optimus special sets
@@ -94,6 +98,41 @@ fn_regedit(){
 		fi
 	fi
 }
+fn_mime_asso(){
+	## convert conf coma separated data in usable list.
+	mime_type_list=( $(printf "$local_association"| tr ',' '\n') )
+	if [ ${#mime_type_list[@]} -gt 0 ]; then
+	mime_log=$user_prefix/$bottle_prefix/mime_install.log
+	## create temp file only if type list is not empty.
+	reg_temp=$(mktemp --tmpdir mime.XXXXXXXX)
+	## loop on conf list, check and set if available.
+		for type in ${mime_type_list[@]}; do
+			mime_def=$(cat $scpt_dir/resources/mime-type.lst| grep "^$type")
+			if [ $(printf "$mime_def"| grep -c .) -gt 0 ]; then
+				file_type=$(printf "$mime_def"| cut -d':' -f1)
+				doc_type=$(printf "$mime_def"| cut -d':' -f2)
+				mime_type=$(printf "$mime_def"| cut -d':' -f3)
+				## controL if file type is not already setted
+				if [ $(cat $mime_log| grep -c "^$file_type") -eq 0 ]; then
+					## create the reg file from the collected vars
+					reg_base="REGEDIT4
+
+[HKEY_CLASSES_ROOT\\.$file_type]
+@=\"$doc_type\"
+\"Content Type\"=\"$mime_type\"
+[HKEY_CLASSES_ROOT\\$doc_type\\Shell\\Open\\command]
+@=\"winebrowser \\\"%1\\\"\""
+					echo "$reg_base" &> $reg_temp
+					## launch wine regedit on reg temp file setted.
+					$wine_bin regedit $reg_temp
+					## send newly installed report to bottle mime install log
+					echo "$file_type,$doc_type" &> $mime_log
+					## wipe and go to the next loop variable.
+				fi
+			fi
+		done
+	fi
+}
 fn_use_winepath(){
 	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; else ftp_elf='x86'; fi
 	if ! [ -n $wine_path/$ftp_elf ]; then mkdir -p $HOME/.winebin/$ftp_elf; fi
@@ -114,12 +153,12 @@ fn_use_winepath(){
 		dl_cmd(){ wget $pol_address/PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol $dl_dir/ 2>&1; }
 		cd $dl_dir
 		## yad progress bar
-		dl_cmd | track | yad --width=450 --title "$w_title" --text-align=center --text="$w_text" \
+		dl_cmd | track | $yad_bin --width=450 --title "$w_title" --text-align=center --text="$w_text" \
 		--window-icon=filesave --image=filesave --progress --auto-close
 		if [ -s $dl_dir/PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol ]; then
 			e_text="$vb\\Extracting $wine_ver $ftp_elf to $wine_path$end"
 			( tar -xf PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol 
-			)| yad --width=400 --title "$w_title" --text-align=center --text="$e_text" \
+			)| $yad_bin --width=400 --title "$w_title" --text-align=center --text="$e_text" \
 			--window-icon=filesave --progress --pulsate --auto-close
 			cp -Rf wineversion/$wine_ver/ $wine_path/$ftp_elf
 			_use_winepath_env=1
@@ -161,7 +200,7 @@ fn_install_tricks(){
 					$w_tricks $w_tricks_opts $w_list
 					printf "$w_list\n" >> $i_list_file
 				done
-				)| yad --width=250 --title "$w_title" --text-align=center --text="$e_text" \
+				)| $yad_bin --width=250 --title "$w_title" --text-align=center --text="$e_text" \
 				--window-icon=filesave --progress --pulsate --auto-close --no-buttons
 				perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
 			else
@@ -239,7 +278,7 @@ fn_extract_lnk(){
 	fi
 }
 fn_convert_desktop_file(){
-	if [ -s /usr/bin/convert ]; then
+	if [ -s $convert_bin ]; then
 	local $DESK_DIR
 	
 	exe_key=$(printf "$game_exe"| perl -pe "s/^.*\///p")
@@ -267,10 +306,10 @@ fn_convert_desktop_file(){
 				done
 			fi
 			if ! [ -s $dsk_dir/$dsk_name.desktop ]; then
-				if [ -x /usr/bin/yad ]; then
+				if [ -x $yad_bin ]; then
 					d_text0="$vb\\Desktop file auto detection for $dsk_key failed.\\nSelect a desktop file entry manually. Or just cancel to pass.$end"
 					dsk_list=$(printf "${desktop_file_list[*]}"| sed -n "s/.desktop//g;p"|tr '\n' '!')
-					dsk_seek=$(yad --width=400 --title "$w_title" --form --image=stock_dialog_question \
+					dsk_seek=$($yad_bin --width=400 --title "$w_title" --form --image=stock_dialog_question \
 					--window-icon=filesave --timeout=10 --timeout-indicator=bottom --separator="" \
 					--field="$d_text0":LBL '' --field="":CB "$dsk_list")
 					if ! [ "$dsk_seek" = '' ]; then dsk_name=$dsk_seek; else
@@ -307,7 +346,7 @@ fn_convert_desktop_file(){
 					scale_op=$(printf "%s\n" ${rank_list[*]}| sort -n| tail -1)
 					scale=$scale_op'x'$scale_op
 					d_icon_src=$l_icon_dir/$scale/apps/$d_icon.png
-					/usr/bin/convert $d_icon_src $d_emblem -scale $scale -composite $d_png_dir/$d_exec.png
+					$convert_bin $d_icon_src $d_emblem -scale $scale -composite $d_png_dir/$d_exec.png
 					if [ -s $d_png_dir/$d_exec.png ]; then
 						## replace icon
 						sed -ni "s|^\(Icon\)=\(.*\)|\1=$d_png_dir/$d_exec.png|i;p" $dsk_dir/$dsk_name
@@ -379,9 +418,9 @@ fn_install_exe(){
 		elif [ $(printf "$w_install_zip"| grep -c ".exe") -gt 0 ]; then
 			$wine_bin $w_install_zip $wine_opts
 		fi
-		if [ -x /usr/bin/yad ]; then
+		if [ -x $yad_bin ]; then
 			exe_text="$vb\\Please, select the executable to launch in $game_dir.$end"
-			exe_seek=$(yad --width=400 --title "$w_title" --form --image=stock_dialog_question \
+			exe_seek=$($yad_bin --width=400 --title "$w_title" --form --image=stock_dialog_question \
 			--window-icon=filesave --separator="" \
 			--field="$exe_text":LBL '' --field="":FL "$target_dir")
 			abort=$?
@@ -464,7 +503,7 @@ fn_game_dir_exist(){
 			if ! [ -s $target_app$game_dir/$game_exe ]; then
 				d_text="$vb\\App executable is not set:\\nChoose one in the list below.$end"
 				exe_ls=$( ( ls -1 $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/| tr '\n' '!'
-				)| yad --title 'WARMING' --width=400 --form --field="Please select one":CB \
+				)| $yad_bin --title 'WARMING' --width=400 --form --field="Please select one":CB \
 				--separator='' --text="$d_text" )
 				game_exe=$exe_ls
 				sed -ni "s|^\(\w*game_exe=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_exe\4|i;p" $config_file
@@ -532,6 +571,7 @@ reg_file=$(printf "$conf"| sed -n "s/\.conf//p")".reg"
 ## create and insert registry entry if any.
 #if [[ $(printf "$user_reg"| sed -n '$p') != '' ]]; then fn_regedit; fi
 fn_regedit
+if [ $(printf "$local_association"| grep -c .) -gt 0 ]; then fn_mime_asso; fi
 if [ $w_config = 1 ]; then fn_wineconf ; fi
 
 ## check one last time that appli directory exist
