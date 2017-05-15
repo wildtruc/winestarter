@@ -359,6 +359,7 @@ main_code(){
 		"1;_resume;Resume;fn_end_game_1;$img_wine_desk_ui")
 #		"2;_resume;Warnings;fn_end_game_2;$img_wine_desk_ui")
 		# window style and function
+		
 		win_type=1
 		# create main window variables
 		default_tab_create
@@ -382,6 +383,7 @@ $nf\winetstarter $conf_target.conf$end"
 		"3;;;;;LBL;;;"
 		"4;;;;$w_res_0;LBL;;;"
 		)
+		item_sep='!'
 		# start form display
 		win_type=1
 		ignore_loop=0
@@ -1695,13 +1697,13 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		basic_sets=(
 		"1;;;;;LBL;;;"
 		"2;;;;$w_reg_manual0;LBL;;;"
-		"3;$StrictDrawOrdering;StrictDrawOrdering;;$w_reg_def_SDO;CB;enabled,disabled;;"
-		"4;$csmt;csmt;;$w_reg_def_CSMT;CB;enabled,disabled;;"
-		"5;$DirectDrawRenderer;DirectDrawRenderer;;$nf DirectDrawRenderer$end;CB;opengl,gdi;;"
-		"6;$OffscreenRenderingMode;OffscreenRenderingMode;;$nf OffscreenRenderingMode$end;CB;backbuffer,fbo;;"
-		"7;$RenderTargetLockMode;RenderTargetLockMode;;$nf RenderTargetLockMode$end;CB;auto,disabled,readdraw,readtex,texdraw,textex;;"
-		"8;$UseGLSL;UseGLSL;;$nf UseGLSL$end;CB;enabled,disabled;;"
-		"9;$CheckFloatConstants;CheckFloatConstants;;$nf CheckFloatConstants$end;CB;enabled,disabled;;"
+		"3;$StrictDrawOrdering;StrictDrawOrdering;;$w_reg_def_SDO;CB;enabled#disabled;;"
+		"4;$csmt;csmt;;$w_reg_def_CSMT;CB;enabled#disabled;;"
+		"5;$DirectDrawRenderer;DirectDrawRenderer;;$nf DirectDrawRenderer$end;CB;opengl#gdi;;"
+		"6;$OffscreenRenderingMode;OffscreenRenderingMode;;$nf OffscreenRenderingMode$end;CB;backbuffer#fbo;;"
+		"7;$RenderTargetLockMode;RenderTargetLockMode;;$nf RenderTargetLockMode$end;CB;auto#disabled#readdraw#readtex#texdraw#textex;;"
+		"8;$UseGLSL;UseGLSL;;$nf UseGLSL$end;CB;enabled#disabled;;"
+		"9;$CheckFloatConstants;CheckFloatConstants;;$nf CheckFloatConstants$end;CB;enabled#disabled;;"
 		"10;$Nonpower2Mode;Nonpower2Mode;;$nf Nonpower2Mode$end;CB;repack;;"
 		"11;$mem_set;VideoMemorySize;;$w_reg_def_VID;CBE;$vid_mem;;"
 		"12;;;;$w_reg_manual1;LBL;;;"
@@ -1741,7 +1743,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 			"${misc_sets[@]}"
 			)
 		fi
-		item_sep=","
+		item_sep="#"
 		# start form display
 		win_type=1
 		ignore_loop=0
