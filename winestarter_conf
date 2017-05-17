@@ -2,11 +2,11 @@
 
 #PATH=$PATH
 colors(){
-main='#005400'
-warn='#FF3300'
-freeze='#b6b6b6'
-font='Noto Sans'
-size='10'
+#main='#005400'
+#warn='#FF3300'
+#freeze='#b6b6b6'
+#font='Noto Sans'
+#size='10'
 #vb='<span color="'$main'" weight="bold" font="'$font'" size="'$size'">'
 #vn='<span color="'$main'" weight="normal" font="'$font','$size'">'
 #rb='<span color="'$warn'" weight="bold" font="'$font','$size'">'
@@ -14,13 +14,18 @@ size='10'
 #bf='<span color="'$main'" weight="bold" font="'$font','$(($size+4))'">'
 #brf='<span color="'$warn'" weight="bold" font="'$font','$(($size+4))'">'
 #nf='<span weight="bold" font="'$font $size'">'
-vb='<span color="'$main'" weight="bold" font="'$font' '$size'">'
-vn='<span color="'$main'" weight="normal" font="'$font' '$size'">'
-rb='<span color="'$warn'" weight="bold" font="'$font' '$size'">'
-gb='<span color="'$freeze'" weight="bold" font="'$font' '$size'">'
-bf='<span color="'$main'" weight="bold" font="'$font' '$(($size+4))'">'
-brf='<span color="'$warn'" weight="bold" font="'$font' '$(($size+4))'">'
-nf='<span weight="bold" font="'$font' '$size'">'
+if [ -s $HOME/.winestarter/color.conf ]; then
+ . $HOME/.winestarter/color.conf
+fi
+vb='<span color="'$main'" weight="bold" font="'$font0' '$size0'">'
+vn='<span color="'$main'" weight="normal" font="'$font0' '$size0'">'
+rb='<span color="'$warn'" weight="bold" font="'$font0' '$size0'">'
+gb='<span color="'$freeze'" weight="bold" font="'$font0' '$size0'">'
+bf='<span color="'$main'" weight="bold" font="'$font1' '$size1'">'
+brf='<span color="'$warn'" weight="bold" font="'$font1' '$size1'">'
+#bf='<span color="'$main'" weight="bold" font="'$font' '$(($size+4))'">'
+#brf='<span color="'$warn'" weight="bold" font="'$font' '$(($size+4))'">'
+nf='<span weight="bold" font="'$font0' '$size0'">'
 
 end='</span>'
 vB=$vb
@@ -112,7 +117,8 @@ main_code(){
 			form_win=$(printf "${default_win[@]}"|tr ';' '\n')			
 		fi
 		if [ $win_type = 1 ]; then
-			$yad_bin --width=594 $t_plug --text="$w_text" --form $extended_opts \
+			w_width=$((594+$scale))
+			$yad_bin --width=$w_width $t_plug --text="$w_text" --form $extended_opts \
 			"${field_list[@]}" "${chk_list[@]}" --separator=';' --item-separator="$item_sep" > $temp &
 #			YAD_03=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
 		fi
@@ -191,7 +197,8 @@ main_code(){
 		done
 		if [ $win_type = 1 ]; then
 		kill $WAIT_UI_1
-			$yad_bin --width=700 --title "$w_title" --window-icon=$img_wine_desk_ui $main_opts \
+			w_width=$((700+$scale))
+			$yad_bin --width=$w_width --title "$w_title" --window-icon=$img_wine_desk_ui $main_opts \
 			--notebook --key=$key --tab-pos=right --tab-border=2 --text="$main_tab_text" \
 			"${t_display[@]}"
 			e_exit=$?
@@ -699,6 +706,7 @@ w_extra_script=\"$w_extra_script\""
 		insert=1
 	}
 	newconf_tricks(){
+		
 		_tricks_conf="
 ## first install launch and prefix creation (0) already set, (1) first launch
 w_install_tricks=1
@@ -1046,7 +1054,7 @@ export __GL_YIELD=\"$__GL_YIELD\"
 ## allow unofficial GLX implmentation. Mostly for debug mode or test, but can be useful
 ## in some case like Wine : off [0], on [1]
 export __GL_ALLOW_UNOFFICIAL_PROTOCOL=$__GL_ALLOW_UNOFFICIAL_PROTOCOL
-## if monitor can manage G-SYNC behaviour, this could impove display performance: off [0], on [1].
+## if monitor can manage G-SYNC behaviour, this could improve display performance: off [0], on [1].
 ## Disable __GL_SYNC_TO_VBLANK to get faster performance and also xorg conf options \"stereo\", \"overlays\"
 export __GL_GSYNC_ALLOWED=$__GL_GSYNC_ALLOWED
 ## ignore GLGS extension check. Could be useful in case of some missing extension in appli GL sets.
@@ -1830,8 +1838,8 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_tricks_cm_vc_found="$vb\\MS Foundation Class (mfc), often called by Visual C++ apps$end"
 		w_tricks_cm_m40="mfc40 library"
 		w_tricks_cm_m42="mfc42 library"
-		w_tricks_cm_phy="$vb\\PHYSX Nvidia package: can be very useful to impove  performance$end"
-		w_tricks_cm_font="$vb\\Windows full corefonts package: impove Wine fonts display (very useful)$end"
+		w_tricks_cm_phy="$vb\\PHYSX Nvidia package: can be very useful to improve  performance$end"
+		w_tricks_cm_font="$vb\\Windows full corefonts package: improve Wine fonts display (very useful)$end"
 		w_tricks_alt_packs="$vb\\Alternative packages (needed in particular cases):$end"
 		w_tricks_alt_ie8="IE8 pack in case GECKO mozilla package failed to load HTML pages"
 		w_tricks_alt_dot3="Dot NET version 3.5"
@@ -2110,7 +2118,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		w_nv_yield0="$vB Updating window moves yield: can be useful if some window has refresh issues:$end"
 		w_nv_yield1="$nf normal yield (''), no yield (NOTHING), background (USLEEP)$end"
 		w_nv_unofficial0="$vB Allow unofficial GLX implementation from appli (very optional):$end"
-		w_nv_gsync="$vB If monitor can manage G-SYNC behaviour, this option could impove performance:$end"
+		w_nv_gsync="$vB If monitor can manage G-SYNC behaviour, this option could improve performance:$end"
 		w_nv_glsl0="$vB This option permit to recompile GLSL and could be useful if appli is missing some extension in OpenGL sets:$end"
 		# use 'get_xrandr_list' to set the connected monitor list.
 		monitors_list=$(printf "${connect_[@]}"|tr '\n' '#')
@@ -2573,43 +2581,58 @@ select_wine_bin(){
 #delete_conf(){}
 ## manage ui font colors
 change_fonts_colors(){
-	unset font_color color_fonts
+	unset font_color color_fonts prev_colors prev_fonts
 	sleep 1
 	kill $YAD_PID
-	w_text="$bf Basic font colors$end$vb \\n \
-Change font UI colors at will, but keep in mind the sens of each of them: main, warning, unavialable.$end"
+	w_text="$bf\\Basic font colors and style$end$vb\\n\
+Change UI fonts colors and kind at will, but keep in mind the sens of each of them: main, warning, unavialable.$end"
+	w_tip="$rb\\WARNING$end$vn: Don't select fonts with more than 2 words if it's not a \"regular\" or \"italic\", it won't be displayed correctly.\nYou can also extend window width up to 100px if the horizontal scrollbar still appears in some tabs.$end"
 	font_color=$($yad_bin --width=480 --height=300 --title "$w_title" --image="$img_wine_desktop" \
-			--window-icon=$img_wine_desk_ui --text "$w_text" --form --separator="," --item-separator="" \
+			--window-icon=$img_wine_desk_ui --text "$w_text" --form --separator="|" --item-separator="," \
 			--field="":LBL '' \
 			--field="$vb Main messages color\t\t$end":CLR "$main" \
 			--field="$vb Warning messages color$end":CLR "$warn" \
 			--field="$vb Unavialable messages color$end":CLR "$freeze" \
-			--field="$vb Change normal font type$end":FN 'Sans Regular 10' \
-			--field="$vn\\Smaller and bigger fonts will be increment by -1 and +1.$end":LBL '')
+			--field="$vb Normal font type$end":FN "$font0 $size0" \
+			--field="$vb Titles font type$end":FN "$font1 $size1" \
+			--field="$vb Add more width to windoow display$end":SCL "$scale,0..100" \
+			--field="$w_tip":LBL '')
 	if [ $? = 1 ]; then bash $bash_opt $base_script; exit 0; fi
 	if [ $? = 0 ]; then
-		font_color=( $(printf "${font_color[*]}"| sed -n "s/^,//;s/\(^.*,\),,/\1/;s/,/\n/g;p") )
-		echo "${font_color[*]}"
-		for i in "${font_color[@]}"; do
-			color_fonts+=("$i")
-		done
-		C=0
-		fields=( 'main' 'warning' 'freeze' 'face' )
+#		prev_colors=$(printf "$font_color"| sed -n "s/^,//;s/\(^.*\),,/\1/p" ) #
+		prev_colors=$(printf "$font_color"| sed -n "s/^|//;s/\(^.*\)||/\1/p" ) #
 		
+		ifs=$IFS
+		IFS='|'
+		for i in ${prev_colors[@]} ; do
+			color_fonts+=("$i")
+			echo "$i"
+		done
+		echo "${color_fonts[@]}"
+		IFS=$ifs
+		C=0 ; D=0
+		## main color/font vars
+		fields=( 'main' 'warning' 'freeze' 'norm' 'big' 'scale' )
+		## stick collected new vars to script vars 
 		for colr in ${fields[@]}; do
 			previous=${color_fonts[$C]}
-			if [[ $colr == face ]]; then
-				font=$(printf "$colr"| grep -o "[0-9]*")
-				size=$(printf "$colr"| sed -n "s/\(^.*\) [0-9]*/\1/p")
-				fields+=("$font")
-				fiedds+=("$size")
-				echo "${fields[*]}"
+			if [[ $colr == norm || $colr == big ]]; then
+				## divide font block name into font name and size
+				echo "$D"
+				size=$(printf "$previous"| grep -o "[0-9]*")
+				font=$(printf "$previous"| sed -n "s/\(^.*\) [0-9]*/\1/p")
+				new_fields+=("font$D;$font")
+				new_fields+=("size$D;$size")
+				D=$[ $D+1 ]
+			else
+				new_fields+=("$colr;$previous")
 			fi
-			for f in ${fields[@]}; do
-				perl -ni -pe "s|^($f=['])(#\w*[0-9A-Z])(['])$|\1$previous\3|i" $(basename "$base_script")
-#			   perl -ni -pe "s|^($f=['])(#\w*[0-9A-Z])(['])$|\1$previous\3|i" /usr/local/bin/winestarter
-			done
 			C=$[ $C+1 ]
+		done
+		for f in "${new_fields[@]}"; do
+			cl_var=$(printf "$f"| cut -d';' -f1)
+			cl_val=$(printf "$f"| cut -d';' -f2)
+			perl -ni -pe "s|(^$cl_var=)'.*'$|\1'$cl_val'|i" $HOME/.winestarter/color.conf
 		done
 		bash $bash_opt $base_script
 	fi
@@ -2921,8 +2944,8 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 }
 
 ## Script debug options
-bash_opt='-x -c'
-#bash_opt='-c'
+#bash_opt='-x -c'
+bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""

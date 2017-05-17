@@ -1,3 +1,12 @@
 pdf:PDFfile:application/pdf
 jpg:JPGfile:image/jpeg
 3gp:3GPfile:video/3gpp
+mp4:MP4file:video/mp4
+ts:TSfile:text/vnd.trolltech.linguist
+mpeg:MPEGfile:video/mpeg
+mp3:MP3file:audio/mpg
+flac:FLACfile:audio/flac
+ogg:OGGfile:audio/x-vorbis+ogg
+wma:WMAfile:audio/x-ms-wma
+wav:WAVfile:audio/x-wav
+

@@ -1,15 +1,25 @@
 # Change log & reports
 
 ### Issues
-*v0.97.3* - winestarter_conf - Status: on it.
+[ ] *v0.97.4* - winestarter_conf
+ - mime-type is now added in wine regeistry, but it didn't resolve the way of some app (like captvty) manage the bottle system to launch some file for reading. 
+ 
+[x] *v0.97.3* - winestarter_conf
  - #1 ( 11/05/17 ) - new extended feature for local mime-type launch display uncorrectly (add a unwanted horiz scrollbar).
  - #2 ( 12/05/17 ) - other distro than mine (fedora) seems to have difficulties to find mandatory binaries (yad, nvidia, wintricks, etc). Need to replace by a short 'find' command.
  
-*v0.97.2* - winestarter_conf - Status: fixed.
+[x] *v0.97.2* - winestarter_conf
  - #1 ( 11/05/17 ) - Discovered with helping hand that Debian grep can't read some regex when a point (.) is not mark with a backslash (and also prefer egrep in place grep).
 
 -----------
 ### Change Log
+*( 17/05/17 ) v0.97.5* - winestarter
+ - When DLLs were installed by winetricks gui, script was still trying install something at launch. Now process is automaticcaly turn to off if conf tricks list is empty.
+ 
+*( 17/05/17 ) v0.97.5* - winestarter_conf
+ - To fix the horizontal scrollbar unwanted issue, added a color.conf file that can managed displayed font style size and wiwdow size by adding more width. This way, user can change from default desktop font or font size to a more adapted.
+ - To fix the '!' yad output separator that couild call bash history by mistake, all yad separators have been changed to comma or other not buggy symbols.
+ 
 *( 14/05/17 ) v0.97.4* - winestarter_conf
  - v0.97.3 issue #1 - fixed
  - v0.97.3 issue #2 - fixed

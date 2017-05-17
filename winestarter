@@ -22,7 +22,9 @@ conf=$1
 ## Is per game specific wine conf file exist ?
 [ -n $scpt_dir/configs/$conf ]|| exit 0
 config_file=$scpt_dir/configs/$conf
-. $config_file
+ . $scpt_dir/configs/$conf
+ . $scpt_dir/color.conf
+
 [[ $auto_set ]]|| auto_set=0
 [[ $set_desktop_env ]]|| set_desktop_env=0
 [[ $use_optimus ]]|| use_optimus=0
@@ -35,17 +37,15 @@ DESK_DIR=$(cat $HOME/.config/user-dirs.dirs| grep "XDG_DESKTOP_DIR"| \
 sed -n "s|\"||g;s|\$HOME|$HOME|p")
 DESK_DIR=("$DESK_DIR")
 ## yad fonts colors
-main='#005400'
-warn='#FF3300'
-freeze='#b6b6b6'
-
-vb='<span color="'$main'" weight="bold" font="10">'
-rb='<span color="'$warn'" weight="bold" font="10">'
-gb='<span color="'$freeze'" weight="bold" font="10">'
-bf='<span color="'$main'" weight="bold" font="14">'
-brf='<span color="'$warn'" weight="bold" font="14">'
-nf='<span weight="bold" font="10">'
+vb='<span color="'$main'" weight="bold" font="'$font0' '$size0'">'
+vn='<span color="'$main'" weight="normal" font="'$font0' '$size0'">'
+rb='<span color="'$warn'" weight="bold" font="'$font0' '$size0'">'
+gb='<span color="'$freeze'" weight="bold" font="'$font0' '$size0'">'
+bf='<span color="'$main'" weight="bold" font="'$font1' '$size1'">'
+brf='<span color="'$warn'" weight="bold" font="'$font1' '$size1'">'
+nf='<span weight="bold" font="'$font0' '$size0'">'
 end='</span>'
+
 ## yad warning messages
 warning='dialog-warning'
 inform='dialog-info'
@@ -54,7 +54,8 @@ yad_warnings(){
 #	d_txt=$(printf "$dialog_list"|cut -d';' -f1)
 	d_btt=$(printf "$dialog_list"|cut -d';' -f1)
 	d_img=$(printf "$dialog_list"|cut -d';' -f2)
-	$yad_bin --width=400 --height=100 --title "" --button="$d_btt":1 --image=$d_img --text="$text" --timeout=2
+	$yad_bin --width=400 --height=100 --title "" --button="$d_btt":1 \
+	--image=$d_img --text="$text" --timeout=3
 #	zenity --title='' --warning --window-icon=$d_img --text="$text" --timeout=3
 }
 ## optimus special sets
@@ -164,7 +165,7 @@ fn_use_winepath(){
 			_use_winepath_env=1
 		else
 			printf "# Downloaded package missing. Using defautl Wine.\n"
-			text="$vb\\Downloaded package missing.\nUsing system default Wine$end"
+			text="$bf\\Downloaded package missing$end$vb.\nUsing system default Wine$end"
 			dialog_list="gtk-close;$warning"; yad_warnings
 		fi
 	fi	
@@ -177,20 +178,27 @@ fn_install_tricks(){
 	unset diff_tricks
 	i_list_file=$user_prefix/$bottle_prefix/tricks_install.log
 	w_list_file=$user_prefix/$bottle_prefix/winetricks.log
+	## when DLLs are installed by winetricks gui only,
+	## don't push anything in winestarter log and turn tricks process to off.
+	if [[ -e $w_list_file && ! -e $i_list_file ]]; then
+		w_install_tricks=0
+		perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
+	fi
+	## make the diff between winetricks log and winestarter log
 	if [ -s $i_list_file ]; then
 		c_tricks_list=$(printf "$w_tricks_list"|tr ',' '\n')
 		diff_tricks=$(printf "$c_tricks_list" | grep -vFf "$i_list_file")
 		diff_count=$(printf "$diff_tricks" | egrep -c .)
 	else
 		diff_count=0
-		
 	fi
-	
+	## if any diff, choose the right list to parse
 	if [ $diff_count -gt 0 ]; then
 		w_tricks_list=( $diff_tricks )
 	else
 		w_tricks_list=( $(echo "$w_tricks_list"| sed -n "s/,/\n/g;p") )
 	fi
+	## now, let's do winetricks job
 	if [ $w_install_tricks -gt 0 ]; then
 		if [ "$w_tricks_list" ]; then
 			if [ -x $w_tricks ]; then
@@ -205,12 +213,12 @@ fn_install_tricks(){
 				perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
 			else
 				printf "# Winetricks was not found, install it first\n"
-				text="$vb\\Winetricks was not found, install it first$end"
+				text="$bf\\Winetricks was not found$end\n$vb\\Install it first$end"
 				dialog_list="gtk-close;$warning"; yad_warnings
 				exit 0
 			fi
 		fi
-		## add winetricks already installed
+		## add winetricks already installed to winestarter log
 		if [ -s $w_list_file ]; then
 			w_tricks_res=$scpt_dir/resources/tricks_wo.txt
 			if ! [ -s $w_tricks_res ]; then
@@ -313,7 +321,7 @@ fn_convert_desktop_file(){
 					--window-icon=filesave --timeout=10 --timeout-indicator=bottom --separator="" \
 					--field="$d_text0":LBL '' --field="":CB "$dsk_list")
 					if ! [ "$dsk_seek" = '' ]; then dsk_name=$dsk_seek; else
-					text="$vb\\If you want a custom desktop file entry, launch winestarter_conf:$end$rb\nEdit or create a desktop file$end"
+					text="$bf\\There no desktop file entry for your app$end\n$vb\\If you want one, launch winestarter_conf and choose button:$end$rb\nEdit or create a desktop file$end"
 					dialog_list="gtk-close;$warning"; yad_warnings
 					fi
 				fi
@@ -358,13 +366,13 @@ fn_convert_desktop_file(){
 		else
 			## not found
 			echo "»»»» NO DESKTOP FILE TO PROVIDE. PASSED."
-			text="$rb\\No desktop file found$end$vb.\nAuto desktop file entry creation can't process\nUse winestarter_conf instead$end"
+			text="$brf\\No desktop file found$end$vb.\nAuto desktop file entry creation can't process\nUse winestarter_conf instead$end"
 			dialog_list="gtk-close;$inform"; yad_warnings
 		fi		
 	fi
 	else
 		echo "»»»» WARNING: IMAGEMAGIK CONVERT BINARY NOT FOUND. PASSED."
-		text="$rb\\ImageMagick converter not found.$end$vb\nIf you xant to have desktop file entry convertion you need to install ImageMagick first.$end"
+		text="$brf\\ImageMagick converter not found.$end$vb\nIf you xant to have desktop file entry convertion you need to install ImageMagick first.$end"
 		dialog_list="gtk-close;$warning"; yad_warnings
 	fi
 }
@@ -440,7 +448,7 @@ fn_install_exe(){
 	fi	
 	if [ $abort = 1 ]; then
 		printf "# EXE path was not found.\n# Defining the right install executable path is mandatory.\n# EXIT.\n"
-		text="$rb\\EXE path was not found.$end$vb\nDefining the right install executable path is mandatory.\n\nEXIT.$end"
+		text="$brf\\EXE path was not found.$end$vb\nDefining the right install executable path is mandatory.\n\nEXIT.$end"
 		dialog_list="gtk-close;$warning"; yad_warnings
 		exit 0
 	else
@@ -580,7 +588,7 @@ if ! [ -s $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; 
 	IFS=$ifs 
 	echo "»»»» Can't find $game_exe for $user_prefix/$bottle_prefix
 »»»» ABORT & EXIT"
-	text="$vb\\Can't find an executable for:$end\n$rb\\$user_prefix/$bottle_prefix$end\n\n$vb\\Script will now end on exception.$end"
+	text="$bf\\Can't find an executable for:$end\n$rb\\$user_prefix/$bottle_prefix$end\n\n$vb\\Script will now end on exception.$end"
 	dialog_list="gtk-close;$warning"; yad_warnings
 	exit 0
 fi

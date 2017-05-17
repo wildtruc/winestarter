@@ -10,11 +10,14 @@ install:
 	mkdir -p $(CONF_DIR)/icons
 	mkdir -p $(CONF_DIR)/configs
 	mkdir -p $(CONF_DIR)/desktop
+	mkdir -p $(CONF_DIR)/resources
 	mkdir -p /usr/local/share/applications
 	mkdir -p /usr/local/share/pixmaps
 #	cp -f ./winestarter.conf $(CONF_DIR)/
 	cp -Rf ./emblems $(CONF_DIR)/
 	cp -Rf ./png $(CONF_DIR)/
+	cp -f ./color.conf $(CONF_DIR)/
+	cp -f ./mime-* $(CONF_DIR)/resources/
 	cp -f ./winestarter /usr/local/bin/
 	cp -f ./winestarter_conf /usr/local/bin/
 	cp -f ./winestarter.desktop /usr/local/share/applications/
