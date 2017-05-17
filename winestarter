@@ -47,8 +47,9 @@ nf='<span weight="bold" font="'$font0' '$size0'">'
 end='</span>'
 
 ## yad warning messages
+png_stock=$HOME/.winestarter/png/defaults
 warning='dialog-warning'
-inform='dialog-info'
+inform='dialog-information'
 # text=""; dialog_list="$text;gtk-close;$inform"; yad_warnings
 yad_warnings(){
 #	d_txt=$(printf "$dialog_list"|cut -d';' -f1)
