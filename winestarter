@@ -570,14 +570,15 @@ fn_root_key(){
 		sed_key=''
 		win_prog=''
 	}
+#	if [ $app_portable = 1 ]; then
+#		end_target=$user_prefix/$bottle_prefix/drive_c
+#	else
+#		end_target=$user_prefix/$bottle_prefix/drive_c/$game_dir
+#	fi
 	if [ "$game_dir" != '' ]; then
-		if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then
-			pf_key_no
-		else
-			pf_key_yes
-		fi
+		if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then pf_key_no; else pf_key_yes; fi
 	else
-		pf_key_yes
+		if [ $app_portable = 1 ]; then pf_key_no; else pf_key_yes; fi
 	fi
 }
 fn_wine_binary(){

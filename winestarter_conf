@@ -414,7 +414,7 @@ $nf\winetstarter $conf_target.conf$end"
 		# "user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
 		echo "2222222222222"
 #		if [[ $_var == special_cmd || $_var == wine_elf ]]; then
-		if [[ $_var == special_cmd || $_var == start_cmd ]]; then
+		if [[ $_var == special_cmd || $_var == start_cmd || $_var == app_portable ]]; then
 			if [[ $_val == 'TRUE' ]]; then _val=1; else _val=0; fi
 		fi
 		if [[ $_var == bottle_prefix ]]; then
@@ -516,6 +516,8 @@ game_path=\"$game_path\"
 ## Full game dir name in Program Files (including Program Files dir name)
 game_dir=\"$game_dir\"
 game_exe=\"$game_exe\"
+## set if the app is portable or to be installed in C: drive root: no (0), yes (1).
+app_portable=$app_portable
 ## if classic wine command fail, execute .exe inside the directory
 special_cmd=$special_cmd
 ## wine can use \"start\" command to launch apps or installer from absolute path
@@ -1485,9 +1487,10 @@ $nf Check here the sections you would like to configure.$end"
 		w_wine_user_prefix="$vB\\Set user prefix if not the user's default one:$end"
 		w_wine_prefix="$vB\\Set the Wine Bottle prefix to use:$end"
 		w_wine_prefix_tip="$nf\\\Ex:$end wine.my_bottle, no space and \"wine.\" suffix is mandatory."
-		w_wine_game_path="$vB\\Set the full game/appli path if different from bottle:$end"
-		w_wine_game_dir="$vB\\Set full Wine style game/appli directory (if already existing):$end"
-		w_wine_game_exe="$vB\\Set the Wine game/appli executable to launch (if already existing):$end"
+		w_wine_game_path="$vB\\Set the full game/app path if different from bottle:$end"
+		w_wine_game_dir="$vB\\Set full Wine style game/app directory:$end$vn (if already existing)$end"
+		w_wine_game_exe="$vB\\Set the Wine game/app executable to launch:$end$vn (if already existing)$end"
+		w_wine_portable="$vb\\Set if the game/app is portable or you wish to install an already existing path to the C: drive root:$end"
 		w_wine_game_spl="$vb\\Set if the app have to be started from the app directory:$end"
 #		w_wine_elf="$vb Set if the app elf type is in 64 bits (experimental):$end"
 		w_wine_elf_tip="$nf\\Note:$end The initial install is actually set to Wine $nf"$elf"Bits$end. If you would like a different install type, you need to create a new prefix."
@@ -1516,9 +1519,11 @@ $nf Check here the sections you would like to configure.$end"
 		"11;$game_dir;game_dir;;$nf Full Wine appli directory$end;DIR;;;"
 		"12;;;;$w_wine_game_exe;LBL;;;"
 		"13;$game_exe;game_exe;;$nf EXE file$end;FL;;;"
-		"14;;;;$w_wine_game_spl;LBL;;;"
-		"15;$special_cmd;special_cmd;;execute the binary file inside the directory;CHK;;;"
-		"16;$start_cmd;start_cmd;;execute the binary from absolute path (uding Wine \"start\" command);CHK;;;")
+		"14;;;;$w_wine_portable;LBL;;;"
+		"15;$app_portable;app_portable;;Portable app (or to be set at C: drive root);CHK;;;"
+		"16;;;;$w_wine_game_spl;LBL;;;"	
+		"17;$special_cmd;special_cmd;;execute the binary file inside the directory;CHK;;;"
+		"18;$start_cmd;start_cmd;;execute the binary from absolute path (using Wine \"start\" command);CHK;;;")
 #		"16;;;;;LBL;;;"
 #		"17;;;;$w_wine_elf_tip;LBL;;;"
 #		)

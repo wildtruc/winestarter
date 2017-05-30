@@ -1,6 +1,9 @@
 # Change log & reports
 
 ### Issues
+[x] *v0.97.5* - winestarter_conf
+ - It seems in some case when willing to set an already existing app path, winestarter fail to auto set the link to C drive root because it dosen't enough data to define the link 'rootkey' var properly and then link it inside Program Files folder.
+
 [ ] *v0.97.4* - winestarter_conf
  - mime-type is now added in wine regeistry, but it didn't resolve the way of some app (like captvty) manage the bottle system to launch some file for reading. 
 
@@ -13,6 +16,9 @@
 
 -----------
 ### Change Log
+*( 30/05/17 ) v0.97.6* - winestarter_conf
+ - v0.97.5 issue - Add an app portable option : Option prevents and define the C drive root as app root.
+  
 *( 30/05/17 ) v0.97.6* - winestarter
  - fn_extract_lnk was messing when it didn't find the .lnk file to reach the app executabe. Modified by seeking a possible .lnk on desktop directory then trying to find in the bottle. If nothing is auto-detect, then a yad window pop up asking for choosing one.
  - wine 'winepath' function is now used to translate unix path form to C: directory path form. Yes, I didn't knew it. :)
