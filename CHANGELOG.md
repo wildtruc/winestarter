@@ -3,7 +3,7 @@
 ### Issues
 [ ] *v0.97.4* - winestarter_conf
  - mime-type is now added in wine regeistry, but it didn't resolve the way of some app (like captvty) manage the bottle system to launch some file for reading. 
- 
+
 [x] *v0.97.3* - winestarter_conf
  - #1 ( 11/05/17 ) - new extended feature for local mime-type launch display uncorrectly (add a unwanted horiz scrollbar).
  - #2 ( 12/05/17 ) - other distro than mine (fedora) seems to have difficulties to find mandatory binaries (yad, nvidia, wintricks, etc). Need to replace by a short 'find' command.
@@ -13,6 +13,13 @@
 
 -----------
 ### Change Log
+*( 30/05/17 ) v0.97.6* - winestarter
+ - fn_extract_lnk was messing when it didn't find the .lnk file to reach the app executabe. Modified by seeking a possible .lnk on desktop directory then trying to find in the bottle. If nothing is auto-detect, then a yad window pop up asking for choosing one.
+ - wine 'winepath' function is now used to translate unix path form to C: directory path form. Yes, I didn't knew it. :)
+ - extract section of fn_install_exe wasn't creating correctly the install path. Now extracted files are pull at the root of the C drive instead of Program Files and asking for an install directory if it didn't find one (except for auto-extractible).
+ - fixed unrar and 7z command lines. Added a filter for tar.7z.
+ - fixed bad diff in reg files.
+
 *( 17/05/17 ) v0.97.5* - winestarter
  - When DLLs were installed by winetricks gui, script was still trying install something at launch. Now process is automaticcaly turn to off if conf tricks list is empty.
  

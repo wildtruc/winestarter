@@ -513,7 +513,7 @@ user_prefix=$user_prefix
 bottle_prefix=\"$bottle_prefix\"
 ## default system path of the game/appli if not in the chosen Wine prefix
 game_path=\"$game_path\"
-## Full game dir name in Progrma Files (including Program Files dir name)
+## Full game dir name in Program Files (including Program Files dir name)
 game_dir=\"$game_dir\"
 game_exe=\"$game_exe\"
 ## if classic wine command fail, execute .exe inside the directory
@@ -855,6 +855,8 @@ w_tricks_list=\"$w_tricks_list\""
 				if [ $(printf "$local_association"| grep -c .) -eq 0 ]; then _var='local_association'; fi
 				_val=''
 			fi
+			## registering/unregistering part
+			
 			if [[ $from_config = 0 || $insert_section = 1 ]]; then
 				new_conf_list+=("$_var=$_val")
 #				local local_association="$_val"
@@ -1727,22 +1729,21 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		"20;;;;$w_reg_2_setted;LBL;;;"
 		"21;unset;Selected_Files;;$w_reg_2_set_1;MFL;;;"
 		"22;unset;mime_preset;;$w_reg_2_set_2;CB;$res_mime_preset;;"
-		)
-#		"21;;;;;LBL;;;"
-#		"22;;;;$w_reg_manual3;LBL;;;"
-#		"23;;;;$w_reg_3_tip0;LBL;;;"
-#		"24;;;;$w_reg_3_warn0;LBL;;;"
-#		"25;;;;;LBL;;;"
-#		"26;;;;$w_reg_3_titl0;LBL;;;"
-#		"27;unset;;;$w_reg_3_cmd0;CB;register#unregister;;"
-#		"28;unset;;;$w_reg_3_cmd1;CB;wine32#wine64#both;;"
-#		"29;$bottle_prefix/drive_c/windows;;;$w_reg_3_cmd2;MFL;;;"
-#		"30;;;;;LBL;;;"
-#		"31;;;;$w_reg_3_titl1;LBL;;;"
-#		"32;unset;;;$w_reg_3_cmd3;CB;user#system;;"
-#		"33;;misc_reg;;$w_reg_3_cmd4;TXT;;;"
-#		${previous_reg[@]}
-#		)
+		"23;;;;;LBL;;;"
+		"24;;;;$w_reg_manual3;LBL;;;"
+		"25;;;;$w_reg_3_tip0;LBL;;;"
+		"26;;;;$w_reg_3_warn0;LBL;;;"
+		"27;;;;;LBL;;;"
+		"28;;;;$w_reg_3_titl0;LBL;;;"
+		"29;unset;dll_reg__type;;$w_reg_3_cmd0;CB;register#unregister;;"
+		"30;unset;dll_elf_type;;$w_reg_3_cmd1;CB;wine32#wine64#both;;"
+		"31;$bottle_prefix/drive_c/windows;dll_file_list;;$w_reg_3_cmd2;MFL;;;"
+		"32;;;;;LBL;;;"
+		"33;;;;$w_reg_3_titl1;LBL;;;"
+		"34;unset;misc_reg_type;;$w_reg_3_cmd3;CB;user#system;;"
+		"35;;misc_reg_val;;$w_reg_3_cmd4;TXT;;;"
+		${previous_reg_edit[@]}
+		) 
 #		"11;$edit_button;user_reg;;$w_reg_manual1;FBTN;;;"
 #		)
 		if [ $_extended = 1 ]; then
@@ -2502,6 +2503,9 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 }
 ########### MAIN ###########
 export yad_bin=$(find /usr/{bin,local/bin} -name yad)
+export conv_bin=$(find /usr/{bin,local/bin} -name convert)
+export icot_bin=$(find /usr/{bin,local/bin} -name icotool)
+export wres_bin=$(find /usr/{bin,local/bin} -name wrestool)
 # PlayOnLinux packages download window
 select_win_bin(){ colors ; icons_set ; select_wine_bin; }
 edit_reg_bin(){ colors ; icons_set ; edit_regfile; }
@@ -2688,7 +2692,7 @@ edit_desktop(){
 	# set the icon type to extract
 	ico_type=14
 	# extract the icon
-	/usr/bin/wrestool -x -t $ico_type -o $_path_set/icons $exe_path
+	$wres_bin -x -t $ico_type -o $_path_set/icons $exe_path
 	exe_name=$(printf "$exe_path"| sed -n "s|^.*/||g;p")
 	default_name=$(printf "$exe_name"| sed -n "s/.exe$//p")
 	config_name=$(printf "$config_file"|sed -n "s|^.*/||p")
@@ -2714,14 +2718,14 @@ edit_desktop(){
 	def_list=('256' '128' '64' '48')
 	for _def in ${def_list[@]}; do
 		# look for index for the asked definition
-		idx=$(/usr/bin/icotool -l $_path_set/icons/$exe_name\_$ico_type\_*.ico| \
+		idx=$($icot_bin -l $_path_set/icons/$exe_name\_$ico_type\_*.ico| \
 		grep "\(width=$_def\).*\(bit-depth=32\)"| sed -n "s/^.*--index=\([0-9]\).*$/\1/g;p")
 		if [[ $idx > 0 ]]; then
-			/usr/bin/icotool -x -i $idx -o $_path_set/png $_path_set/icons/$exe_name\_$ico_type\_*.ico
+			$icot_bin -x -i $idx -o $_path_set/png $_path_set/icons/$exe_name\_$ico_type\_*.ico
 			png_file=$(ls -1 $_path_set/png/$exe_name\_$ico_type*\_$_def\x$_def*.png)
 			thb_file=$_path_set/png/thumb/$(printf "$png_file"| sed -n "s/^.*\///g;p")
 			# create thumbnail for yad UI
-			/usr/bin/convert $png_file -scale 48x48 $thb_file
+			$conv_bin $png_file -scale 48x48 $thb_file
 			# make def field readable
 			png_def="$_def"x"$_def"
 			icon_id+=("$thb_file")
@@ -2745,7 +2749,7 @@ edit_desktop(){
 		## add the desktop icon to the icon list if extracted from the desktop file entry
 		# make a thumbnail for yad UI
 		thb_file=$_path_set/png/thumb/$(printf "$png_file"| sed -n "s/^.*\///g;p")
-		/usr/bin/convert $png_file -scale 48x48 $thb_file
+		$conv_bin $png_file -scale 48x48 $thb_file
 		# get image dimensions
 		png_def=$(file $png_file | perl -pe "s| ||g;s|^.*,([0-9]*.*)x([0-9]*.*),[0-9].*$|\1x\2|p")
 		# add it to the list
@@ -2846,7 +2850,7 @@ $vb You can create or modify every main fields of a desktop file$end"
 					fi
 				fi
 			done
-			/usr/bin/convert $fld_entry $emblem_png $scale -composite $_img_set/$exe_name.png
+			$conv_bin $fld_entry $emblem_png $scale -composite $_img_set/$exe_name.png
 			fld_entry=$_img_set/$exe_name.png
 			keys="$fld_var=$fld_entry"
 		fi
@@ -2944,8 +2948,8 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 }
 
 ## Script debug options
-#bash_opt='-x -c'
-bash_opt='-c'
+bash_opt='-x -c'
+#bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""
