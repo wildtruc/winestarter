@@ -859,23 +859,23 @@ w_tricks_list=\"$w_tricks_list\""
 			fi
 			## registering/unregistering part
 			# dll_reg_type, dll_elf_type, dll_file_list - misc_reg_type,misc_reg_val
-			if [[ $_var == dll_reg_type ]]; then
-				if [[ $_val != unset ]]; then reg_proc=1; else reg_proc=0; fi
-			fi
-			if [ $reg_proc -gt 0 ]; then
-				if [[ $_var == dll_reg_type ]]; then
-					if [[ $_val == register ]]; then reg_class=1; else reg_class=0; fi
-				fi
-				if [[ $_var == dll_elf_type ]]; then
-					if [[ $_val == 32 ]]; then reg_elf=32; else reg_elf=64; fi
-				fi
-				if [[ $_var == dll_file_list ]]; then
-					if [[$_val != '' ]]; then
-						echo
-					fi
-				fi		
-				dll_file_manager+=()
-			fi
+#			if [[ $_var == dll_reg_type ]]; then
+#				if [[ $_val != unset ]]; then reg_proc=1; else reg_proc=0; fi
+#			fi
+#			if [ $reg_proc -gt 0 ]; then
+#				if [[ $_var == dll_reg_type ]]; then
+#					if [[ $_val == register ]]; then reg_class=1; else reg_class=0; fi
+#				fi
+#				if [[ $_var == dll_elf_type ]]; then
+#					if [[ $_val == 32 ]]; then reg_elf=32; else reg_elf=64; fi
+#				fi
+#				if [[ $_var == dll_file_list ]]; then
+#					if [[$_val != '' ]]; then
+#						echo
+#					fi
+#				fi		
+#				dll_file_manager+=()
+#			fi
 			if [[ $from_config = 0 || $insert_section = 1 ]]; then
 				new_conf_list+=("$_var=$_val")
 #				local local_association="$_val"
