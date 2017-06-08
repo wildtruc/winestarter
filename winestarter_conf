@@ -858,7 +858,24 @@ w_tricks_list=\"$w_tricks_list\""
 				_val=''
 			fi
 			## registering/unregistering part
-			
+			# dll_reg_type, dll_elf_type, dll_file_list - misc_reg_type,misc_reg_val
+			if [[ $_var == dll_reg_type ]]; then
+				if [[ $_val != unset ]]; then reg_proc=1; else reg_proc=0; fi
+			fi
+			if [ $reg_proc -gt 0 ]; then
+				if [[ $_var == dll_reg_type ]]; then
+					if [[ $_val == register ]]; then reg_class=1; else reg_class=0; fi
+				fi
+				if [[ $_var == dll_elf_type ]]; then
+					if [[ $_val == 32 ]]; then reg_elf=32; else reg_elf=64; fi
+				fi
+				if [[ $_var == dll_file_list ]]; then
+					if [[$_val != '' ]]; then
+						echo
+					fi
+				fi		
+				dll_file_manager+=()
+			fi
 			if [[ $from_config = 0 || $insert_section = 1 ]]; then
 				new_conf_list+=("$_var=$_val")
 #				local local_association="$_val"
@@ -880,8 +897,12 @@ w_tricks_list=\"$w_tricks_list\""
 ## \"UseGLSL\"=\"readtex\"
 ## \"VideoMemorySize\"=\"(memory size of your graphic card)\"
 user_reg=''
-## Allow local system apps to launch some file type:
-local_association=\"$local_association\""
+## Allow local system apps to launch some mime-file type:
+local_association=\"$local_association\"
+## Register/unsregister DLLs libraies:
+## example: 1,32,foo.dll;0,64,foo.dll, where 1 is register and 0 unregister
+## and elf type is the real elf type and not the wierd reverse MS one.
+dll_file_manager\"$dll_file_manager\""
 		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
 		printf "$_reged_conf\n" >> $tmp_conf
 		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
@@ -1739,8 +1760,9 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		"25;;;;$w_reg_3_tip0;LBL;;;"
 		"26;;;;$w_reg_3_warn0;LBL;;;"
 		"27;;;;;LBL;;;"
+		"27;;;;$rb\\THE FUNCTIONS BELOW ARE ACTUALLY UNUSABLE$end;LBL;;;"
 		"28;;;;$w_reg_3_titl0;LBL;;;"
-		"29;unset;dll_reg__type;;$w_reg_3_cmd0;CB;register#unregister;;"
+		"29;unset;dll_reg_type;;$w_reg_3_cmd0;CB;register#unregister;;"
 		"30;unset;dll_elf_type;;$w_reg_3_cmd1;CB;wine32#wine64#both;;"
 		"31;$bottle_prefix/drive_c/windows;dll_file_list;;$w_reg_3_cmd2;MFL;;;"
 		"32;;;;;LBL;;;"
@@ -2953,8 +2975,8 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 }
 
 ## Script debug options
-bash_opt='-x -c'
-#bash_opt='-c'
+#bash_opt='-x -c'
+bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""
