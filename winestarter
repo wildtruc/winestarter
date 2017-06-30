@@ -16,6 +16,7 @@ wrestool_bin=$(find /usr/{bin,local/bin} -name wrestool)
 strings_bin=$(find /usr/{bin,local/bin} -name strings)
 
 wine_bin='wine'
+wineboot_bin='wineboot'
 conf=$1
 
 ## create the user script conf directory if it doesn't exist
@@ -78,32 +79,50 @@ fn_regedit(){
 		if [[ $(cat -n $user_prefix/$bottle_prefix/$reg_file| grep -c .) -ge 3 ]]; then
 #			printf "boom!\n"
 			$wine_bin regedit $user_prefix/$bottle_prefix/$reg_file
+			$wineboot_bin -r
 		else
 			IFS=$ifs ; exit 0
 		fi
 	else
-		previous_reg=$(( $(cat $user_prefix/$bottle_prefix/$reg_file| grep -c .)+1 ))
-		new_reg=$(printf "$user_reg"|grep -c .)
-		video_chk_prev=$(cat $user_prefix/$bottle_prefix/$reg_file| egrep "(^.*Video*)"| grep -o "[0-9]*")
-		video_chk_new=$(printf "$user_reg"| egrep "(^.*Video*)"| grep -o "[0-9]*" )
-#		if [ $user_prefix/$bottle_prefix/$reg_file ]
-		if [ "$video_chk_prev" != '' -o "$video_chk_new" != '' ]; then
-			if [ $video_chk_new -ne $video_chk_prev ]; then
-				new_reg=$(($new_reg+1))
-			fi
-		fi
-		if [ $new_reg -ne $(($previous_reg-2)) ]; then
-#		if [ $new_reg -ne $previous_reg ]; then
-			if [ $new_reg -gt 0 ]; then
-				$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Direct3D
-				printf "REGEDIT4\n\n$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file
+		previous_reg=$user_prefix/$bottle_prefix/$reg_file
+		printf "REGEDIT4\n\n$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file.new
+		new_reg=$user_prefix/$bottle_prefix/$reg_file.new
+		
+		if [ $(diff -q $previous_reg $new_reg| grep -c .) -gt 0 ]; then
+			if [ $(cat $user_prefix/$bottle_prefix/$reg_file.new| grep -c .) -gt 0 ]; then
 #				$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Direct3D
+				printf "REGEDIT4\n\n$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file			
 				$wine_bin regedit $user_prefix/$bottle_prefix/$reg_file
 			else
 				$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Direct3D
 				printf "" > $user_prefix/$bottle_prefix/$reg_file
 			fi
 		fi
+		$wineboot_bin -r
+		rm -f $user_prefix/$bottle_prefix/$reg_file.new
+		
+#		previous_reg=$(( $(cat $user_prefix/$bottle_prefix/$reg_file| grep -c .)+1 ))
+#		new_reg=$(printf "$user_reg"|grep -c .)
+#		video_chk_prev=$(cat $user_prefix/$bottle_prefix/$reg_file| egrep "(^.*Video*)"| grep -o "[0-9]*")
+#		video_chk_new=$(printf "$user_reg"| egrep "(^.*Video*)"| grep -o "[0-9]*" )
+##		if [ $user_prefix/$bottle_prefix/$reg_file ]
+#		if [ "$video_chk_prev" != '' -o "$video_chk_new" != '' ]; then
+#			if [ $video_chk_new -ne $video_chk_prev ]; then
+#				new_reg=$(($new_reg+1))
+#			fi
+#		fi
+#		if [ $new_reg -ne $(($previous_reg-2)) ]; then
+##		if [ $new_reg -ne $previous_reg ]; then
+#			if [ $new_reg -gt 0 ]; then
+##				$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Direct3D
+#				printf "REGEDIT4\n\n$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file
+##				$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Direct3D
+#				$wine_bin regedit $user_prefix/$bottle_prefix/$reg_file
+#			else
+#				$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Direct3D
+#				printf "" > $user_prefix/$bottle_prefix/$reg_file
+#			fi
+#		fi
 	fi
 }
 fn_mime_asso(){
@@ -139,7 +158,42 @@ fn_mime_asso(){
 				fi
 			fi
 		done
+		$wineboot_bin -r
 		rm -f $reg_temp
+	fi
+}
+fn_reg_dlls(){
+	if [[ "$dll_reg_manager" ]]; then
+		if [ $(printf "$dll_reg_manager"| grep -c .) -gt 0 ]; then
+			reg_type=$(printf "$dll_reg_manager"| cut -d',' -f1)
+			reg_elf=$(printf "$dll_reg_manager"| cut -d',' -f2)
+			reg_dlls=$(printf "$dll_reg_manager"| cut -d',' -f3-)
+			if [ $reg_type = 1 ]; then reg_opt='/u'; else reg_opt=''; fi
+			if [ $elf = 64 ]; then
+				if [ $reg_elf = 2 ]; then
+					reg_sys=("system32" "syswow64")
+				else
+					if [ $reg_elf = 0 ]; then reg_sys=("syswow64"); else reg_sys=("system32"); fi
+				fi
+			else
+				if [ $reg_elf -gt 0 ]; then
+					echo "# Wrong system arch. DLLs will by registering to 32bits."
+				fi
+				reg_sys=("system32")
+			fi
+			reg_log=$user_prefix/$bottle_prefix/dlls_reg.log
+			reg_dlls=( "$(echo "$reg_dlls"| tr ',' '\n')" )
+			if ! [ -s $reg_log ]; then touch $reg_log; fi
+			for t_arch in ${reg_sys[@]}; do 
+				for t_dll in ${reg_dlls[@]}; do
+					if [ $(cat $reg_log| egrep -c "$t_arch,$t_dll" ) -eq 0 ]; then
+						printf "$t_arch,$t_dll\n" >> $reg_log
+						$wine_bin regsvr32 $reg_opt C:\\windows\\$t_arch\\$t_dll
+					fi
+				done
+			done
+			$wineboot_bin -r
+		fi
 	fi
 }
 fn_use_winepath(){
@@ -156,7 +210,7 @@ fn_use_winepath(){
 		## create tmp dir for package download
 		dl_dir=$(mktemp --tmpdir -d wine_pol.XXXXXXXX)
 		w_title="Winestarter"
-		w_text="$vb\\Downloading $wine_ver $ftp_elf from PoL server. Please wait$end"
+		w_text="$vb\\!Downloading $wine_ver $ftp_elf from PoL server. Please wait$end"
 		## Analyse and parse wget stdout field, then display it in a yad window
 		track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $wine_ver [\1] time left: \3\t\2\/s/"; }
 		dl_cmd(){ wget $pol_address/PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol $dl_dir/ 2>&1; }
@@ -583,20 +637,24 @@ fn_root_key(){
 }
 fn_wine_binary(){
 	if [ $_use_winepath_env -gt 0 ]; then
-		export WINELOADER=$wine_path/$ftp_elf/$wine_ver/bin/wine
-		export WINESERVER=$wine_path/$ftp_elf/$wine_ver/bin/wineserver
+		wine_elf_path=$wine_path/$ftp_elf/$wine_ver
+		export WINEVERPATH=$wine_elf_path
+		export PATH=$wine_elf_path/bin:$PATH
+		export WINESERVER=$wine_elf_path/bin/wineserver
+		export WINELOADER=$wine_elf_path/bin/wine
 		if [ $wine_elf = 1 ]; then
-			export WINEDLLPATH=$wine_path/$ftp_elf/$wine_ver/$libs/wine
-			LD_LIBRARY_PATH="$wine_path/$ftp_elf/$wine_ver/lib:$wine_path/$ftp_elf/$wine_ver/$libs"
-			#:/usr/lib:/usr/lib64:/lib:/lib64
+			export WINEDLLPATH=$wine_elf_path/$libs/wine/fakedlls
+			export LD_LIBRARY_PATH="$wine_elf_path/lib:$wine_elf_path/$libs:$LD_LIBRARY_PATH"
+			#":/lib:/lib64:/usr/lib:/usr/lib64"
 		else
-			export WINEDLLPATH=$wine_path/$ftp_elf/$wine_ver/lib/wine
-			LD_LIBRARY_PATH="$wine_path/$ftp_elf/$wine_ver/lib"
+			export WINEDLLPATH=$wine_elf_path/lib/wine
+			export LD_LIBRARY_PATH="$wine_elf_path/lib:$LD_LIBRARY_PATH"
+			#":/lib:/lib64:/usr/lib:/usr/lib64"
 		fi
-		PATH="$PATH:$wine_path/$ftp_elf/$wine_ver/bin"
-		export LD_LIBRARY_PATH
-		export PATH
-		echo "$LD_LIBRARY_PATH"
+#		PATH="$PATH:$wine_elf_path/bin"
+#		export LD_LIBRARY_PATH
+#		export PATH
+#		echo "$LD_LIBRARY_PATH"
 		wine_bin=$WINELOADER
 	#	wineboot -u
 	#	wine --version
@@ -664,6 +722,7 @@ reg_file=$(printf "$conf"| sed -n "s/\.conf//p")".reg"
 #if [[ $(printf "$user_reg"| sed -n '$p') != '' ]]; then fn_regedit; fi
 fn_regedit
 if [ $(printf "$local_association"| grep -c .) -gt 0 ]; then fn_mime_asso; fi
+if [ $(printf "$dll_reg_manager"| grep -c .) -gt 0 ]; then fn_reg_dlls; fi
 if [ $w_config = 1 ]; then fn_wineconf ; fi
 
 ## check one last time that appli directory exist

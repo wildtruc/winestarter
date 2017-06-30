@@ -851,31 +851,41 @@ w_tricks_list=\"$w_tricks_list\""
 					else
 						_val=$mime_preset
 					fi
+					_var='local_association'
 				fi
-				_var='local_association'
+				
 			else
+				
 				if [ $(printf "$local_association"| grep -c .) -eq 0 ]; then _var='local_association'; fi
 				_val=''
 			fi
 			## registering/unregistering part
 			# dll_reg_type, dll_elf_type, dll_file_list - misc_reg_type,misc_reg_val
-#			if [[ $_var == dll_reg_type ]]; then
-#				if [[ $_val != unset ]]; then reg_proc=1; else reg_proc=0; fi
-#			fi
-#			if [ $reg_proc -gt 0 ]; then
-#				if [[ $_var == dll_reg_type ]]; then
-#					if [[ $_val == register ]]; then reg_class=1; else reg_class=0; fi
-#				fi
-#				if [[ $_var == dll_elf_type ]]; then
-#					if [[ $_val == 32 ]]; then reg_elf=32; else reg_elf=64; fi
-#				fi
-#				if [[ $_var == dll_file_list ]]; then
-#					if [[$_val != '' ]]; then
-#						echo
-#					fi
-#				fi		
-#				dll_file_manager+=()
-#			fi
+			if [[ $_var == dll_reg_type ]]; then
+				if [[ $_val != unset ]]; then reg_proc=1; else reg_proc=0; fi
+			fi
+			if [ $reg_proc -gt 0 ]; then
+				if [[ $_var == dll_reg_type ]]; then
+					if [[ $_val == register ]]; then _reg_class=1; else _reg_class=0; fi
+				fi
+				if [[ $_var == dll_elf_type ]]; then
+					if [[ $_val == both ]]; then
+						_reg_elf=2
+					else if [[ $_val == wine32 ]];then _reg_elf=0; else _reg_elf=1; fi
+					fi
+				fi
+				if [[ $_var == dll_file_list ]]; then
+					if [[ $_val != '' ]]; then
+							_dlls_list=$(printf "$_val"| tr '#' '\n')
+							for _dlls in ${_dlls_list[@]}; do
+								_conf_dlls+=( "$(printf "$_dlls"| sed -n "s/^.*\///g;p")," )
+							done
+						_reg_dlls=$(printf "${_conf_dlls[*]}"| sed -n "s/\ //g;s/\,$//p")
+					fi
+				fi
+				_var=dll_reg_manager
+				_val="$_reg_class,$_reg_elf,$_reg_dlls"						
+			fi
 			if [[ $from_config = 0 || $insert_section = 1 ]]; then
 				new_conf_list+=("$_var=$_val")
 #				local local_association="$_val"
@@ -899,10 +909,10 @@ w_tricks_list=\"$w_tricks_list\""
 user_reg=''
 ## Allow local system apps to launch some mime-file type:
 local_association=\"$local_association\"
-## Register/unsregister DLLs libraies:
-## example: 1,32,foo.dll;0,64,foo.dll, where 1 is register and 0 unregister
-## and elf type is the real elf type and not the wierd reverse MS one.
-dll_file_manager\"$dll_file_manager\""
+## Register/unsregister DLLs libraies (one arch at a time):
+## example: 1,0,foo.dll,poo.dll,
+## Where first 1 is register and 0 unregister and secondary 0/1 is wine32/wine64, 2 is both
+dll_reg_manager=\"$dll_reg_manager\""
 		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
 		printf "$_reged_conf\n" >> $tmp_conf
 		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
@@ -1686,9 +1696,35 @@ $nf Check here the sections you would like to configure.$end"
 			reg_variable+=($reg_var=$reg_val)
 			local $reg_variable
 		done
-		if [ -s $HOME/.winestarter/resources/mime-preset.lst ]; then
-			res_mime_preset=$(cat $HOME/.winestarter/resources/mime-preset.lst| tr '\n' '#')
+		if [ $_extended = 1 ]; then
+			if [ -s $HOME/.winestarter/resources/mime-preset.lst ]; then
+				res_mime_preset=$(cat $HOME/.winestarter/resources/mime-preset.lst| tr '\n' '#'| \
+				sed -n "s/#$//p")
+			fi
+			dn=28
+			reg_log=$bottle_prefix/dlls_reg.log
+			if [ -s $reg_log ]; then
+				unset dlls_var_list
+				dll_base_list=("$(cat $reg_log| cut -d',' -f2)")				
+				for dll_base in ${dll_base_list[@]}; do
+					if [ $elf = 32 ]; then
+						sys_elf='32'
+						reg_field_list+=( "$dll_base" )
+					else
+						sys_elf='32/64'
+						if [ $(echo "${reg_field_list[*]}"| egrep -c "$dll_base" ) -eq 0 ]; then
+								reg_field_list+=( "$dll_base" )
+						fi
+					fi
+				done
+				reg_dlls_field=$(echo "${reg_field_list[*]}"| sed -n "s/\ /\, /g;p")
+				reg_dll_msg="$vb\\Registered DLLs ($sys_elf):$end"
+				dlls_var_list=( "$[ $dn+1 ];;;;$reg_dll_msg $reg_dlls_field;LBL;;;" )
+				dn=$[ $dn+1 ]
+				echo "${dlls_var_list[@]}"
+			fi
 		fi
+			
 		# window messages
 		w_text="$bf Edit the Wine registry$end\\n\
 $vB\\Set here the most usual registry Direct3D graphic options$end\\n\
@@ -1711,11 +1747,11 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 
 		w_reg_3_tip0="$vb\\In some cases, it could be necessary to use specific system reg file, DLLs registration/unregistration to set properly a bottle.$end"
 		w_reg_3_warn0="$rb\\WARNING$end$vn: Doing something nasty here can strongly compromise your bottle.$end"
-		w_reg_3_titl0="$vb\\Register, unregister DLLs from the system$end"
+		w_reg_3_titl0="$vb\\Register, unregister specific DLLs:$end"
 		w_reg_3_cmd0="$nf Select the operation class$end"
 		w_reg_3_cmd1="$nf Select the system type$end"
 		w_reg_3_cmd2="$nf Select the DLL (one or more)$end"
-		w_reg_3_titl1="$vb\\Create a specific reg file$end"
+		w_reg_3_tit1e="$vb\\Create a specific reg file$end"
 		w_reg_3_cmd3="$nf Select the type$end"
 		w_reg_3_cmd4="$vb\\Write the custom registration without the key line$end"
 		w_reg_3_tip=""
@@ -1760,18 +1796,19 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		"25;;;;$w_reg_3_tip0;LBL;;;"
 		"26;;;;$w_reg_3_warn0;LBL;;;"
 		"27;;;;;LBL;;;"
-		"27;;;;$rb\\THE FUNCTIONS BELOW ARE ACTUALLY UNUSABLE$end;LBL;;;"
 		"28;;;;$w_reg_3_titl0;LBL;;;"
-		"29;unset;dll_reg_type;;$w_reg_3_cmd0;CB;register#unregister;;"
-		"30;unset;dll_elf_type;;$w_reg_3_cmd1;CB;wine32#wine64#both;;"
-		"31;$bottle_prefix/drive_c/windows;dll_file_list;;$w_reg_3_cmd2;MFL;;;"
-		"32;;;;;LBL;;;"
-		"33;;;;$w_reg_3_titl1;LBL;;;"
-		"34;unset;misc_reg_type;;$w_reg_3_cmd3;CB;user#system;;"
-		"35;;misc_reg_val;;$w_reg_3_cmd4;TXT;;;"
-		${previous_reg_edit[@]}
-		) 
-#		"11;$edit_button;user_reg;;$w_reg_manual1;FBTN;;;"
+		"${dlls_var_list[@]}"
+		"$[ $dn+1 ];unset;dll_reg_type;;$w_reg_3_cmd0;CB;register#unregister;;"
+		"$[ $dn+2 ];unset;dll_elf_type;;$w_reg_3_cmd1;CB;wine32#wine64#both;;"
+		"$[ $dn+3 ];$bottle_prefix/drive_c/windows;dll_file_list;;$w_reg_3_cmd2;MFL;;;"
+		)
+#		"$[ $dn+4 ];;;;;LBL;;;"
+#		"$[ $dn+5 ];;;;$w_reg_3_title;LBL;;;"
+#		"$[ $dn+6 ];unset;misc_reg_type;;$w_reg_3_cmd3;CB;user#system;;"
+#		"$[ $dn+7 ];;misc_reg_val;;$w_reg_3_cmd4;TXT;;;"
+#		${previous_reg_edit[@]}
+#		) 
+#		"$[ $dn+8 ];$edit_button;user_reg;;$w_reg_manual1;FBTN;;;"
 #		)
 		if [ $_extended = 1 ]; then
 			basic_sets=(

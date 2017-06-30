@@ -1,23 +1,27 @@
 # Change log & reports
 
 ### Issues
-[x] *v0.97.5* - winestarter_conf
- - It seems in some case when willing to set an already existing app path, winestarter fail to auto set the link to C drive root because it dosen't enough data to define the link 'rootkey' var properly and then link it inside Program Files folder.
+ - [x] *v0.97.5* - winestarter_conf
+   - It seems in some case when willing to set an already existing app path, winestarter fail to auto set the link to C drive root because it dosen't enough data to define the link 'rootkey' var properly and then link it inside Program Files folder.
 
-[ ] *v0.97.4* - winestarter_conf
- - mime-type is now added in wine regeistry, but it didn't resolve the way of some app (like captvty) manage the bottle system to launch some file for reading. 
+ - [ ] *v0.97.4* - winestarter_conf
+   - mime-type is now added in wine regeistry, but it didn't resolve the way of some app (like captvty) manage the bottle system to launch some file for reading. 
 
-[x] *v0.97.3* - winestarter_conf
- - #1 ( 11/05/17 ) - new extended feature for local mime-type launch display uncorrectly (add a unwanted horiz scrollbar).
- - #2 ( 12/05/17 ) - other distro than mine (fedora) seems to have difficulties to find mandatory binaries (yad, nvidia, wintricks, etc). Need to replace by a short 'find' command.
+ - [x] *v0.97.3* - winestarter_conf
+   - #1 ( 11/05/17 ) - new extended feature for local mime-type launch display uncorrectly (add a unwanted horiz scrollbar).
+   - #2 ( 12/05/17 ) - other distro than mine (fedora) seems to have difficulties to find mandatory binaries (yad, nvidia, wintricks, etc). Need to replace by a short 'find' command.
  
-[x] *v0.97.2* - winestarter_conf
- - #1 ( 11/05/17 ) - Discovered with helping hand that Debian grep can't read some regex when a point (.) is not mark with a backslash (and also prefer egrep in place grep).
+ - [x] *v0.97.2* - winestarter_conf
+   - #1 ( 11/05/17 ) - Discovered with helping hand that Debian grep can't read some regex when a point (.) is not mark with a backslash (and also prefer egrep in place grep).
 
 -----------
 ### Change Log
+*( 30/06/17 ) v0.98* - winestarter
+ - Changed regedit reg file update by a real diff command. It's a simpliest way.
+ - extended features - Added dlls special independant registration through regsvr32.
+
 *( 30/05/17 ) v0.97.6* - winestarter_conf
- - v0.97.5 issue - Add an app portable option : Option prevents and define the C drive root as app root.
+ - v0.97.5 issue - Add an app portable option : Option prevents to send new app to Program Files and define the C drive root as app root.
   
 *( 30/05/17 ) v0.97.6* - winestarter
  - fn_extract_lnk was messing when it didn't find the .lnk file to reach the app executabe. Modified by seeking a possible .lnk on desktop directory then trying to find in the bottle. If nothing is auto-detect, then a yad window pop up asking for choosing one.
