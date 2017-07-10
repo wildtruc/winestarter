@@ -210,7 +210,7 @@ fn_use_winepath(){
 		## create tmp dir for package download
 		dl_dir=$(mktemp --tmpdir -d wine_pol.XXXXXXXX)
 		w_title="Winestarter"
-		w_text="$vb\\!Downloading $wine_ver $ftp_elf from PoL server. Please wait$end"
+		w_text="$vb\\Downloading $wine_ver $ftp_elf from PoL server. Please wait$end"
 		## Analyse and parse wget stdout field, then display it in a yad window
 		track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $wine_ver [\1] time left: \3\t\2\/s/"; }
 		dl_cmd(){ wget $pol_address/PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol $dl_dir/ 2>&1; }
@@ -665,7 +665,8 @@ fn_wineconf(){
 	perl -ni -pe "s|(w_config)=[0-9]|\1=0|i" $config_file
 }
 fn_replace_env(){
-	if [ -x $secondary_desktop ]; then
+	sec_desk=$(find /usr/{bin,local/bin} -name $secondary_desktop)
+	if [ -x $sec_desk ]; then
 		$secondary_desktop --replace &
 	fi
 }
@@ -775,7 +776,8 @@ else
 #	sed -n "s/^.*[\/\|\\\]//;s/^\(.\{3\}\).*/\1/g;p")
 fi
 #bin_pid="pgrep ^\(\s*$exe_short.*$\)"
-bin_pid="pgrep ^$exe_short.*.exe$"
+#bin_pid="pgrep ^$exe_short.*.exe$"
+bin_pid="pgrep ^$exe_short.*.e.*$"
 A_PID=$(${bin_pid})
 ## if script is launched from winestarter configurator, ger Yad pid and kill it
 #if [ $YAD_PID ]; then killall -9 yad ; fi

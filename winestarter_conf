@@ -1189,8 +1189,7 @@ bck_xrandr='$bck_xrandr'
 
 ## optional desktop environment replacement:
 ## This option allow you to replace a buggy enduser graphical environment
-## by a lighter one (OpenGl glitch, etc). This suppose a second desktop UI is
-## already installed. 
+## by a lighter one (OpenGl glitch, etc). This suppose a second desktop UI is already installed. 
 ## set enable (1) or disable (0)
 set_desktop_env=$set_desktop_env
 ## selec the default UI and replacement UI
@@ -2279,7 +2278,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		unset basic_sets field_list chk_list track_list conf_dat input_list field_line
 		# create the basic_sets data to display in the yad tab
 		display_field_set(){
-			X=0; x=1; l=3
+			X=0; x=1; l=5
 			monitor_filter=1
 			for x_var in ${dsp_vars[@]}; do
 				m_name=$(printf "$x_var"| cut -d';' -f1)
@@ -2303,7 +2302,8 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 				x=$[ $x+2 ]; X=$[ $X+1 ]
 				fi
 			done
-			l=$[ $x+$l ]
+			export l=$[ $x+$l ]
+			
 		}
 		get_pointer_list(){
 			xinput_list=$(xinput list | grep "pointer"|grep -v "master\|XTEST"| \
@@ -2340,8 +2340,17 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 				fi
 			fi
 		}		
-		# define the most as possible desktop enviroment name
-		desktop_list="gnome-shell,cinnamon,kde,lxde,xfce,openbox"
+		# define the most as possible desktop enviroment name, then check if they are in bin three.
+		unset dsk_unite
+		desktop_prelist="cinnamon,cinnamon2d,gnome-shell,kde,lxde,mate,openbox,xfce"
+		desktop_prelist=( $(echo "$desktop_prelist"| tr ',' ' ') )
+		for dsk_ui in ${desktop_prelist[@]}; do
+			if [ $(find /usr/{bin,local/bin} -name $dsk_ui| grep -c .) -gt 0 ]; then
+				dsk_unite+=("$dsk_ui")
+			fi
+		done
+		desktop_list=$(echo "${dsk_unite[*]}"| tr ' ' ',' )
+
 		# first establish lists for seeked values
 		input_vars=('set_output' 'set_mode' 'bck_mode' \
 		'default_desktop' 'secondary_desktop' 'mouse_dev' 'set_buttons')
@@ -2391,7 +2400,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		w_xrandr_tip5="$vb\\If you have change the mouse button placement, replacement window manager can reverse your set. This option allow you to preserve it$end"
 		w_xrandr_mouse="$nf Select the mouse device$end"
 		w_xrandr_buttons="$nf Select the button preset$end"
-
+		
 		basic_sets=(
 		"1;;;;;LBL;;;"
 		"2;;;;$w_xrandr_tip;LBL;;;"
@@ -2410,6 +2419,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		"$[ $l+8 ];$mouse_dev;mouse_dev;;$w_xrandr_mouse;CB;$mouse_list;;"
 		"$[ $l+9 ];$set_buttons;set_buttons;;$w_xrandr_buttons;CB;1 2 3,3 2 1;;"
 		)
+		
 		item_sep=","
 		# start form display
 		win_type=1

@@ -8,10 +8,10 @@ Consider this like a mix between PlayOnLinux and Wine usual command line. It use
 Config file and configuration UI are completly independent and script can work without the UI, but it can do a lot of thing to help you during your journey to install Wine emulated apps.  
 
 # Changelog and issues
-Look CHANGELOG.md. You can find too some experience reports about apps install test.
+Have a look to [CHANGELOG](./CHANGELOG.md) to follow progress, issues and fixes. You will find also some experience reports about apps install test.
 
 # WARNINGS
-I'm still leaning and I often discover issues and bugs. If you can't install, see wierd things or everything else, feel free to xontact me and we will fix this together.
+I'm still leaning and I often discover issues and bugs. If you can't install, see weird things or everything else, feel free to contact me and we will fix this together.
 
 -------
 # Basics
@@ -58,8 +58,6 @@ Note to MAC users: The script will probably works for you (don't know for Yad), 
  - Configure Nvidia apps environment options
  - Configure Xrandr behaviour
  - Set Optimus Bumblebee/Primusrun variables
- 
-Look to change log at the end of the page.
  
 --------
 To simplefy usage description, we will use a full working example for config from Final Fantasy XIV game.

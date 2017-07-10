@@ -1,6 +1,9 @@
 # Change log & reports
 
 ### Issues
+ - [x] *v0.98* - winestarter_conf
+   - #1 Error in Display Xrandr mode, ui line are not numbered correctly.
+ 	
  - [x] *v0.97.5* - winestarter_conf
    - It seems in some case when willing to set an already existing app path, winestarter fail to auto set the link to C drive root because it dosen't enough data to define the link 'rootkey' var properly and then link it inside Program Files folder.
 
@@ -16,6 +19,13 @@
 
 -----------
 ### Change Log
+wtc => winestarter_conf, wt => winestarter
+
+*( 10/07/17 ) v0.98.1* - winestarter_conf - winestarter
+ - v0.98 issue #1 - fixed.
+ - fn_replace_env - added 'find' filter to get desktop ui binary full path.
+ - changed desktop manager list display, managers will onl display is found in the system. 
+ 
 *( 30/06/17 ) v0.98* - winestarter
  - Changed regedit reg file update by a real diff command. It's a simpliest way.
  - extended features - Added dlls special independant registration through regsvr32.
