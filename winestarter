@@ -4,7 +4,7 @@
 ## You can rename the script as you wish
 ## You can redistribute it as you wish : GPL v3
 ## author : wildtruc@noneltd.net
-## usage : winestart CONIGFILE 
+## usage : winestart CONFIGFILE 
 
 ## define per game conf files dir
 #scpt_dir=$HOME/.user_scripts
@@ -14,6 +14,7 @@ yad_bin=$(find /usr/{bin,local/bin} -name yad)
 convert_bin=$(find /usr/{bin,local/bin} -name convert)
 wrestool_bin=$(find /usr/{bin,local/bin} -name wrestool)
 strings_bin=$(find /usr/{bin,local/bin} -name strings)
+rpm_bin=$(find /usr/{bin,local/bin} -name rpm2cpio)
 
 wine_bin='wine'
 wineboot_bin='wineboot'
@@ -176,7 +177,7 @@ fn_reg_dlls(){
 					if [ $reg_elf = 0 ]; then reg_sys=("syswow64"); else reg_sys=("system32"); fi
 				fi
 			else
-				if [ $reg_elf -gt 0 ]; then
+				if [ $reg_elf -gt 0 ]; then	
 					echo "# Wrong system arch. DLLs will by registering to 32bits."
 				fi
 				reg_sys=("system32")
@@ -197,43 +198,81 @@ fn_reg_dlls(){
 	fi
 }
 fn_use_winepath(){
+	unset dl_list
+	## create tmp dir for package download
+	dl_dir=$(mktemp --tmpdir -d wine_dl.XXXXXXXX)	
+	pkg_ver=$(printf $wine_ver| cut -d'-' -f1)
+	pkg_rel=$(printf $wine_ver| cut -d'-' -f2)
+	
 	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; else ftp_elf='x86'; fi
 	if ! [ -n $wine_path/$ftp_elf ]; then mkdir -p $HOME/.winebin/$ftp_elf; fi
 	if [ -d $wine_path/$ftp_elf/$wine_ver ]; then
 		_use_winepath_env=1
 	else
-		printf "# No special Wine path found: Try to download.\n"
+		w_title="Winestarter"
+		## This perl regex Analyse and parse wget stdout field, then display it in a yad window
+		track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $wine_ver [\1] time left: \3\t\2\/s/"; }
 		## control if wine bin dir exist. If not create it from default
 		if ! [ -d $wine_path/$ftp_elf/ ]; then mkdir -p $wine_path/$ftp_elf; fi
-		## PoL server address
-		pol_address="http://wine.playonlinux.com/binaries/linux-$ftp_elf/"
-		## create tmp dir for package download
-		dl_dir=$(mktemp --tmpdir -d wine_pol.XXXXXXXX)
-		w_title="Winestarter"
-		w_text="$vb\\Downloading $wine_ver $ftp_elf from PoL server. Please wait$end"
-		## Analyse and parse wget stdout field, then display it in a yad window
-		track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $wine_ver [\1] time left: \3\t\2\/s/"; }
-		dl_cmd(){ wget $pol_address/PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol $dl_dir/ 2>&1; }
-		cd $dl_dir
-		un_tar(){ tar -xf PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol; }
-		## yad progress bar
-		dl_cmd | track | $yad_bin --width=450 --title "$w_title" --text-align=center --text="$w_text" \
-		--window-icon=filesave --image=$filesave --progress --auto-close
-		if [ -s $dl_dir/PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol ]; then
-			e_text="$vb\\Extracting $wine_ver $ftp_elf to $wine_path$end"
-#			( tar -xf PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol )| $yad_bin --width=250 \
-			un_tar | $yad_bin --width=250 \
-			--title "$w_title" --text-align=center --text="$e_text" \
-			--window-icon=filesave  --progress --pulsate --auto-close --no-buttons
-			cp -Rf wineversion/$wine_ver/ $wine_path/$ftp_elf
-			_use_winepath_env=1
+		## create the download list to fill in the yad loop.
+		if [ $wine_pack = 0 ]; then
+			dl_address_0="http://wine.playonlinux.com/binaries/linux-$ftp_elf"
+			dl_pkg=PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol
+			dl_list=( "$dl_address_0/$dl_pkg" )
+			unpack_list=( $dl_pkg )
 		else
-			printf "# Downloaded package missing. Using defautl Wine.\n"
-			text="$bf\\Downloaded package missing$end$vb.\nUsing system default Wine$end"
-			dialog_list="gtk-close;$warning"; yad_warnings
+			if [ $wine_elf = 1 ]; then http_elf='x86_64'; b_elf='64'; else http_elf='i686'; b_elf=''; fi
+			dl_address_0="https://dl.winehq.org/wine-builds/fedora/25/$http_elf"
+			dl_address_1="https://dl.winehq.org/wine-builds/fedora/25/i686"
+			dl_list=(
+				"$dl_address_0/wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
+				"$dl_address_1/wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
+			)
+			unpack_list=(
+				"wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
+				"wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
+			)
 		fi
-	fi	
-#	exit 0
+		
+		cd $dl_dir
+		for pkgs in ${dl_list[@]}; do
+			dl_cmd(){ wget $pkgs $dl_dir/ 2>&1; }
+			pack=$(printf "$pkgs"| sed -n "s/^.*\///p")
+			w_text="$vb\\Downloading $pack from $site server.$end"
+			## yad progress bar
+			dl_cmd | track | $yad_bin --width=550 --title "$w_title" --text="$w_text" \
+			--window-icon=filesave --image=$filesave --progress --auto-close
+		done
+			
+		for dwld in ${unpack_list[@]}; do
+			if [ $wine_pack = 0 ]; then 
+				un_tar(){ tar -xf $dwld; }
+			else
+				un_tar(){ $rpm_bin $dwld | cpio -id; }
+			fi
+			if [ $(ls -1 $dl_dir| egrep -c "$pkg_ver") -gt 0 ]; then
+			e_text="$vb\\Extracting $dwld to $wine_path.$end"
+			$yad_bin --width=550 --title "$w_title" --text-align=center --no-buttons \
+			--window-icon=filesave --progress --pulsate --auto-close --text="$e_text"  --progress-text="" &
+			WAIT_UI=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+#			un_tar | $yad_bin --width=500 --title "$w_title" --text-align=center --no-buttons\
+#			--window-icon=filesave --progress --pulsate --auto-close --text="$e_text" --progress-text=""
+			un_tar
+			kill $WAIT_UI
+			_use_winepath_env=1
+			else
+				printf "# Downloaded package missing. Using defautl Wine.\n"
+				text="$bf\\Downloaded package missing$end$vb.\nUsing system default Wine$end"
+				dialog_list="gtk-close;$warning"; yad_warnings
+			fi
+		done
+		if [ $wine_pack = 0 ]; then
+			cp -Rf wineversion/$wine_ver/ $wine_path/$ftp_elf
+		else
+			mkdir -p $wine_path/$ftp_elf/$wine_ver/
+			cp -Rf opt/wine-staging/* $wine_path/$ftp_elf/$wine_ver/
+		fi
+	fi
 }
 fn_install_tricks(){
 	## control winetricks installed
@@ -644,7 +683,8 @@ fn_wine_binary(){
 		export WINELOADER=$wine_elf_path/bin/wine
 		if [ $wine_elf = 1 ]; then
 			export WINEDLLPATH=$wine_elf_path/$libs/wine/fakedlls
-			export LD_LIBRARY_PATH="$wine_elf_path/lib:$wine_elf_path/$libs:$LD_LIBRARY_PATH"
+#			export LD_LIBRARY_PATH="$wine_elf_path/lib:$wine_elf_path/$libs:$LD_LIBRARY_PATH"
+			export LD_LIBRARY_PATH=$wine_elf_path/lib:$wine_elf_path/$libs:$LD_LIBRARY_PATH
 			#":/lib:/lib64:/usr/lib:/usr/lib64"
 		else
 			export WINEDLLPATH=$wine_elf_path/lib/wine
