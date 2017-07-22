@@ -1148,8 +1148,9 @@ export __GL_IGNORE_GLSL_EXT_REQS=$__GL_IGNORE_GLSL_EXT_REQS"
 			activ_mod+=("auto_set,$A")
 		fi
 		if [[ $_var == default_desktop ]]||[[ $_var == secondary_desktop ]]; then
-			if [[ $_val != unset ]]; then			
-					((M++)); N=$(($N+1))
+			if [[ $_val != unset ]]; then		
+				if [[ $_val == mate ]]; then _val='marco'; fi	
+				((M++)); N=$(($N+1))
 			else
 				_val=''; N=0
 			fi
@@ -2293,7 +2294,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		unset basic_sets field_list chk_list track_list conf_dat input_list field_line
 		# create the basic_sets data to display in the yad tab
 		display_field_set(){
-			X=0; x=1; l=5
+			X=0; x=1; l=6
 			monitor_filter=1
 			for x_var in ${dsp_vars[@]}; do
 				m_name=$(printf "$x_var"| cut -d';' -f1)
@@ -2310,12 +2311,12 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 				# this function can detect all attached displays, but the actual script can't manage
 				# multidisplay at this state. Then, the below conditional filter is added to only
 				# manage one display, the primary.
-				if [ $m_prim -gt 0 ]; then
+#				if [ $m_prim -gt 0 ]; then
 				field_msg1="$nf Choose app resolution$end"
 				field_line+=("$[ $l+$x ];$bck_mode;bck_mode;;$field_msg0;CB;$reso_list;$monitor;")
 				field_line+=("$[ $l+(($x+1)) ];$set_mode;set_mode;;$field_msg1;CB;$reso_list;$monitor;")
 				x=$[ $x+2 ]; X=$[ $X+1 ]
-				fi
+#				fi
 			done
 			export l=$[ $x+$l ]
 			
@@ -2357,7 +2358,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		}		
 		# define the most as possible desktop enviroment name, then check if they are in bin three.
 		unset dsk_unite
-		desktop_prelist="cinnamon,cinnamon2d,gnome-shell,kde,lxde,mate,openbox,xfce"
+		desktop_prelist="cinnamon,cinnamon2d,compiz,gnome-shell,kde,lxde,marco,mate,openbox,xfce"
 		desktop_prelist=( $(echo "$desktop_prelist"| tr ',' ' ') )
 		for dsk_ui in ${desktop_prelist[@]}; do
 			if [ $(find /usr/{bin,local/bin} -name $dsk_ui| grep -c .) -gt 0 ]; then
@@ -2400,14 +2401,14 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		w_text="$bf Configure XRandr Wine app resolution$end\\n$vb\\Special fullscreen mode issue: Change the default desktop resolution.$end"
 		w_xrandr_tip="$vb\\In some cases, older game could occur issues when set in fullscreen, the options below allow to set the resolution before the start and then back to default when stop. (also useful for Optimus display behaviour).$end"
 #		w_text="$bf Configure XRandr Wine app resolution$end"
-		w_xrandr_tip0="$vb\\Desktop primary monitor resolution is currently set to$end $nf$current_res$end"
+		w_xrandr_tip0="$vb\\Desktop main monitor resolution is currently set to$end $nf$current_res$end"
 		w_xrandr_def_dsp="$vb\\Select the output to switch to and resolution to switch back$end"
-		w_xrandr_tip1="$nf Note: Prefer primary monitor, secondary is untested.$end"
+		w_xrandr_tip1="$nf Note:$end Configure connected display only. Primary doesn't necessary mean current connected monitor."
 	
 		w_xrandr_res_to="Choose app resolution"
 		w_xrandr_res_bk="Choose the resolution to swith back"
 		w_xrandr_tip2="$bf Compositing$end"
-		w_xrandr_tip3="$vb\\If your desktop manager slow down graphic performance, you can try to replace the default one by a lighter. Default replacement is set to Openbox (you have to install it first)$end"
+		w_xrandr_tip3="$vb\\If your desktop manager slow down graphic performance, you can try to replace the default one by a lighter.$end"
 		w_xrandr_tip6="$nf Note:$end In cinnamon, desactivate compositing in fullscreen mode in System Settings menu: Preferences > General"
 		w_xrandr_compo1="$nf Select the default manager$end"
 		w_xrandr_compo2="$nf Select the replacement manager\t$end"
@@ -2422,6 +2423,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		"3;;;;;LBL;;;"
 		"4;;;;$w_xrandr_tip0;LBL;;;"
 		"5;;;;$w_xrandr_def_dsp;LBL;;;"
+		"6;;;;$w_xrandr_tip1;LBL;;;"
 		"${field_line[@]}"
 		"$l;;;;;LBL;;;"
 		"$[ $l+1 ];;;;$w_xrandr_tip3;LBL;;;"
