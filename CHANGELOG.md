@@ -2,29 +2,30 @@
 wtc => winestarter_conf, wt => winestarter
 
 ### Issues
+ - [x] *v0.98.2* - wtc
+ 	- #1 Bad images export in WineHQ, PoL download selectors.
  - [x] *v0.98.1* - wt & wtc
    - #1 PlayOnLinux binbaries packages seems to not be always functionnal. Need an alternative.
    - #2 Since Wine 2.11, there some mouse glitches in some D3D game (FFXIV), need an alternative to fall back to previous version.
-    
  - [x] *v0.98* - winestarter_conf
    - #1 Error in Display Xrandr mode, desktop ui line are not numbered correctly.
  	
  - [x] *v0.97.5* - winestarter_conf
    - It seems in some case when willing to set an already existing app path, winestarter fail to auto set the link to C drive root because it dosen't enough data to define the link 'rootkey' var properly and then link it inside Program Files folder.
-
  - [ ] *v0.97.4* - winestarter_conf
    - mime-type is now added in wine regeistry, but it didn't resolve the way of some app (like captvty) manage the bottle system to launch some file for reading. 
-
  - [x] *v0.97.3* - winestarter_conf
    - #1 ( 11/05/17 ) - new extended feature for local mime-type launch display uncorrectly (add a unwanted horiz scrollbar).
    - #2 ( 12/05/17 ) - other distro than mine (fedora) seems to have difficulties to find mandatory binaries (yad, nvidia, wintricks, etc). Need to replace by a short 'find' command.
- 
  - [x] *v0.97.2* - winestarter_conf
    - #1 ( 11/05/17 ) - Discovered with helping hand that Debian grep can't read some regex when a point (.) is not mark with a backslash (and also prefer egrep in place grep).
 
 -----------
 ### Change Log
 
+*( 21/07/28 ) v0.98.3* - wtc
+ - v0.98.2 issues #1 - fixed.
+ 
 *( 21/07/17 ) v0.98.2* - wtc - wt
  - v0.98.1 issues #1 & #2 - fixed - Add an alternative to PoL and distro Wine packages by allow dowloading directly from WineHQ staging server. In place of add an option to install distro repos (debian/ubuntu, fedora), I'd prefer to choose downloading the fedora rpm packages that are more managable for standalone use and install them in the 'winebin' packs directory. Seems to be fully usable after test.
  - Debian users and like, need to install 'rpm' distro package (usually in main distros repos) to take benefits of the new feature.

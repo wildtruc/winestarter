@@ -1,5 +1,24 @@
 #! /bin/bash
 
+# #License:
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU Lesser General Public
+#   License as published by the Free Software Foundation; either
+#   version 2.1 of the License, or (at your option) any later
+#   version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Lesser General Public License for more details.
+#
+#   You should have received a copy of the GNU Lesser General Public
+#   License along with this program.  If not, see
+#   <https://www.gnu.org/licenses/>.
+#
+## You can redistribute it as you wish : GPL v3
+## author : wildtruc@noneltd.net
+
 #PATH=$PATH
 colors(){
 #main='#005400'
@@ -32,13 +51,15 @@ vB=$vb
 }
 icons_set(){
 	png_stock=$HOME/.winestarter/png/defaults
+	## window bar icon
+	img_desktop=$png_stock/'wine48w.png'
+	
 	img_wine_add=$png_stock/'new_bottle16.png'
 	img_wine_mod=$png_stock/'config16.png'
 	img_wine_desk_bt=$png_stock/'desktop16.png'
 	img_wine_desk_ui=$png_stock/'wine48w.png'
 	img_wine_ui=$png_stock/'wine-wine48.png'
 	img_wine_desktop=$png_stock/'colors48.png'
-	img_desktop="$png_stock/wine48w.png"
 	img_wine_cfg1=$png_stock/'wine-winecfg48.png'
 	img_wine_cfg2=$png_stock/'wine-msiexec48.png'
 	img_tricks=$png_stock/'wine-winetricks48.png'
@@ -52,8 +73,11 @@ icons_set(){
 	img_wine_colors=$png_stock/'colors16.png'
 	img_wine_restart=$png_stock/'reload.png'
 	img_wine_reload=$png_stock/'reload48.png'
+	## PoL and WineHQ selection and download set
 	img_winepol_bt=$png_stock/'playonlinux16.png'
-	img_winedis_bt=$png_stock/'config16.png'
+	img_winedis_bt=$png_stock/'wine16r.png'
+	img_dl_pol=$png_stock/'wine48w.png'
+	img_dl_whq=$png_stock/'wine48r.png'
 }
 main_code(){
 		default_win_design(){
@@ -1563,8 +1587,8 @@ $nf Check here the sections you would like to configure.$end"
 		"14;;;;$w_wine_portable;LBL;;;"
 		"15;$app_portable;app_portable;;Portable app (or to be set at C: drive root);CHK;;;"
 		"16;;;;$w_wine_game_spl;LBL;;;"	
-		"17;$special_cmd;special_cmd;;execute the binary file inside the directory;CHK;;;"
-		"18;$start_cmd;start_cmd;;execute the binary from absolute path (using Wine \"start\" command);CHK;;;")
+		"17;$special_cmd;special_cmd;;execute binary file inside the directory;CHK;;;"
+		"18;$start_cmd;start_cmd;;execute binary from absolute path (using Wine \"start\" command);CHK;;;")
 #		"16;;;;;LBL;;;"
 #		"17;;;;$w_wine_elf_tip;LBL;;;"
 #		)
@@ -1609,8 +1633,8 @@ $nf Check here the sections you would like to configure.$end"
 		# check already setted variables
 		track_list="use_winepath wine_path wine_ver"
 		wineset_list=$track_list
-		wine_bin_cmd="bash $bash_opt \"select_win_bin\""
-		wine_dis_cmd="bash $bash_opt \"select_win_dis\""
+		wine_bin_cmd="bash $bash_opt \"select_wine_bin\""
+		wine_dis_cmd="bash $bash_opt \"select_wine_dis\""
 		if [ $wine_elf = 1 ]; then ftp_elf='amd64'; else ftp_elf='x86'; fi
 		if [ $from_config = 1 ]; then
 			ifs=$IFS
@@ -1641,8 +1665,8 @@ $nf Check here the sections you would like to configure.$end"
 		"7;$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;;"
 		"8;;;;;LBL;;;"
 		"9;;;;$w_wine_dl_info;LBL;;;"
-		"10;$wine_bin_cmd;;;$vb click here to download a PoL Wine package$end,$img_winepol_bt;FBTN;;;"
-		"11;$wine_dis_cmd;;;$vb click here to download from WineHQ staging$end,$img_tricks_bt;FBTN;;;"
+		"10;$wine_dis_cmd;;;$vb click here to download from WineHQ staging$end,$img_winedis_bt;FBTN;;;"
+		"11;$wine_bin_cmd;;;$vb click here to download a PoL Wine package$end,$img_winepol_bt;FBTN;;;"
 		"12;;;;;LBL;;;"
 		"13;;;;$w_wine_wconfig;LBL;;;"
 		"14;$w_config;w_config;;Start Winecfg at app launch;CHK;;;"
@@ -1661,7 +1685,8 @@ $nf Check here the sections you would like to configure.$end"
 		# créer liste des dlls désenregistrés
 		# créer une option de suppression
 		# config file preset
-		vid_mem="256,512,768,1024,2048,3072,4096,6144"
+#		vid_mem="256,512,768,1024,2048,3072,4096,6144"
+		vid_mem="256#512#768#1024#2048#3072#4096#6144"
 		nv_smi=$(find /usr/{bin,local/bin} -name nvidia-smi)
 		if [ -x $nv_smi ]; then
 #		if [ -x /usr/bin/nvidia-smi ]||[ -x /usr/local/bin/nvidia-smi ] ; then
@@ -2598,7 +2623,7 @@ export conv_bin=$(find /usr/{bin,local/bin} -name convert)
 export icot_bin=$(find /usr/{bin,local/bin} -name icotool)
 export wres_bin=$(find /usr/{bin,local/bin} -name wrestool)
 # PlayOnLinux packages download window
-select_win_bin(){ colors ; icons_set ; select_wine_bin; }
+#select_win_bin(){ colors ; icons_set ; select_wine_bin; }
 edit_reg_bin(){ colors ; icons_set ; edit_regfile; }
 edit_regfile(){
 #	reg_move=$(mktemp --tmpdir reg2.XXXXXXXX)
@@ -2671,17 +2696,23 @@ $nf\\All custom maunal changes in the text area will be merge with others preset
 #	fi
 #}
 select_wine_bin(){
-	export bin_class=0
+	colors ; icons_set
+	bin_class=0
 	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; else ftp_elf='x86'; fi
 	dl_address="http://wine.playonlinux.com/binaries/linux-$ftp_elf.lst"
 	site='PlayOnLinux'
+	window_ico="$img_desktop"
+	window_img="$img_dl_pol"
 	select_wine_binary
 }
-select_win_dis(){
-	export bin_class=1
+select_wine_dis(){
+	colors ;icons_set
+	bin_class=1
 	if [ $wine_elf = 1 ]; then http_elf='x86_64'; else http_elf='i686'; fi
 	dl_address="https://dl.winehq.org/wine-builds/fedora/25/$http_elf/"
 	site='WineHQ'
+	window_ico="$img_desktop"
+	window_img="$img_dl_whq"
 	select_wine_binary
 }
 select_wine_binary(){
@@ -2721,8 +2752,8 @@ select_wine_binary(){
 		done
 #		wine_bin_list=$(cat $list_temp| sed -n "s/,$//p")
 		wine_bin_list=$(cat $list_temp)
-		wine_bin=$($yad_bin --width=300 --title "$w_title" --image="$img_wine_desk_ui" \
-		--window-icon="$img_desktop" --form --text="$w_text" --separator=" " --item-separator="," \
+		wine_bin=$($yad_bin --width=300 --title "$w_title" --image="$window_img" \
+		--window-icon="$window_ico" --form --text="$w_text" --separator=" " --item-separator="," \
 		--field="$vb Select $ftp_elf package from $site$end":CB "$wine_bin_list")
 		
 		if [ $? = 0	 ]; then
@@ -3124,7 +3155,7 @@ main_text0="$bf\\Stay simple with yours Wine bottles$end $vb\\\"Don't be a clic 
 $vb\\What do you want to do?$end\\n$vn(Hover buttons show tooltips)$end"
 
 export -f colors icons_set
-export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_win_bin select_win_dis select_wine_binary edit_reg_bin edit_regfile
+export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_wine_dis select_wine_binary edit_reg_bin edit_regfile
 export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt"
 $yad_bin --width=482 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons \
 --form --text="$main_text0" --image=$the_big_button \
