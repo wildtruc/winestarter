@@ -786,11 +786,13 @@ w_tricks_list=\"$w_tricks_list\""
 			_reg_content=$(printf "$_val"| perl -pe "s|^(\[.*\])\*(.*)$|\2|p")
 			_reg_val=$(printf "${_reg_var[*]}"| sed -n "s| |*|g;p")
 			if [ $(printf "$_reg_content"| grep -c "option_set") = 0 ]; then
-				if [ $(printf "${_unset_var[*]}"| grep -c .) -gt 0 ]; then
+#				if [ $(printf "${_unset_var[*]}"| grep -c .) -gt 0 ]; then
+				if [ ${#_unset_var[@]} -gt 0 ]; then
 					for _unset in "${_unset_var[@]}"; do
 						_reg_content=$(printf "$_reg_content"| \
 #						sed -n "s/\(\"$_unset\"\)=\(\"\w*[a-z]*\"\)\(*\|$\)//p")
-						sed -n "s/\(\"$_unset\"\)=\(\(\"[a-z]*\"\)\|\([a-z]*:[0-9]*\)\)\(*\|$\)//p")
+#						sed -n "s/\(\"$_unset\"\)=\(\(\"[a-z]*\"\)\|\([a-z]*:[0-9]*\)\(\"[0-9]*\"\)\)\(*\|$\)//p")
+						sed -n "s/\(\"$_unset\"\)=\(\(\"[a-z]*\"\)\|\([a-z]*:[0-9]\+\)\|\(\"[0-9]\+\"\)\)\(*\|$\)//p")
 #						sed -n "s/\"$_unset\"=.*$//g;p")
 					done
 				fi
@@ -824,8 +826,12 @@ w_tricks_list=\"$w_tricks_list\""
 			else
 				_val=''
 			fi
-			cat $config_file | sed -n "/^user_reg='/,/'/{;s/.*/user_reg=''/};p"| \
-			uniq > $reg_temp
+			if [ $(cat $config_file | egrep -c "^user_reg=''") -eq 0 ]; then
+				cat $config_file | sed -n "/^user_reg='/,/'/{;s/.*/user_reg=''/};p"| \
+				uniq > $reg_temp
+			else
+				cat $config_file > $reg_temp
+			fi
 			perl -ni -pe "s|^user_reg=''|user_reg='$(cat $reg_edit)'|i" $reg_temp
 			if [ $insert_section = 0 ]; then
 				cat $reg_temp > $config_file
@@ -1173,7 +1179,8 @@ export __GL_IGNORE_GLSL_EXT_REQS=$__GL_IGNORE_GLSL_EXT_REQS"
 		fi
 		if [[ $_var == default_desktop ]]||[[ $_var == secondary_desktop ]]; then
 			if [[ $_val != unset ]]; then		
-				if [[ $_val == mate ]]; then _val='marco'; fi	
+				if [[ $_val == mate ]]; then _val='marco'; fi
+				if [[ $_val == compiz ]]; then _val='compiz ccp'; fi
 				((M++)); N=$(($N+1))
 			else
 				_val=''; N=0
@@ -1685,15 +1692,21 @@ $nf Check here the sections you would like to configure.$end"
 		# créer liste des dlls désenregistrés
 		# créer une option de suppression
 		# config file preset
-#		vid_mem="256,512,768,1024,2048,3072,4096,6144"
-		vid_mem="256#512#768#1024#2048#3072#4096#6144"
 		nv_smi=$(find /usr/{bin,local/bin} -name nvidia-smi)
 		if [ -x $nv_smi ]; then
 #		if [ -x /usr/bin/nvidia-smi ]||[ -x /usr/local/bin/nvidia-smi ] ; then
 			mem_set=$($nv_smi --query|grep -w "^.*Total.*[KMG]iB"|sed -n "s/^.*\ \([0-9]*\) [A-Z].*$/\1/;1p")
+			x_mem='unset#'$mem_set
+			mem_comment=$mem_set'Mo detected'
 		else
 			mem_set='unset'
+			x_mem='unset'
+			mem_comment=''
 		fi
+#		vid_mem="256,512,768,1024,2048,3072,4096,6144"
+		
+		vid_mem='128#256#512#768#1024#2048#3072#4096#6144'
+		
 		reg_file=$(mktemp --tmpdir reg1.XXXXXXXX)
 		reg_move=$(mktemp --tmpdir reg2.XXXXXXXX)
 		reg_edit=$(mktemp --tmpdir reg3.XXXXXXXX)
@@ -1721,8 +1734,16 @@ $nf Check here the sections you would like to configure.$end"
 			unset reg_variable
 			if [ -s $reg_file ]; then
 				if [ $(cat $reg_file| grep -c "$reg_var") -gt 0 ]; then
+					## check for 'dword' reg file line structure and convert to 'enable/disable' for UI.
 					if [ $(cat $reg_file| grep "$reg_var"| grep -c "dword") -eq 0 ]; then
 						reg_val=$(cat $reg_file| grep "$reg_var"| sed -n "s|^\"\($reg_var\)\"=\"\(.*\)\"|\2|p")
+						## check for video memory reg value. Then, move 'unset' value if needed
+						if [ $reg_var == 'VideoMemorySize' ]; then
+							if [ $reg_val -gt 0 ]; then
+								x_mem=$reg_val
+								if [ $mem_set != $reg_val ]; then vid_mem="$mem_set#$vid_mem"; fi
+							fi
+						fi
 					else
 						reg_val=$(cat $reg_file| grep "$reg_var"| sed -n "s|^\"\($reg_var\)\"=dword:\(.*\)|\2|p")
 						if [[ $reg_val == '00000000' ]]; then reg_val=('disabled'); else reg_val="enabled"; fi
@@ -1798,7 +1819,8 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		
 		w_reg_def_SDO="$nf StrictDrawOrdering$end$vn\tbelow Wine 2.6$end"
 		w_reg_def_CSMT="$nf CSMT$end$vn \t\t\t\tWine 2.6 and above$end"
-		w_reg_def_VID="$nf VideoMemorySize$end$vn     unset to not use$end"
+#		w_reg_def_VID="$nf VideoMemorySize$end$vn     unset to not use$end"
+		w_reg_def_VID="$nf VideoMemorySize$end$vn  $mem_comment$end"
 #		w_reg_def_=""
 #		w_reg_def_=""
 #		w_reg_def_=""
@@ -1817,7 +1839,7 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		"8;$UseGLSL;UseGLSL;;$nf UseGLSL$end;CB;enabled#disabled;;"
 		"9;$CheckFloatConstants;CheckFloatConstants;;$nf CheckFloatConstants$end;CB;enabled#disabled;;"
 		"10;$Nonpower2Mode;Nonpower2Mode;;$nf Nonpower2Mode$end;CB;repack;;"
-		"11;$mem_set;VideoMemorySize;;$w_reg_def_VID;CBE;$vid_mem;;"
+		"11;$x_mem;VideoMemorySize;;$w_reg_def_VID;CBE;$vid_mem;;"
 		"12;;;;$w_reg_manual1;LBL;;;"
 		"13;;user_reg;;$w_reg_manual2;TXT;;;"
 		)
@@ -2386,7 +2408,8 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		desktop_prelist="cinnamon,cinnamon2d,compiz,gnome-shell,kde,lxde,marco,mate,openbox,xfce"
 		desktop_prelist=( $(echo "$desktop_prelist"| tr ',' ' ') )
 		for dsk_ui in ${desktop_prelist[@]}; do
-			if [ $(find /usr/{bin,local/bin} -name $dsk_ui| grep -c .) -gt 0 ]; then
+			if [ $dsk_ui == 'mate' ]; then dsk_chk='marco'; else dsk_chk=$dsk_ui; fi
+			if [ $(find /usr/{bin,local/bin} -name $dsk_chk| grep -c .) -gt 0 ]; then
 				dsk_unite+=("$dsk_ui")
 			fi
 		done

@@ -23,8 +23,11 @@ wtc => winestarter_conf, wt => winestarter
 -----------
 ### Change Log
 
-*( 21/07/28 ) v0.98.3* - wtc
+*( 30/07/28 ) v0.98.3* - wtc
  - v0.98.2 issues #1 - fixed.
+ - Fixed an issue in regedit function when user_reg value in config file is empty. It was removing too much lines under the targeted one.
+ - Video memory is not display by default in scroll selector anymore. All graphics adaptors do not return memory at command line and it was too much confusing at config time.
+ - Adjust more accuretly desktop interface in fn_xrandr_config.
  
 *( 21/07/17 ) v0.98.2* - wtc - wt
  - v0.98.1 issues #1 & #2 - fixed - Add an alternative to PoL and distro Wine packages by allow dowloading directly from WineHQ staging server. In place of add an option to install distro repos (debian/ubuntu, fedora), I'd prefer to choose downloading the fedora rpm packages that are more managable for standalone use and install them in the 'winebin' packs directory. Seems to be fully usable after test.
