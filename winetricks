@@ -4,6 +4,8 @@
 # SC2031: WINE was modified in a subshell. That change might be lost
 # This has to be right after the shebang, see: https://github.com/koalaman/shellcheck/issues/779
 
+# Fork by Wildtruc in Winestarter GIT repos for script dependency (0.98.4)
+
 # Name of this version of winetricks (YYYYMMDD)
 # (This doesn't change often, use the sha256sum of the file when reporting problems)
 WINETRICKS_VERSION=20170614-next
