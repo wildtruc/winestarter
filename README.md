@@ -5,7 +5,7 @@ A not very simple script to start and install wine emulated applications
 
 Consider this like a mix between PlayOnLinux and Wine usual command line. It use winetricks for DLLs and everything winetrciks can do.
 
-Config file and configuration UI are completly independent and script can work without the UI, but it can do a lot of thing to help you during your journey to install Wine emulated apps.  
+Config file and configuration UI are completly independent and script can work without the UI, but it can do a lot of thing to help you during your journey to install your apps under Wine layer.  
 
 # Changelog and issues
 Have a look to [CHANGELOG](./CHANGELOG.md) to follow progress, issues and fixes. You will find also some experience reports about apps install test.
@@ -22,20 +22,20 @@ The project comes with 2 scripts:
 Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards.
 
 ## History
-For everyboby using Wine know that launching a Wine emulated application could by real nightmare.
+For everyboby using Wine know that launching a application under this layer could by real nightmare.
 
 When you surf over **WineHQ**, there is often many tricks, "env" variables, register edits not very fun for both newbies or old Wine user guys.
 
 So, newbies goes to PlayOnllinux to feel more confortable with less options and old guy never stop to write mini bash launcher script or commandlines that easely cross over the Channel.
-Well, boring...
+Well, anoying...
 
 
 At the beginning, I wish to get a script to launch some games over **Wine** and **Bumblebee**. If **Wine** command lines could be a bit long, I wont tell you with **Bumblebee** !
 
-I turn around the right solution since a while, but finally got this one and I'm very happy with it.
+I turn around the right solution since a while, but finally got this one and because I'm very happy with it, I decided to share it with the communauty.
 
 
-Note to MAC users: The script will probably works for you (don't know for Yad), but it need somme desktop environnent I don't have or know. So, if you want it, give a hand !
+Note to MAC users: The script will probably works for you (don't know for Yad), but it need somme desktop and system environnent variables I don't have or know. So, if you want it, give a hand !
 
 # OS Depencies
  - Yad (zenity fork, usualy by default in distros, for Debian look **[here](https://packages.debian.org/sid/amd64/yad/download)**)
@@ -44,20 +44,22 @@ Note to MAC users: The script will probably works for you (don't know for Yad), 
  - strings (for Wine/Ms lnk file reading, usualy by default in all distros)
  - icoutils (for MS Icons png extraction, name can vary by distro like icotools)
  - Winetricks (for dlls downlaod and install, usualy in non-free distros repos)
+ - rpm (for rpm2cpio helping extracting rpm package, usualy available in all distros repos)
  
  and obviously, Wine :)
  
 --------
 ## Features
  - Create and configure a basic Wine bottle (32 or 64)
- - Configure a custom Wine binaries directory
+ - Download and configure a custom Wine binaries directory (PoL & WinHQ-staging)
  - Install Winestricks packages
  - Create and configure a Wine registry
- - Install a MS software.
+ - Install a software form a file or downloaded.
  - Create or modify a desktop file entry
  - Configure Nvidia apps environment options
  - Configure Xrandr behaviour
  - Set Optimus Bumblebee/Primusrun variables
+ - and more ...
  
 --------
 To simplefy usage description, we will use a full working example for config from Final Fantasy XIV game.
@@ -90,10 +92,6 @@ To uninstall without remove precious conf files :
 The `makefile` will install launcher and configarator in `/usr/local/bin` and the per game/app config file template in `~/.winestarter/configs` user hidden dir.
 
 ## Usage
-At the very beginning, this was just a app launcher. There's now a tested app install feature and it also can download and install custom Wine binaries and libs from the PlayOnlinux project. Plus, it can convert or modify the desktop file entry (from software installation process or already existing or a complete new one)
-
-Note that winestarter_conf doesn't need any template to start, because it create it from scratch.
-The the `winestarter` conf file template is only a model for those wanting to use the script only :
 
 ```sh
 	winestart game.conf
@@ -105,9 +103,13 @@ or
 or simply from the menu : Wine > winestarter configurator
 
 ## Config file edit
+Note that winestarter_conf doesn't need any template to start, because it create it from scratch.
+The `winestarter` conf file template is only a model for those wanting to use the script only
+
+
 If don't use `winestarter_conf`, you can edit the config file as you wish. It is a per game/app file, so you can create many conf files as you want. I will add a few other example in the repository ( You could contribute by adding yours, if you like)
 
-This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example with full parts added for user leanring purpose:
+This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example with full parts added for user learning purpose and it will be updated when changes will be made: (update 0.98.4)
 
 ```sh
 #! /bin/bash
@@ -116,26 +118,26 @@ This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind
 ## comments with '#' are unset feature
 
 ## default is /home/$USER
-## default is /home/mike
-user_prefix=/home/mike
+user_prefix=$HOME
 ## game/appli prefix name
 bottle_prefix=".wine.FFXIV_64"
 ## default system path of the game/appli if not in the chosen Wine prefix
-game_path="/home/games/FFXIV/SquareEnix"
+game_path="$HOME/games/FFXIV/SquareEnix"
 ## Full game dir name in Progrma Files (including Program Files dir name)
 game_dir="SquareEnix/FINAL FANTASY XIV - A Realm Reborn"
 game_exe="boot/ffxivboot.exe"
+## set if the app is portable, it will be install at C: drive root: no (0), yes (1).
+app_portable=0
 ## if classic wine command fail, execute .exe inside the directory
 special_cmd=0
 ## wine can use "start" command to launch apps or installer from absolute path
 ## useful on old or recalcitrant buggy app.
 start_cmd=0
-## set a 64 bits bottle: false (0), true (1)
-wine_elf=1
-
 ## In some apps, it's possible to send extended options at the end of command line.
 ## It can be some extra DLLs, game map, etc. Add them here.
 wine_opts="-opengl -whatmore and so on" # <- this is an example ->
+## set a 64 bits bottle: false (0), true (1)
+wine_elf=1
 
 ## to lauch winecfg at first launch
 w_config=0
@@ -149,22 +151,39 @@ w_tricks_list="d3dx9,d3dx11_42,d3dx11_43,physx,xact_jun2010"
 ## config set from winestarter configurator
 _tricks=1
 
-## This option allow to install .exe or .msi directly (experimental) 
+## This option allow to install .exe or .msi through winestarter process.
+## It's possible to replace file name path by an internet URL for download it.
 w_install_exe=0
 ## Winetricks options, if any
 w_tricks_opts='--no-isolate' # <- this is an example ->
 ## Full path of the exe/msi file
 w_exe_path="/home/mike/.cache/winetricks/steam/SteamInstall_French.msi" # <- this is an example ->
+## Additional associated dlls or app packages list to install (if any)
+w_more_pkgs=''
 ## In some cases, install is provided by extractible or auto-extractible package
 ## This option will install them in the provided directory to the Program Files path
 w_install_zip=""
 w_install_dir=""
+## Download dir is the user default one, you can change it here.
+w_download_dir=""
 ## user script: You can add here a personal or a community script (updater, logs, etc)
 ## It will be automaticaly pasted in the installed app directory.
 ## This is very optional and at your own risk
 w_extra_script=""
 ## Do not remove or edit below except if you don't use winestarter configurator.
 _install=1
+
+## Use a specific Wine path: yes (1), no (0).
+use_winepath=1
+## where is your custom Wine binary, if any 
+wine_path="$HOME/.winebin"
+## custom Wine binary name
+wine_ver='2.10-staging'
+## Which kind of packages do you want to use:
+## PlayOnLinux (0), WineHQ staging (1)
+wine_pack=1
+## Do not remove or edit below except if you don't use winestarter configurator.
+_wbin=1
 
 ## extra wine registry specific entry
 ## leave user_reg blank if none : user_reg=''
@@ -177,10 +196,15 @@ _install=1
 ## "UseGLSL"="readtex"
 ## "VideoMemorySize"="(memory size of your graphic card)"
 user_reg='[HKEY_CURRENT_USER\Software\Wine\Direct3D]
+"VideoMemorySize"="4096"
 "StrictDrawOrdering"="disabled"
-"VideoMemorySize"="6072"'
+"csmt"=dword:00000001'
 ## Allow local system apps to launch some file type:
 local_association="pdf,docx,doc" # <- this is an example ->
+## Register/unsregister DLLs libraies (one arch at a time):
+## example: 1,0,foo.dll,poo.dll,
+## Where first 1 is register and 0 unregister and secondary 0/1 is wine32/wine64, 2 is both
+dll_reg_manager=""
 ## Do not remove or edit below except if you don't use winestarter configurator.
 _reged=1
 
@@ -189,9 +213,7 @@ _reged=1
 use_optimus=0
 ## set the optimus starter : 'optirun', 'primusrun'
 opti_starter="optirun"
-## optirun need '-b' option if choosing between 'VirtualGl' or 'primus' virtualizer
-## if using 'primusrun' leave 'opts' and 'accel' blank ('')
-opti_opts='-b'
+## If using 'primusrun' or 'Bumblebee default' leave 'accel' blank ('')
 ## set optirun vitualizer: 'virtualgl', 'primus'
 opti_accel="primus"
 ## optimus env options
@@ -212,13 +234,12 @@ bck_xrandr='xrandr --output HDMI-1 --mode 1920x1080 --rate 60'
 
 ## optional desktop environment replacement:
 ## This option allow you to replace a buggy enduser graphical environment
-## by a lighter one (OpenGl glitch, etc). This suppose a second desktop UI is
-## already installed. 
+## by a lighter one (OpenGl glitch, etc). This suppose a second desktop UI is already installed. 
 ## set enable (1) or disable (0)
 set_desktop_env=0
 ## selec the default UI and replacement UI
 default_desktop='cinnamon'
-secondary_desktop='/usr/bin/openbox'
+secondary_desktop='openbox'
 ## reverse mouse button  
 mouse_set=0
 mouse_dev='Minicute Mouse'
@@ -277,7 +298,7 @@ You finally keep the ones really needed.
 ## Xrandr
 There is also an **xrandr** option.
 
-For a classic app, this is unuseful, but for games it really could be.
+For a classic app, this is unuseful, but for games it really could be particulary with Optimus laptop.
 
 
 Sometimes is better to set the desktop to the gameplay definition, this way you could get a smoother gameplay, better FPS, etc...
@@ -307,7 +328,7 @@ The one with a res is your default(s). You just have now to set it in the conf f
 ----------
 
 ## Configurator UI
-Configurator can do more than the default config file, but doesn't change it except for dedicated configurator needs lines.
+Configurator can do more than the default config file, but doesn't change it except for dedicated configurator needed lines.
 
 There is short user help displayed 
 

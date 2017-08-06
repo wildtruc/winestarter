@@ -2,6 +2,7 @@
 wtc => winestarter_conf, wt => winestarter
 
 ### Issues
+ - [ ] winestarter yad popups don't looking very nice and need improvement.
  - [x] *v0.98.2* - wtc
  	- #1 Bad images export in WineHQ, PoL download selectors.
  - [x] *v0.98.1* - wt & wtc
@@ -23,6 +24,10 @@ wtc => winestarter_conf, wt => winestarter
 -----------
 ### Change Log
 
+*( 05/08/28 ) v0.98.4* - wtc - wt
+ - Added fn_install_exe ability to download binary package directly by only changing executable path by downloadable package URL. Then, script detect the URL form and try to download the binary before install process.
+ - Changed fn_convert_desktop_file in wt to only popup at install time. Still looking for a beter display.
+ 
 *( 30/07/28 ) v0.98.3* - wtc
  - v0.98.2 issues #1 - fixed.
  - Fixed an issue in regedit function when user_reg value in config file is empty. It was removing too much lines under the targeted one.

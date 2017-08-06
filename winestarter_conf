@@ -662,10 +662,10 @@ wine_pack=$wine_pack"
 			insert=0
 		fi
 		
-		if [[ $_var == w_install_zip ]]; then if [ "$_val" == $HOME ]; then _val=''; fi; fi
+		if [[ $_var == w_install_zip ]]; then if [ "$_val" == $HOME/ ]; then _val=''; fi; fi
 		if [[ $_var == w_install_dir ]]; then 
 			if [[ "$_val" != '' ]]; then
-				if [[ "$w_install_zip" != '' && "$w_install_zip" != $HOME ]]; then
+				if [[ "$w_install_zip" != '' && "$w_install_zip" != $HOME/ ]]; then
 					if [[ $(printf "$w_install_zip"| egrep -c "^.*-") -gt 0 ]]; then
 						exe_dir=$(printf "$w_install_zip"| sed -n "s/\([[:alnum:]]*\)-.*$/\1/;s/^.*\///g;p")
 						_val=$exe_dir
@@ -675,6 +675,7 @@ wine_pack=$wine_pack"
 			fi
 			if [ "$_val" == $HOME/ ]; then _val=''; fi
 		fi
+		if [[ $_var == w_download_dir ]]; then if [ "$_val" == $HOME/ ]; then _val=''; fi; fi
 		if [[ $_var == w_extra_script ]]; then if [ "$_val" == $HOME/ ]; then _val=''; fi; fi
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
@@ -686,7 +687,8 @@ wine_pack=$wine_pack"
 		if [ $(printf "$w_more_pkgs"| grep -c "*") -gt 0 ]; then w_more_pkgs=$(cat $conf_edit); fi
 		if [[ $w_extra_script == $HOME/ ]]; then w_extra_script=''; fi
 		_install_conf="
-## This option allow to install .exe or .msi through winestarter process
+## This option allow to install .exe or .msi through winestarter process.
+## It's possible to replace file name path by an internet URL for download it.
 w_install_exe=$w_install_exe
 ## Winetricks options, if any
 w_tricks_opts='$w_tricks_opts'
@@ -698,6 +700,8 @@ w_more_pkgs='$w_more_pkgs'
 ## This option will install them in the provided directory to the Program Files path
 w_install_zip=\"$w_install_zip\"
 w_install_dir=\"$w_install_dir\"
+## Download dir is the user default one, you can change it here.
+w_download_dir=\"$w_download_dir\"
 ## user script: You can add here a personal or a community script (updater, logs, etc)
 ## It will be automaticaly pasted in the installed app directory.
 ## This is very optional and at your own risk
@@ -2029,22 +2033,26 @@ $vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		# window messages
 		w_text="$bf\\Software install$end\\n\
 $vb\\This feature allow you to install a software at WineStarter launch$end\\n\
-$vb\\It will work in most cases, but could fail before the end of process$end"
+$vb\\It will work in most cases, but could fail before the end of process$end\n\
+$nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		w_tricks_trk_exe="check here to activate install process"
 		w_tricks_ins_exe="$nf Select the .exe/.msi package to install$end"
 		w_tricks_trk_opt="$vb Winetricks command line options:$end"
 		w_tricks_trk_opt0="option (--no-isolate): force Winetricks to not create its own prefix"
 		w_tricks_trk_tip0="$vb\\User prefix and wine bottle have to be already set in Wine tab.$end"
 		w_tricks_trk_tip1="$nf\\Note:$end Steam Winetricks package is usualy broken, download it by your own if needed."
-		w_more_pkgs0="$bf More packages$end"
+		w_more_pkgs0="$bf\\More packages$end"
 		w_more_pkgs1="$vb\\If you have to install associated package or other dlls from separate source and not available in Winetricks, select them here$end"
 		w_more_pkgs2="$nf Select one or more$end"
-		w_more_zip0="$bf Alternative install type$end"
+		w_more_zip0="$bf\\Alternative install type$end"
 		w_more_zip1="$vb\\In some cases, install is provided by a compressed file (zip, rar, 7z, exe) extracted or to extract directly to the bottle Program File directory. Manage them here.$end"
 		w_more_zip2="$nf\\Note$end: for auto-extractible exe file, create the directory first. Name with a '$nf-$end' after the first word will be auto-detected."
 		w_more_zip3="$nf Select the compressed file to install$end"
 		w_more_zip4="$nf Select or create the target directory$end"
-		w_more_scpt0="$bf User script$end"
+		w_more_dl0="$bf\\Download directory option$end"
+		w_more_dl1="$vb\\By default, download will be stocked in user default dowload directory. You can set a different one here.$end"
+		w_more_dl2="$nf Select dowload directory$end"
+		w_more_scpt0="$bf\\User script$end"
 		w_more_scpt1="$vb\\In very rare case, some users wish to add script to their app directory (updator,log collector, etc), this is the place to do so.$end"
 		w_more_scpt2="$rb\\WARNING$end:$nf Choose wisely, this is at your own risk.$end"
 		w_more_scpt3="$nf Select a script (bash, python, etc) $end"
@@ -2097,7 +2105,8 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		fi
 		if [ "$w_install_zip" == '' ]; then w_install_zip="$HOME/";	fi
 		if [ "$w_install_dir" == '' ]; then w_install_dir="$HOME/";	fi
-		if [ "$w_extra_script" == '' ]; then w_extra_script="$HOME/";	fi
+		if [ "$w_extra_script" == '' ]; then w_extra_script="$HOME/"; fi
+		if [ "$w_download_dir" == '' ]; then w_download_dir="$HOME/"; fi
 		
 		pre_list=0
 		# var list sets
@@ -2108,7 +2117,7 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		"4;;;;;LBL;;;"
 		"5;$w_install_exe;w_install_exe;;$w_tricks_trk_exe;CHK;;;"
 		"6;;;;;LBL;;;"
-		"7;$w_exe_path;w_exe_path;;$w_tricks_ins_exe;FL;;_w_soft;"
+		"7;$w_exe_path;w_exe_path;;$w_tricks_ins_exe;MFL;;_w_soft;"
 		"8;;;;;LBL;;;"
 		"9;;;;$w_tricks_trk_opt;LBL;;;"
 		"10;$w_tricks_opts;w_tricks_opts;;$w_tricks_trk_opt0;CHK;;;"
@@ -2120,15 +2129,19 @@ $vb\\It will work in most cases, but could fail before the end of process$end"
 		"16;;;;$w_more_zip0;LBL;;;"
 		"17;;;;$w_more_zip1;LBL;;;"
 		"18;;;;$w_more_zip2;LBL;;;"
-		"19;$w_install_zip;w_install_zip;;$w_more_zip3;FL;;;"
+		"19;$w_install_zip;w_install_zip;;$w_more_zip3;MFL;;;"
 		"20;$w_install_dir;w_install_dir;;$w_more_zip4;CDIR;;;"
+		"21;;;;;LBL;;;"
+		"22;;;;$w_more_dl0;LBL;;;"
+		"23;;;;$w_more_dl1;LBL;;;"
+		"24;$w_download_dir;w_download_dir;;$w_more_dl2;CDIR;;;"
 		)
 		misc_sets=(
-		"21;;;;;LBL;;;"
-		"22;;;;$w_more_scpt0;LBL;;;"
-		"23;;;;$w_more_scpt1;LBL;;;"
-		"24;;;;$w_more_scpt2;LBL;;;"
-		"25;$w_extra_script;w_extra_script;;$w_more_scpt3;FL;;;"
+		"25;;;;;LBL;;;"
+		"26;;;;$w_more_scpt0;LBL;;;"
+		"27;;;;$w_more_scpt1;LBL;;;"
+		"28;;;;$w_more_scpt2;LBL;;;"
+		"29;$w_extra_script;w_extra_script;;$w_more_scpt3;FL;;;"
 		)
 		if [ $_extended = 1 ]; then
 		basic_sets=(

@@ -1,9 +1,26 @@
 #! /bin/bash
 
-## You can place the script everywhere, but /usr/local/bin is still the best
-## You can rename the script as you wish
+## License:
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU Lesser General Public
+#   License as published by the Free Software Foundation; either
+#   version 2.1 of the License, or (at your option) any later
+#   version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Lesser General Public License for more details.
+#
+#   You should have received a copy of the GNU Lesser General Public
+#   License along with this program.  If not, see
+#   <https://www.gnu.org/licenses/>.
+#
 ## You can redistribute it as you wish : GPL v3
 ## author : wildtruc@noneltd.net
+
+## You can place the script everywhere, but /usr/local/bin is still the best
+## You can rename the script as you wish
 ## usage : winestart CONFIGFILE 
 
 ## define per game conf files dir
@@ -36,9 +53,13 @@ config_file=$scpt_dir/configs/$conf
 [[ $w_install_exe ]]|| w_install_exe=0
 [[ $w_config ]]|| w_config=0
 ##define user home desktop directory
-DESK_DIR=$(cat $HOME/.config/user-dirs.dirs| grep "XDG_DESKTOP_DIR"| \
-sed -n "s|\"||g;s|\$HOME|$HOME|p")
-DESK_DIR=("$DESK_DIR")
+if [ -e $HOME/.config/user-dirs.dirs ]; then
+	. $HOME/.config/user-dirs.dirs
+fi
+#DESK_DIR=$(cat $HOME/.config/user-dirs.dirs| grep "XDG_DESKTOP_DIR"| \
+#sed -n "s|\"||g;s|\$HOME|$HOME|p")
+#DESK_DIR=("$DESK_DIR")
+#DESK_DIR=("$XDG_DESKTOP_DIR")
 ## yad fonts colors
 vb='<span color="'$main'" weight="bold" font="'$font0' '$size0'">'
 vn='<span color="'$main'" weight="normal" font="'$font0' '$size0'">'
@@ -197,6 +218,23 @@ fn_reg_dlls(){
 		fi
 	fi
 }
+fn_download_ui(){
+	if [ $dl_installer = 1 ]; then
+		dl_cmd(){ wget -O $dl_dir/$pack_name $pkgs 2>&1; }
+	else
+		dl_cmd(){ wget $pkgs $dl_dir/ 2>&1; }
+	fi
+	## This perl regex Analyse and parse wget stdout field, then display it in a yad window
+	track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $pack_name [\1] time left: \3\t\2\/s/"; }
+#	site=$(printf "$pkgs"| sed -n "s/\(^.*\/\/\)\(.*\.\w*[a-z]\)\/*.*$/\2/p")
+	pkg_ext=$(printf "$pkgs"| sed -n "s/^.*\.//p")
+	site=$(printf "$pkgs"| sed -n -E "s/(^.*\/\/)(.*\.\w*[a-z])\/*.*\.(w*$pkg_ext)$/\2/p")
+	pack=$(printf "$pkgs"| sed -n "s/^.*\///p")
+	w_text="$vb\\Downloading $pack from $site server.$end"
+	## yad progress bar
+	dl_cmd | track | $yad_bin --width=550 --title "$w_title" --text="$w_text" \
+	--window-icon=filesave --image=$filesave --progress --auto-close
+}
 fn_use_winepath(){
 	unset dl_list
 	## create tmp dir for package download
@@ -210,8 +248,7 @@ fn_use_winepath(){
 		_use_winepath_env=1
 	else
 		w_title="Winestarter"
-		## This perl regex Analyse and parse wget stdout field, then display it in a yad window
-		track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $wine_ver [\1] time left: \3\t\2\/s/"; }
+		
 		## control if wine bin dir exist. If not create it from default
 		if ! [ -d $wine_path/$ftp_elf/ ]; then mkdir -p $wine_path/$ftp_elf; fi
 		## create the download list to fill in the yad loop.
@@ -236,12 +273,9 @@ fn_use_winepath(){
 		
 		cd $dl_dir
 		for pkgs in ${dl_list[@]}; do
-			dl_cmd(){ wget $pkgs $dl_dir/ 2>&1; }
-			pack=$(printf "$pkgs"| sed -n "s/^.*\///p")
-			w_text="$vb\\Downloading $pack from $site server.$end"
-			## yad progress bar
-			dl_cmd | track | $yad_bin --width=550 --title "$w_title" --text="$w_text" \
-			--window-icon=filesave --image=$filesave --progress --auto-close
+			dl_installer=0
+			pack_name=$wine_ver
+			fn_download_ui
 		done
 			
 		for dwld in ${unpack_list[@]}; do
@@ -343,7 +377,7 @@ fn_install_tricks(){
 	fi
 }
 fn_extract_lnk(){
-	local $DESK_DIR
+#	local $DESK_DIR
 	sct_time=$(date +%H%M)
 	dsk_dir=$XDG_DESKTOP_DIR
 	
@@ -414,7 +448,7 @@ fn_extract_lnk(){
 }
 fn_convert_desktop_file(){
 	if [ -s $convert_bin ]; then
-	local $DESK_DIR
+#	local $DESK_DIR
 	
 	exe_key=$(printf "$game_exe"| perl -pe "s/^.*\///p")
 	wine_dsk=$(printf "$XDG_DESKTOP_DIR"| sed -n "s/^.*\///p")
@@ -440,20 +474,22 @@ fn_convert_desktop_file(){
 					fi
 				done
 			fi
-			if ! [ -s $dsk_dir/$dsk_name.desktop ]; then
-				if [ -x $yad_bin ]; then
-					d_text0="$vb\\Desktop file auto detection for $dsk_key failed.\\nSelect a desktop file entry manually. Or just cancel to pass.$end"
-					d_text1="$vb\\You can also use winestarter_conf after and choose button:$end$rb\nEdit or create a desktop file$end"
-					dsk_list=$(printf "${desktop_file_list[*]}"| sed -n "s/.desktop//g;p"|tr '\n' '!')
-					dsk_seek=$($yad_bin --width=400 --title "$w_title" --form --image=$inform \
-					--window-icon=filesave --timeout=10 --timeout-indicator=bottom --separator="" \
-					--field="$d_text0":LBL '' --field="":CB "$dsk_list" \
-					--field="$d_text1":LBL ''
-					)
-					if ! [ "$dsk_seek" = '' ]; then dsk_name=$dsk_seek; fi #else
-#					text="$bf\\There no desktop file entry for your app$end\n$vb\\If you want one, launch winestarter_conf and choose button:$end$rb\nEdit or create a desktop file$end"
-#					dialog_list="gtk-close;$warning"; yad_warnings
-#					fi
+			if [ $w_install_exe -gt 0 ]; then
+				if ! [ -s $dsk_dir/$dsk_name.desktop ]; then
+					if [ -x $yad_bin ]; then
+						d_text0="$vb\\Desktop file auto detection for $dsk_key failed.\\nSelect a desktop file entry manually. Or just cancel to pass.$end"
+						d_text1="$vb\\You can also use winestarter_conf after and choose button:$end$rb\nEdit or create a desktop file$end"
+						dsk_list=$(printf "${desktop_file_list[*]}"| sed -n "s/.desktop//g;p"|tr '\n' '!')
+						dsk_seek=$($yad_bin --width=400 --title "$w_title" --form --image=$inform \
+						--window-icon=filesave --timeout=10 --timeout-indicator=bottom --separator="" \
+						--field="$d_text0":LBL '' --field="":CB "$dsk_list" \
+						--field="$d_text1":LBL ''
+						)
+						if ! [ "$dsk_seek" = '' ]; then dsk_name=$dsk_seek; fi #else
+	#					text="$bf\\There no desktop file entry for your app$end\n$vb\\If you want one, launch winestarter_conf and choose button:$end$rb\nEdit or create a desktop file$end"
+	#					dialog_list="gtk-close;$warning"; yad_warnings
+	#					fi
+					fi
 				fi
 			fi
 		fi
@@ -495,8 +531,10 @@ fn_convert_desktop_file(){
 		else
 			## not found
 			echo "»»»» NO DESKTOP FILE TO PROVIDE. PASSED."
-			text="$brf\\No desktop file found for convertion$end$vb.\nPlease process with winestarter_conf instead$end"
-			dialog_list="gtk-close;$inform"; yad_warnings
+			if [ $w_install_exe -gt 0 ]; then
+				text="$brf\\No desktop file found for convertion$end$vb.\nPlease process with winestarter_conf instead$end"
+				dialog_list="gtk-close;$inform"; yad_warnings
+			fi
 		fi		
 	fi
 	else
@@ -506,18 +544,31 @@ fn_convert_desktop_file(){
 	fi
 }
 fn_install_exe(){
+	sub_download(){
+		if [[ $w_download_dir != '' ]]; then dl_dir=$w_download_dir; else dl_dir=$XDG_DOWNLOAD_DIR; fi
+		pack_name=$(printf "$pkgs"| sed -n "s/^.*\///p")
+		if ! [ -s $dl_dir/$pack_name ]; then
+			dl_installer=1
+			fn_download_ui
+		fi		
+	}
 	if [ "$w_exe_path" != '' ]; then
+		if [[ $w_exe_path =~ ^(http*|ftp*) ]]; then
+			pkgs=$w_exe_path
+			sub_download
+			w_exe_path=$dl_dir/$pack_name
+		fi
 		msi=$(printf "$w_exe_path"| grep -c "\.msi")
-		if [ $start_cmd = 0 ]; then
+#		if [ $start_cmd = 0 ]; then
 			if [ $msi = 0 ]; then
 				$wine_bin $w_exe_path $w_exe_opts
 			else
 				$wine_bin msiexec \/i $w_exe_path $w_exe_opts
 			fi
-		else
-			# pull wine start command line in unix style
-			$opti_run $wine_bin start /unix "$w_exe_path" $w_exe_opts
-		fi
+#		else
+#			# pull wine start command line in unix style
+#			$opti_run $wine_bin start /unix "$w_exe_path" $w_exe_opts
+#		fi
 		fn_extract_lnk
 		sleep 1
 		abort=0
@@ -527,6 +578,11 @@ fn_install_exe(){
 	fi
 	if [ $(printf "$w_more_pkgs"| grep -c .) -gt 0 ]; then
 		for pkg in ${w_more_pkgs[@]}; do
+			if [[ $pkg =~ ^(http*|ftp*) ]]; then
+				pkgs=$pkg
+				sub_download
+				pkg=$dl_dir/$pack_name
+			fi
 			msi=$(printf "$pkg"| grep -c "\.msi")
 			if [ $msi = 0 ]; then
 				$wine_bin $pkg $w_exe_opts
@@ -548,8 +604,8 @@ fn_install_exe(){
 			target_dir=$user_prefix/$bottle_prefix/drive_c/
 			if [ -x $yad_bin ]; then
 				dir_text="$vb\\Please, select or create the target directory in C: drive.$end"
-				w_install_dir=$($yad_bin --width=400 --title "$w_title" --form --image=stock_dialog_question \
-				--window-icon=filesave --separator="" \
+				w_install_dir=$($yad_bin --width=400 --title "$w_title" --form \
+				--image=stock_dialog_question --window-icon=filesave --separator="" \
 				--field="$dir_text":LBL '' --field="":CDIR "$target_dir")
 				abort=$?
 				target_dir=$w_install_dir
@@ -558,6 +614,11 @@ fn_install_exe(){
 		fi
 		mkdir -p $target_dir
 		game_dir=$w_install_dir
+		if [[ $w_install_zip =~ ^(http*|ftp*) ]]; then
+			pkgs=$w_install_zip
+			sub_download
+			w_install_zip=$dl_dir/$pack_name
+		fi
 		if [ $(printf "$w_install_zip"| grep -c ".zip") -gt 0 ]; then
 #			unzip -o -D ISO-8859-15 $w_install_zip -d $w_install_dir
 			unzip -o $w_install_zip -d $target_dir
