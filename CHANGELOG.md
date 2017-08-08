@@ -24,6 +24,13 @@ wtc => winestarter_conf, wt => winestarter
 -----------
 ### Change Log
 
+*( 08/08/28 ) v0.98.5* - wtc - wt
+ - wt - Add a symlink to .winebin amd64 binary dir to x86 binary dir, x86_64 packages containing already wine32 binaries and libs.
+ - wtc - Added an auto hide function for Nvidia section when Nvidia device are not detected.
+ - wtc - Added a config file editor at config file selector for fast edit.
+ - Added a notification independant script to notify for winestarter update to user.
+ - Last version of winetricks will be automatically update on git repo.
+ 
 *( 05/08/28 ) v0.98.4* - wtc - wt
  - Added fn_install_exe ability to download binary package directly by only changing executable path by downloadable package URL. Then, script detect the URL form and try to download the binary before install process.
  - Changed fn_convert_desktop_file in wt to only popup at install time. Still looking for a beter display.

@@ -45,6 +45,7 @@ brf='<span color="'$warn'" weight="bold" font="'$font1' '$size1'">'
 #bf='<span color="'$main'" weight="bold" font="'$font' '$(($size+4))'">'
 #brf='<span color="'$warn'" weight="bold" font="'$font' '$(($size+4))'">'
 nf='<span weight="bold" font="'$font0' '$size0'">'
+vz='<span color=\"'$main'\" weight=\"bold\" font=\"'$size0'\">'
 
 end='</span>'
 vB=$vb
@@ -521,7 +522,7 @@ $nf\winetstarter $conf_target.conf$end"
 ##  License along with main.c;if not, write to the Free Software
 ##  Foundation, Inc., 51 Franklin Street, Fifth Floor Boston, MA 02110-1301,  USA
 
-## comments with '##' are unremovable, they are user help comments
+## comments with '##' are user help comments
 ## comments with '#' are unset feature
 
 ## Allow extended features for winestarter configurator; off (0), on (1)
@@ -1313,7 +1314,7 @@ opti_VBLK=$opti_VBLK"
 #		key=$RANDOM
 #		unset basic_sets tab_set tab_temp cfg_set t_display form_win
 		unset basic_sets field_list chk_list form_win def_win default_win
-		unset tab_set tab_temp cfg_set t_display 
+		unset tab_set tab_temp cfg_set t_display nv_field
 		main_tab_text="$bf Select settings by theme$end \\n \
  $nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
  $nf\\Last dowloadable Wine:$end$vb wine32 $pol32, wine64 $pol64$end $nf\\System :$end $vb$sys_version$end"
@@ -1328,7 +1329,15 @@ $nf Check here the sections you would like to configure.$end"
 #		wine_tip0="$vb Install software feature is highly experimental. For the instance, you need \
 #to already know the complete path name of the installed app.$end"
 		wine_tip0="$vb Main prefix install sections$end"
-				
+		if [ $($lpci_bin| grep -c "NVIDIA") -gt 0 ]; then
+			nv_field+=("8;;;;;LBL;;;")
+			nv_field+=("9;;;;$w_title1;LBL")
+			nv_field+=("10;$_nvidia_1;_nvidia_1;Nvidia*(common);$msg_nvidia1;CHK;;;fn_nvidia_config_1;$img_nv_cm")
+			nv_field+=("11;$_nvidia_2;_nvidia_2;Nvidia*(extra)*;$msg_nvidia2;CHK;;;fn_nvidia_config_2;$img_nv_ext")
+			nc=11
+		else
+			nc=7
+		fi
 		basic_sets=(
 		"1;;;;;LBL;;;"
 		"2;;;;$wine_tip0;LBL"
@@ -1337,20 +1346,19 @@ $nf Check here the sections you would like to configure.$end"
 		"5;$_install;_install;Install*Software;$msg_install;CHK;;;fn_install_soft;$img_install"
 		"6;$_tricks;_tricks;Install*tricks**;$msg_tricks;CHK;;;fn_winetricks;$img_tricks"
 		"7;$_reged;_reged;Registry*options*;$msg_reged;CHK;;;fn_regedit_config;$img_reged"
-		"8;;;;;LBL;;;"
-		"9;;;;$w_title1;LBL"
-		"10;$_nvidia_1;_nvidia_1;Nvidia*(common);$msg_nvidia1;CHK;;;fn_nvidia_config_1;$img_nv_cm"
-		"11;$_nvidia_2;_nvidia_2;Nvidia*(extra)*;$msg_nvidia2;CHK;;;fn_nvidia_config_2;$img_nv_ext"
-		"12;;;;;LBL;;;"
-		"13;;;;$w_title2;LBL"
-		"14;$_xrandr;_xrandr;Display*options**;$msg_xrandr;CHK;;;fn_xrandr_config;$img_xrandr"
-		"15;$_optimus;_optimus;Optimus*options**;$msg_optimus;CHK;;;fn_optimus_config;$img_opti"
-		"16;;;;;LBL;;;"
-		"17;;;;$w_title3;LBL"
-		"18;;;;$w_sub_3;LBL"
-		"19;$_extended;_extended;;$msg_extended;CHK;;;;")
+		"${nv_field[@]}"
+		"$[ $nc+1 ];;;;;LBL;;;"
+		"$[ $nc+2 ];;;;$w_title2;LBL"
+		"$[ $nc+3 ];$_xrandr;_xrandr;Display*options**;$msg_xrandr;CHK;;;fn_xrandr_config;$img_xrandr"
+		"$[ $nc+4 ];$_optimus;_optimus;Optimus*options**;$msg_optimus;CHK;;;fn_optimus_config;$img_opti"
+		"$[ $nc+5 ];;;;;LBL;;;"
+		"$[ $nc+6 ];;;;$w_title3;LBL"
+		"$[ $nc+7 ];;;;$w_sub_3;LBL"
+		"$[ $nc+8 ];$_extended;_extended;;$msg_extended;CHK;;;;")
 #		"14;$_optimus;_optimus;Optimus;$msg_optimus;CHK;;;fn_optimus_config;$img_opti"
 #		"15;$_xrandr;_xrandr;Monitor;$msg_xrandr;CHK;;;fn_xrandr_config;$img_xrandr")
+#		"10;$_nvidia_1;_nvidia_1;Nvidia*(common);$msg_nvidia1;CHK;;;fn_nvidia_config_1;$img_nv_cm"
+#		"11;$_nvidia_2;_nvidia_2;Nvidia*(extra)*;$msg_nvidia2;CHK;;;fn_nvidia_config_2;$img_nv_ext"
 		item_sep=","
 		# window style and function
 		win_type=0
@@ -1637,7 +1645,7 @@ $nf Check here the sections you would like to configure.$end"
 		w_wine_binary_title="$vb\\You can choose and activate here a custom Wine binary directory. Some apps (particulary old ones) could need old Wine versions. Datas are provided by PlayOnLinux Wine server.$end"
 		w_wine_wine_path="$vb Set full path of customs Wine binaries repository:$end"
 		w_wine_wine_ver="$vb Set the custom Wine directory name:$end"
-		w_wine_dl_info="$vb\\Here, you can set the download method for the custom Wine binary. You can choose between PlayOnLinux packages (for Wine older than 2.4) or configure dedicated distro repos (debian like and fedora like).$end"
+		w_wine_dl_info="$vb\\Here, you can set the download method for the custom Wine binary. You can choose between PlayOnLinux packages (for Wine older than 2.4) or WineHQ-staging packages (above 2.4).$end"
 		w_wine_wine_pol="$vb Download a binary package from PlayOnLinux repo:$end"
 		w_wine_wconfig="$vb\\When set, new Wine binary will setup new environment, this set will allow winecfg to start at boot:$end"
 		w_text="$bf Configure an extra Wine binary path$end"
@@ -2654,10 +2662,13 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 	
 }
 ########### MAIN ###########
+export wine_bin=$(find /usr/{bin,local/bin} -name wine)
 export yad_bin=$(find /usr/{bin,local/bin} -name yad)
+export zen_bin=$(find /usr/{bin,local/bin} -name zenity)
 export conv_bin=$(find /usr/{bin,local/bin} -name convert)
 export icot_bin=$(find /usr/{bin,local/bin} -name icotool)
 export wres_bin=$(find /usr/{bin,local/bin} -name wrestool)
+export lpci_bin=$(find /{bin,sbin} /usr/{bin,sbin} -name lspci)
 # PlayOnLinux packages download window
 #select_win_bin(){ colors ; icons_set ; select_wine_bin; }
 edit_reg_bin(){ colors ; icons_set ; edit_regfile; }
@@ -2685,52 +2696,7 @@ $nf\\All custom maunal changes in the text area will be merge with others preset
 	fi
 	
 }
-#	unset pol_bin_list local_bin_list
-#	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; elf='64'; else ftp_elf='x86'; elf=''; fi
-#	if [ -d $wine_path ]&&[ "$wine_path" != "$HOME" ]; then	
-#			local_bin_list=( $(ls -1x $wine_path/$ftp_elf) )
-#	fi
-#	
-#	if [ -s /usr/bin/wget ]; then
-#		ftp_temp=$(mktemp --tmpdir ftp1.XXXXXXXX)
-#		loc_temp=$(mktemp --tmpdir ftp2.XXXXXXXX)
-#		pol_address="http://wine.playonlinux.com/binaries/linux-$ftp_elf.lst"
-#		p_text="$vb\Retrieving Wine PlayOnLinux server information$end"
-#		( /usr/bin/lftp -c "cd $pol_address; ls > $ftp_temp; sleep 3" 2>&1
-#		( wget -o $ftp_temp $pol_address 2>&1
-#		)| $yad_bin --with=400 --text-align=center --text="$p_text" --progress --pulsate \
-#		--auto-close --progress-text="please, wait..." 
-#		wget -O $ftp_temp $pol_address
-#		cat $ftp_temp| egrep -v "(^\s*.*sha1)"| awk '{print $5}'| \
-#		sed -n "s|^.*wine-\(.*\)-\(linux.*$\)|\1|p"| tac > $ftp_temp
-#		cat $ftp_temp | cut -d';' -f2
-#			sleep 1
-#		pol_bin_list=( $(tac "$ftp_temp"| cut -d';' -f2) )
-#		for r_bins in ${pol_bin_list[@]}; do
-#			out=''
-#			for bins in ${local_bin_list[@]}; do
-#				if [ $bins == $r_bins ]; then out=' *'; fi
-#			done
-#			printf "$r_bins$out," >> $loc_temp
-#		done
-#		w_text="$vb Download a binary package from PlayOnLinux repo:$end"
-#		## PlayOnLinux-wine-$r_bins-linux-x86.pol
-#		wine_bin_list=$(cat $loc_temp)
-#		
-#		wine_bin=$(
-#		$yad_bin --width=300 --title "$w_title" --image="$img_wine_desk_ui" \
-#		--window-icon="$img_wine_desk_ui" --form --text="$w_text" --separator=" " --item-separator="," \
-#		--field="$vb Select $ftp_elf package$end":CB "$wine_bin_list")
-#		
-#		if [ $? = 0 ]; then
-#			if [ $wine_bin != '' ]; then
-#				printf "$wine_bin" > /tmp/w_bin_tmp
-#			fi
-#		else
-#			exit 0
-#		fi
-#	fi
-#}
+
 select_wine_bin(){
 	colors ; icons_set
 	bin_class=0
@@ -3129,26 +3095,45 @@ Select the bottle you would like for a desktop file$end"
 			)
 		fi	
 	else
-		w_text="$bf Wine bottle edition$end$vb\\n \
-You can choose between edit a entire bottle or the Nvidia OpenGL environment options only$end"
 		win_icon=$img_wine_ui
+		unset nv_field nv_list
+		if [ $($lpci_bin| grep -c "NVIDIA") -gt 0 ]; then
+			nv_field+=("--field=:LBL")
+			nv_list+=('')
+			nv_field+=("--field=$vb Select a Wine bottle$end:CB")
+			nv_list+=("$bottle_list")
+			nv_field+=("--field=$vb Select edit option$end:CB")
+			nv_list+=('Edit the whole bottle#Edit config file directly#Edit Nvidia options only')
+			w_text="$bf Wine bottle edition$end$vb\\n \
+You can choose between edit a entire bottle or the Nvidia OpenGL environment options only$end"
+		else
+			w_text="$bf Wine bottle edition$end$vb\\n \
+Select the Wne bottle to edit$end"
+			nv_field+=("--field=:LBL")
+			nv_list+=('')
+			nv_field+=("--field=$vb Select a Wine bottle$end:CB")
+			nv_list+=("$bottle_list")
+			nv_field+=("--field=$vb Select edit option$end:CB")
+			nv_list+=('Edit the whole bottle#Edit config file directly')
+		fi
 		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon \
-			--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
-			--field="":LBL '' \
-			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
-			--field="Edit the whole bottle":CHK TRUE \
-			--field="Edit Nvidia OpenGL only":CHK FALSE \
-			--align=left --text "$w_text" )
+		--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
+		--align=left --text "$w_text" "${nv_field[@]}" "${nv_list[@]}")
 	fi
 	if [ $? = 1 ]; then exit 0; fi
 	_edit_bottle=$(printf "${edit_win[@]}"| cut -d';' -f2)
 	config_file=$HOME/.winestarter/configs/$_edit_bottle.conf
 	if [ $desktop_file = 0 ]; then
-		_all_wine=$(printf "${edit_win[@]}"| cut -d';' -f3)
-		_nv_only=$(printf "${edit_win[@]}"| cut -d';' -f4)
-		[[ $_all_wine == TRUE ]]&& code=0
-		[[ $_nv_only == TRUE ]]&& code=1
+#		_all_wine=$(printf "${edit_win[@]}"| cut -d';' -f3)
+#		_nv_only=$(printf "${edit_win[@]}"| cut -d';' -f4)
+#		[[ $_all_wine == TRUE ]]&& code=0
+#		[[ $_nv_only == TRUE ]]&& code=1
+		if [ $(printf "${edit_win[@]}"| grep -c "Nvidia") -gt 0 ];then
+			code=1; else code=0
+		fi
+		
 	fi
+	
 	if [ $rstart = 1 ]; then
 		_winecfg=$(printf "${edit_win[@]}"| cut -d';' -f3)
 		_winetrk=$(printf "${edit_win[@]}"| cut -d';' -f4)
@@ -3157,8 +3142,26 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 		exit 0
 	fi
 	if [ -e $HOME/.winestarter/configs/$_edit_bottle.conf ]; then
+		## if previous option is config file direct edit, launch zenity text edit and exit.
+		if [ $(printf "${edit_win[@]}"| grep -c "directly") -gt 0 ];then
+			e_text="$bf\\Fast Config Edit$end\n This editor is for quick config edits. All '##' comments are removable if you're confortable without them, but we don't recommand it."
+#			$zen_bin --width=800 --height=600 --title="$w_title" --window-icon=$img_wine_desk_ui \
+#			--text-info  --text="$e_text" --checkbox="Confirm overwrite" \
+#			--editable --filename=$config_file
+			edit_config=$($yad_bin --width=800 --height=600 --title="$w_title" \
+			--window-icon=$img_wine_desk_ui --text-info  --text="$vb$e_text$end" \
+			--editable --filename=$config_file)
+			if [ $? = 1 ]; then
+				exit 0
+			else
+				echo "$edit_config" > $config_file
+			fi
+			exit 0
+			
+		fi
 		from_config=1
 		export from_config=$from_config config_file=$config_file
+		## check if selection is desktop file entry or not
 		if [ $desktop_file = 1 ]; then
 			bash $bash_opt "colors; icons_set; edit_desktop"
 		else
@@ -3171,8 +3174,8 @@ You can choose between edit a entire bottle or the Nvidia OpenGL environment opt
 }
 
 ## Script debug options
-#bash_opt='-x -c'
-bash_opt='-c'
+bash_opt='-x -c'
+#bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""

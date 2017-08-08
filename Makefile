@@ -1,5 +1,9 @@
+# DEFINE FIRST THE CURRENT USER NAME
 C_USER = $(shell ls -l "$(shell pwd)"| cut -d' ' -f3 | sed -n "2p")
-CONF_DIR = /home/$(C_USER)/.winestarter
+INSTALL = install
+PREFIX = /usr/local
+USER_DIR = /home/$(C_USER)
+CONF_DIR = $(USER_DIR)/.winestarter
 
 .PHONY: all install uninstall safeuninstall
 
@@ -11,29 +15,33 @@ install:
 	mkdir -p $(CONF_DIR)/configs
 	mkdir -p $(CONF_DIR)/desktop
 	mkdir -p $(CONF_DIR)/resources
-	mkdir -p /usr/local/share/applications
-	mkdir -p /usr/local/share/pixmaps
-#	cp -f ./winestarter.conf $(CONF_DIR)/
 	cp -Rf ./emblems $(CONF_DIR)/
 	cp -Rf ./png $(CONF_DIR)/
 	cp -f ./color.conf $(CONF_DIR)/
 	cp -f ./mime-* $(CONF_DIR)/resources/
-	cp -f ./winestarter /usr/local/bin/
-	cp -f ./winestarter_conf /usr/local/bin/
-	cp -f ./winestarter.desktop /usr/local/share/applications/
-	cp -f ./png/defaults/winestarter_128.png /usr/local/share/pixmaps/
 	chown -R $(C_USER):$(C_USER) $(CONF_DIR)
+	$(INSTALL) -D -t $(PREFIX)/bin/ winestarter
+	$(INSTALL) -D -t $(PREFIX)/bin/ winestarter_conf
+	$(INSTALL) -D -t $(PREFIX)/bin/ winestricks
+	$(INSTALL) -D -t $(PREFIX)/bin/ update_winestarter
+	$(INSTALL) -D -t $(PREFIX)/share/applications/ winestarter.desktop 
+	$(INSTALL) -D -t $(PREFIX)/share/pixmaps/ png/defaults/winestarter_128.png
+	$(INSTALL) -D -t $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	
 uninstall:
 	rm -Rf $(CONF_DIR)
 	rm -f /usr/local/bin/winestarter
 	rm -f /usr/local/bin/winestarter_conf
+	rm -f /usr/local/bin/update_winestarter
 	rm -f /usr/local/share/applications/winestarter.desktop
 	rm -f /usr/local/share/pixmaps/winestarter_128.png
+	rm -f $(USER_DIR)/.config/autostart/update_winestarter.desktop
 	
 safeuninstall:
 	rm -f /usr/local/bin/winestarter
 	rm -f /usr/local/bin/winestarter_conf
+	rm -f /usr/local/bin/update_winestarter
 	rm -f /usr/local/share/applications/winestarter.desktop
 	rm -f /usr/local/share/pixmaps/winestarter_128.png
+	rm -f $(USER_DIR)/.config/autostart/update_winestarter.desktop
 
