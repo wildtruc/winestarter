@@ -6,7 +6,7 @@ wine_src=$HOME/.winestarter
 temp=$(mktemp --tmpdir git.XXXXXXXX)
 git fetch --dry-run &>$temp
 ## if the word master appears in log, then process, otherwise exit.
-if [ $(cat $temp|grep -c "master") -eq 0 ]; then
+if [ $(cat $temp|grep -c "master") -eq 1 ]; then
 	## send a notification to user desktop.
 	win_icon=$wine_src/png/defaults/wine48r.png
 	msg="Winestarter update on the run !"

@@ -3174,8 +3174,8 @@ Select the Wne bottle to edit$end"
 }
 
 ## Script debug options
-bash_opt='-x -c'
-#bash_opt='-c'
+#bash_opt='-x -c'
+bash_opt='-c'
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""
