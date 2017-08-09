@@ -1,15 +1,17 @@
 #! /bin/bash
 
 ## define winestarter git source
-wine_src=$HOME/.winestarter
+wine_data=$HOME/.winestarter
+wine_src=$wine_data/.git
 ## make a temp file for git fetch output and execute
 temp=$(mktemp --tmpdir git.XXXXXXXX)
+cd $wine_data
 git fetch --dry-run &>$temp
 ## if the word master appears in log, then process, otherwise exit.
 if [ $(cat $temp|grep -c "master") -eq 1 ]; then
 	## send a notification to user desktop.
-	win_icon=$wine_src/png/defaults/wine48r.png
-	msg="Winestarter update on the run !"
+	win_icon=$wine_data/png/defaults/wine48r.png
+	msg="Winestarter GIT update!"
 	zenity --notification --window-icon=$win_icon --text="$msg"
 fi
 ## got out of there
