@@ -21,18 +21,6 @@
 
 #PATH=$PATH
 colors(){
-#main='#005400'
-#warn='#FF3300'
-#freeze='#b6b6b6'
-#font='Noto Sans'
-#size='10'
-#vb='<span color="'$main'" weight="bold" font="'$font'" size="'$size'">'
-#vn='<span color="'$main'" weight="normal" font="'$font','$size'">'
-#rb='<span color="'$warn'" weight="bold" font="'$font','$size'">'
-#gb='<span color="'$freeze'" weight="bold" font="'$font','$size'">'
-#bf='<span color="'$main'" weight="bold" font="'$font','$(($size+4))'">'
-#brf='<span color="'$warn'" weight="bold" font="'$font','$(($size+4))'">'
-#nf='<span weight="bold" font="'$font $size'">'
 if [ -s $HOME/.winestarter/color.conf ]; then
  . $HOME/.winestarter/color.conf
 fi
@@ -46,9 +34,7 @@ brf='<span color="'$warn'" weight="bold" font="'$font1' '$size1'">'
 #brf='<span color="'$warn'" weight="bold" font="'$font' '$(($size+4))'">'
 nf='<span weight="bold" font="'$font0' '$size0'">'
 vz='<span color=\"'$main'\" weight=\"bold\" font=\"'$size0'\">'
-
 end='</span>'
-vB=$vb
 }
 icons_set(){
 	png_stock=$HOME/.winestarter/png/defaults
@@ -346,6 +332,8 @@ main_code(){
 		done
 		if [ $_extended = 1 ]; then
 			if [ "${#_args[@]}" -gt 0 ]; then
+				if [[ ${_args[*]} == unset ]]; then _args=''; fi
+				
 				if [[ $from_config = 1 || $insert_section = 0 ]]; then
 					sed -ni "s|\(^wine_opts=\"\).*\(\"\)$|\1${_args[*]}\2|i;p" $config_file
 				else
@@ -438,10 +426,10 @@ $nf\winetstarter $conf_target.conf$end"
 	}
 	reconf_wine(){		
 		# "user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
-		echo "2222222222222"
+		echo "##### reconf_wine ######"
 #		if [[ $_var == special_cmd || $_var == wine_elf ]]; then
 		if [[ $_var == special_cmd || $_var == start_cmd || $_var == app_portable ]]; then
-			if [[ $_val == 'TRUE' ]]; then _val=1; else _val=0; fi
+			if [[ $_val == TRUE ]]; then _val=1; else _val=0; fi
 		fi
 		if [[ $_var == bottle_prefix ]]; then
 			if [[ $_val != $HOME ]]; then _val=$(printf "$_val"| sed -n "s|^.*/||g;p"); else _val=''; fi
@@ -483,13 +471,40 @@ $nf\winetstarter $conf_target.conf$end"
 #			args_list=( '-opengl' '-no-cf-sandbox' )
 			if [[ $_val == TRUE || $_val == FALSE ]]; then
 				if [[ $_val == TRUE ]]; then
-					if [[	$_var == wine_arg_gl ]]; then _args+=('-opengl'); fi
-					if [[	$_var == wine_arg_sdx ]]; then _args+=('-no-cf-sandbox'); fi
-#					if [[	$_var == wine_arg_msc ]]; then _args+=("$_val"); fi
+					if ! [ -e $HOME/.winestarter/resources/options.list ]; then
+						touch $HOME/.winestarter/resources/options.list
+					fi
+					if ! [ -e $bottle_prefix/options.log ]; then
+						touch $bottle_prefix/options.log
+					fi
+					for opts in ${def_args[@]}; do
+						_opt_var=$(printf "$opts"| cut -d',' -f1)
+						_opt_id=$(printf "$opts"| cut -d',' -f2)
+						if [ $(printf "$_opt_var"| grep -c "wine_arg_msc") -eq 0 ]; then
+							if [[	$_var == $_opt_var ]]; then _args+=("-$_opt_id"); fi
+						fi
+					done
+#					if [[	$_var == wine_arg_gl ]]; then _args+=('-opengl'); fi
+#					if [[	$_var == wine_arg_sdx ]]; then _args+=('-no-cf-sandbox'); fi
+##					if [[	$_var == wine_arg_msc ]]; then _args+=("$_val"); fi
+#					if [ $(cat $bottle_prefix/options.log| egrep -c "")]
 				fi
 			else
 				## TODO > to develop in in file query
-				if [[ $_val != '' ]]; then if [[	$_var == wine_arg_msc ]]; then _args+=("$_val"); fi; fi
+				
+				if [[ $_val != '' ]]; then
+					if [[	$_var == wine_arg_msc ]]; then
+						if [[ $_val != unset ]]; then
+							_args+=("$_val")
+						else
+							if [ "${#_args[@]}" -ge 1 ]; then
+								_args+=('')
+							else
+								_args+=('unset')
+							fi
+						fi
+					fi
+				fi
 			fi
 		fi
 		ifs=$IFS
@@ -561,7 +576,7 @@ w_config=1"
 		fi
 	}
 	reconf_wbin(){
-		echo "##### reconf_wbin ###### "
+		echo "##### reconf_wbin ######"
 		if [[ $_val == TRUE || $_val == FALSE ]]; then
 			if [[ $_val == TRUE ]]; then _val=1; else _val=0; fi	
 		fi
@@ -1319,7 +1334,7 @@ opti_VBLK=$opti_VBLK"
  $nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
  $nf\\Last dowloadable Wine:$end$vb wine32 $pol32, wine64 $pol64$end $nf\\System :$end $vb$sys_version$end"
 		w_text="$bf Wine prefix$end\\n \
-$vB Set wine prefix name, appli/game directories, etc.$end\\n \
+$vb Set wine prefix name, appli/game directories, etc.$end\\n \
 $nf Check here the sections you would like to configure.$end"
 		w_title="Wine Start Config"
 		w_title1="$vb Nvidia OpenGL options$end"
@@ -1412,10 +1427,10 @@ $nf Check here the sections you would like to configure.$end"
 		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
 		# window messages
 		w_wine_basic_tip=""
-		w_wine_user_prefix="$vB\\\Set user prefix if not the user's default one:$end"
-		w_wine_prefix="$vB\\\Set the Wine Bottle prefix to use:$end"
+		w_wine_user_prefix="$vb\\\Set user prefix if not the user's default one:$end"
+		w_wine_prefix="$vb\\\Set the Wine Bottle prefix to use:$end"
 		w_wine_prefix_tip="$vb\\\Example:$end$nf wine.my_bottle$end, no space and \"$nf\\wine.$end\" suffix is mandatory."
-		w_wine_game_path="$vB\\\Set the full game/appli directory if different from bottle:$end"
+		w_wine_game_path="$vb\\\Set the full game/appli directory if different from bottle:$end"
 		w_wine_elf_tip="$nf\\\Note:$end 32bits apps can be launch from a Wine 64bits install (from Wine 2.0 and above). In my own experience, it enhance globaly app performances. (Don't for XP 32bits apps)"
 		w_text="$bf\\Configure the Wine basic environment$end"
 		
@@ -1546,11 +1561,14 @@ $nf Check here the sections you would like to configure.$end"
 						def_arg=("$_def=0")
 					fi
 					local $def_arg
+					## FIXME : redifine this, it's garbages !!
 					if [[ $_def == wine_arg_msc ]]; then
 						# better to 'sed' here than anything else
-						if [[ $_arg_msc != '' ]]; then
+						if [[ $_arg == unset ]]; then
+#						if [[ $_arg_msc != '' ]]; then
 							_arg_msc="\\$(echo -e "${w_args_list[*]}"| sed -n  "s/$g_pat//p")"
 							wine_arg_msc=$_arg_msc
+#							wine_arg_msc="$(echo -e "${w_args_list[*]}"| sed -n  "s/$g_pat//p")"
 						else
 							wine_arg_msc=''
 						fi
@@ -1562,18 +1580,18 @@ $nf Check here the sections you would like to configure.$end"
 			if [ $_extended = 1 ]; then
 				## TODO > push in a list if more options in displayed list		
 	#			for trk in ${def_list(@)}; do
-				wine_arg_gl=0; wine_arg_sdx=0; wine_arg_msc='' 
+				wine_arg_gl=0; wine_arg_sdx=0; wine_arg_msc='unset' 
 	#			done
 			fi
 		fi
 		
 		# window messages
-		w_wine_user_prefix="$vB\\Set user prefix if not the user's default one:$end"
-		w_wine_prefix="$vB\\Set the Wine Bottle prefix to use:$end"
+		w_wine_user_prefix="$vb\\Set user prefix if not the user's default one:$end"
+		w_wine_prefix="$vb\\Set the Wine Bottle prefix to use:$end"
 		w_wine_prefix_tip="$nf\\\Ex:$end wine.my_bottle, no space and \"wine.\" suffix is mandatory."
-		w_wine_game_path="$vB\\Set the full game/app path if different from bottle:$end"
-		w_wine_game_dir="$vB\\Set full Wine style game/app directory:$end$vn (if already existing)$end"
-		w_wine_game_exe="$vB\\Set the Wine game/app executable to launch:$end$vn (if already existing)$end"
+		w_wine_game_path="$vb\\Set the full game/app path if different from bottle:$end"
+		w_wine_game_dir="$vb\\Set full Wine style game/app directory:$end$vn (if already existing)$end"
+		w_wine_game_exe="$vb\\Set the Wine game/app executable to launch:$end$vn (if already existing)$end"
 		w_wine_portable="$vb\\Set if the game/app is portable or you wish to install an already existing path to the C: drive root:$end"
 		w_wine_game_spl="$vb\\Set if the app have to be started from the app directory:$end"
 #		w_wine_elf="$vb Set if the app elf type is in 64 bits (experimental):$end"
@@ -1612,13 +1630,13 @@ $nf Check here the sections you would like to configure.$end"
 #		"17;;;;$w_wine_elf_tip;LBL;;;"
 #		)
 		misc_sets=(
-		"17;;;;;LBL;;;"
-		"18;;;;$w_wine_cmd;LBL;;;"
-		"19;;;;$w_wine_cmd_tip;LBL;;;"
-		"20;$wine_arg_gl;wine_arg_gl;;$w_wine_cmd_gl;CHK;;;"
-		"21;$wine_arg_sdx;wine_arg_sdx;;$w_wine_cmd_sdx;CHK;;;"
-		"22;$wine_arg_msc;wine_arg_msc;;$w_wine_cmd_msc;CBE;$_arg_msc;;"
-		"23;;;;$w_wine_cmd_note;LBL;;;"
+		"19;;;;;LBL;;;"
+		"20;;;;$w_wine_cmd;LBL;;;"
+		"21;;;;$w_wine_cmd_tip;LBL;;;"
+		"22;$wine_arg_gl;wine_arg_gl;;$w_wine_cmd_gl;CHK;;;"
+		"23;$wine_arg_sdx;wine_arg_sdx;;$w_wine_cmd_sdx;CHK;;;"
+		"24;$wine_arg_msc;wine_arg_msc;;$w_wine_cmd_msc;CBE;$_arg_msc;;"
+		"25;;;;$w_wine_cmd_note;LBL;;;"
 		)
 #		"19;;;;$w_wine_wine_pol;LBL;;;"
 #		"20;^unset;wine_bin;;$nf Select package$end;CB;$wine_bin_list;;"
@@ -1800,10 +1818,10 @@ $nf Check here the sections you would like to configure.$end"
 			
 		# window messages
 		w_text="$bf Edit the Wine registry$end\\n\
-$vB\\Set here the most usual registry Direct3D graphic options$end\\n\
-$vB\\or edit a file manualy (will be merge with others sets)$end" #\\n \
+$vb\\Set here the most usual registry Direct3D graphic options$end\\n\
+$vb\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_reg_manual0="$rb\\WARNNG:$end$vn Direct3D registry config is only usable under WindowsXP bottle$end"
-		w_reg_manual1="$vB Custom Direct3D registering (manual edit).$end"
+		w_reg_manual1="$vb Custom Direct3D registering (manual edit).$end"
 		w_reg_manual2="$rb\\WARNING:$end$vn Remove all custom (set by yourself) or empty lines$end"
 		w_reg_manual3="$bf\\Unusual registry commands and options$end"
 
@@ -2168,16 +2186,16 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 	fn_nvidia_config_1(){
 		unset basic_sets field_list chk_list conf_dat track_list #track_sets
 		# window messages
-		w_nv_tip0="$vB All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
-#		w_nv_fsaamod0="$vB Full Scene Anti Aliasing, from 0 (off) to 5 (16x) : (1) 2x (2xMS)[1], (2) 4x (4xMS)[5], (3) 8x (4xSS/2xMS)[9], (4) 8x (8xMS)[10], (5) 16x (4xSS/4xMS)[11]$end"
-		w_nv_fsaamod0="$vB Full Scene Anti Aliasing, from 0 (off) to 5 (16x) : (1) 2x (2xMS), (2) 4x (4xMS), (3) 8x (4xSS/2xMS), (4) 8x (8xMS), (5) 16x (4xSS/4xMS)$end"
-		w_nv_fsaactrl0="$vB If set, FSAA comes with 2 others arguments:$end"
+		w_nv_tip0="$vb All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
+#		w_nv_fsaamod0="$vb Full Scene Anti Aliasing, from 0 (off) to 5 (16x) : (1) 2x (2xMS)[1], (2) 4x (4xMS)[5], (3) 8x (4xSS/2xMS)[9], (4) 8x (8xMS)[10], (5) 16x (4xSS/4xMS)[11]$end"
+		w_nv_fsaamod0="$vb Full Scene Anti Aliasing, from 0 (off) to 5 (16x) : (1) 2x (2xMS), (2) 4x (4xMS), (3) 8x (4xSS/2xMS), (4) 8x (8xMS), (5) 16x (4xSS/4xMS)$end"
+		w_nv_fsaactrl0="$vb If set, FSAA comes with 2 others arguments:$end"
 		w_nv_fsaactrl1="$nf Full controlled, enhanced if using multisample or ignored (manage by nvidia-setting)$end"
-		w_nv_fxaa0="$vB This will allow (not force) Fast Approximate Antialiasing: multisampling and supersampling methods$end"
-		w_nv_aniso="$vB Anisotropic texture filtering set: off (0), x2 (1), x4 (2), x8 (3), x16 (4)$end"
-		w_nv_vblank="$vB Synchronize vertical diplay refresh$end"
-		w_nv_thread="$vB Libpthread is not usualy enable in Wine, you can force it to prelaod$end"
-		w_nv_perf="$vB Performance can be set between Quality(1), Mixed(2) Performance(3)$end"
+		w_nv_fxaa0="$vb This will allow (not force) Fast Approximate Antialiasing: multisampling and supersampling methods$end"
+		w_nv_aniso="$vb Anisotropic texture filtering set: off (0), x2 (1), x4 (2), x8 (3), x16 (4)$end"
+		w_nv_vblank="$vb Synchronize vertical diplay refresh$end"
+		w_nv_thread="$vb Libpthread is not usualy enable in Wine, you can force it to prelaod$end"
+		w_nv_perf="$vb Performance can be set between Quality(1), Mixed(2) Performance(3)$end"
 
 		# check already setted variables
 		if [ $from_config = 1 ]; then
@@ -2260,14 +2278,14 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 	fn_nvidia_config_2(){
 		unset basic_sets field_list chk_list track_list conf_dat #track_sets
 		# window messages
-		w_nv_tip0="$vB All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
-		w_nv_display="$vB VBLANK can't bet set separatly when using multi screen, choose one here if needed:$end"
-		w_nv_fbconfig="$vB This set the X server FBconfig behaviour (very optional):$end"
-		w_nv_yield0="$vB Updating window moves yield: can be useful if some window has refresh issues:$end"
+		w_nv_tip0="$vb All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
+		w_nv_display="$vb VBLANK can't bet set separatly when using multi screen, choose one here if needed:$end"
+		w_nv_fbconfig="$vb This set the X server FBconfig behaviour (very optional):$end"
+		w_nv_yield0="$vb Updating window moves yield: can be useful if some window has refresh issues:$end"
 		w_nv_yield1="$nf normal yield (''), no yield (NOTHING), background (USLEEP)$end"
-		w_nv_unofficial0="$vB Allow unofficial GLX implementation from appli (very optional):$end"
-		w_nv_gsync="$vB If monitor can manage G-SYNC behaviour, this option could improve performance:$end"
-		w_nv_glsl0="$vB This option permit to recompile GLSL and could be useful if appli is missing some extension in OpenGL sets:$end"
+		w_nv_unofficial0="$vb Allow unofficial GLX implementation from appli (very optional):$end"
+		w_nv_gsync="$vb If monitor can manage G-SYNC behaviour, this option could improve performance:$end"
+		w_nv_glsl0="$vb This option permit to recompile GLSL and could be useful if appli is missing some extension in OpenGL sets:$end"
 		# use 'get_xrandr_list' to set the connected monitor list.
 		monitors_list=$(printf "${connect_[@]}"|tr '\n' '#')
 		# check already setted variables
@@ -2680,7 +2698,7 @@ edit_regfile(){
 	
 	w_text="$bf\\Register manual edit$end\\n \
 $nf\\All custom maunal changes in the text area will be merge with others presets.$end"
-	w_com0="$vB Custom register (manual edit).$end"
+	w_com0="$vb Custom register (manual edit).$end"
 	w_com1="$rb\\Warning:$end$vb Remove all custom (set by yourself) or empty lines$end"
 
 	reg_popup=$(
