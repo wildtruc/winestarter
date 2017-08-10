@@ -24,8 +24,9 @@ wtc => winestarter_conf, wt => winestarter
 -----------
 ### Change Log
 
-*( 10/08/28 ) v0.98.6* - wtc
- - Bug fix in wine options extended feature: bad filter.
+*( 10/08/28 ) v0.98.6*
+ - wtc - Bug fix in wine options extended feature: bad filter.
+ - wt  - Bug fix in fn_download_ui, site name regex filter didn't work on debian. 
   
 *( 08/08/28 ) v0.98.5* - wtc - wt
  - wt - Add a symlink to .winebin amd64 binary dir to x86 binary dir, x86_64 packages containing already wine32 binaries and libs.
