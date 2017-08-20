@@ -19,6 +19,7 @@ install:
 	cp -Rf ./emblems $(CONF_DIR)/
 	cp -Rf ./png $(CONF_DIR)/
 	cp -f ./color.conf $(CONF_DIR)/
+	cp -f ./options.list $(CONF_DIR)/resources
 	cp -f ./mime-* $(CONF_DIR)/resources/
 	cp -Rf ./.git $(CONF_DIR)/
 	chown -R $(C_USER):$(C_USER) $(CONF_DIR)

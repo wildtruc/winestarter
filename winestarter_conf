@@ -49,6 +49,7 @@ icons_set(){
 	img_wine_desktop=$png_stock/'colors48.png'
 	img_wine_cfg1=$png_stock/'wine-winecfg48.png'
 	img_wine_cfg2=$png_stock/'wine-msiexec48.png'
+	img_wine_opts=$png_stock/'colors48.png'
 	img_tricks=$png_stock/'wine-winetricks48.png'
 	img_tricks_bt=$png_stock/'wine16w.png'
 	img_install=$png_stock/'wine-install48.png'
@@ -95,7 +96,12 @@ main_code(){
 			if [ $c_box == 'NUM' ]; then chk_box="$c_set$item_sep$c_opt"; fi
 			if [ $c_box == 'LBL' ]; then chk_box=''; fi
 			if [ $c_box == 'CB' ]; then chk_box="$c_set$item_sep$c_opt$extend"; fi
-			if [ $c_box == 'CBE' ]; then chk_box="$c_set$item_sep$c_opt$extend"; fi
+			if [ $c_box == 'CBE' ]; then 
+				chk_box="$c_set$item_sep$c_opt$extend"
+				if [ $(echo "$chk_box"| grep -cF ",,") -gt 0 ]; then
+					chk_box="$c_set$c_opt$extend"
+				fi
+			fi
 			if [ $c_box == 'DIR' ]; then chk_box="$c_set"; fi
 			if [ $c_box == 'CDIR' ]; then chk_box="$c_set"; fi
 			if [ $c_box == 'FL' ]; then chk_box="$c_set"; fi
@@ -271,6 +277,7 @@ main_code(){
 						conf_set=($_var=$_val)
 						local "${conf_set}"
 						${reconf}
+						# TODO : think to remove this in nead future !!
 #						if [[ $_var == user_reg ]]; then
 #							cat $config_file | sed -n "/^user_reg='/,/'/{;s/.*/user_reg=''/};p"| \
 #							uniq > $reg_temp
@@ -346,9 +353,9 @@ main_code(){
 			${new_conf}
 		fi
 	done
-	# if conf fiole is new one, send first temp conf to real conf before testing.
+	## if conf fiole is new one, send first temp conf to real conf before testing.
 	if [ $from_config = 0 ]; then config_file=$tmp_conf; fi 
-	# tell to conf file if function module is 'on' or 'off'
+	## tell to conf file if function module is 'on' or 'off'
 	if [ $(printf "${activ_mod[*]}"| grep -c ".*") -gt 0 ]; then
 		
 		for activ in ${activ_mod[@]}; do
@@ -358,7 +365,6 @@ main_code(){
 		done
 	fi
 	kill $WAIT_UI_2
-#	if [ $from_config = 0 ]; then cp -f -T $tmp_conf $HOME/.winestarter/configs/$bottle_prefix.conf; fi
 	if [ $from_config = 0 ]; then cp -f -T $tmp_conf $new_config_file.conf; fi	
 	end_game_display
 	if [ $? -ge 0 ]; then exit 0; fi
@@ -386,7 +392,8 @@ main_code(){
 		default_tab_create
 	}
 	fn_end_game_1(){
-		# --field="$vb New Wine prefix $end"#$img_wine_add#"Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \
+		## --field="$vb New Wine prefix $end"#$img_wine_add
+		## "Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \
 		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
 		res_action="bash $bash_opt \"winestarter "$conf_target".conf\""
 		res_launch="$vb Launch Winetarter$end"
@@ -469,37 +476,67 @@ $nf\winetstarter $conf_target.conf$end"
 		fi
 		if [ $_extended = 1 ]; then
 #			args_list=( '-opengl' '-no-cf-sandbox' )
+			if ! [ -e $bottle_prefix/options.log ]; then
+				touch $bottle_prefix/options.log
+			fi
 			if [[ $_val == TRUE || $_val == FALSE ]]; then
-				if [[ $_val == TRUE ]]; then
-					if ! [ -e $HOME/.winestarter/resources/options.list ]; then
-						touch $HOME/.winestarter/resources/options.list
-					fi
-					if ! [ -e $bottle_prefix/options.log ]; then
-						touch $bottle_prefix/options.log
-					fi
-					for opts in ${def_args[@]}; do
-						_opt_var=$(printf "$opts"| cut -d',' -f1)
-						_opt_id=$(printf "$opts"| cut -d',' -f2)
-						if [ $(printf "$_opt_var"| grep -c "wine_arg_msc") -eq 0 ]; then
-							if [[	$_var == $_opt_var ]]; then _args+=("-$_opt_id"); fi
-						fi
+				if [[ $_val == TRUE ]]; then					
+					for opts in ${reconf_list[@]}; do
+						_opt_short=$(printf "$opts"| cut -d';' -f1)
+						_opt_id=$(printf "$opts"| cut -d';' -f2)
+						_opt_var=$(printf "$opts"| cut -d';' -f3)
+						_opt_val=$(printf "$opts"| cut -d';' -f4)
+						if [[	$_var == $_opt_var ]]; then _args+=("-$_opt_id"); fi
 					done
-#					if [[	$_var == wine_arg_gl ]]; then _args+=('-opengl'); fi
-#					if [[	$_var == wine_arg_sdx ]]; then _args+=('-no-cf-sandbox'); fi
-##					if [[	$_var == wine_arg_msc ]]; then _args+=("$_val"); fi
-#					if [ $(cat $bottle_prefix/options.log| egrep -c "")]
 				fi
 			else
-				## TODO > to develop in in file query
-				
 				if [[ $_val != '' ]]; then
 					if [[	$_var == wine_arg_msc ]]; then
 						if [[ $_val != unset ]]; then
+							unset msc_arg_list
+							## at this state options list is complete
 							_args+=("$_val")
+							msc_arg_list=("$_val")
+							msc_n=0
+							_option_log_mod=$(stat -c %Y $option_log )
+							if [ $_option_log_mod -gt $_option_log_pre ]; then
+								for _mod_line in ${reconf_list[@]}; do
+									_mod_opt=$(printf "$_mod_line"| cut -d";" -f2)
+										## if modified option take a value of 1 in option_log
+										if [ $(echo "${msc_arg_list[*]}"| grep -c "$_mod_opt") -eq 0 ]; then
+											msc_arg_list+=("-$_mod_opt")
+										fi
+								done
+							fi
+							echo "${msc_arg_list[@]}"
+							for _msc_val in ${msc_arg_list[@]}; do
+								
+								if [ $(echo -e "$_msc_val"| egrep -c "[[:punct:]]") -gt 0 ]; then
+									_msc_short=$(echo -e "$_msc_val"| sed -nE "s/^.*[[:punct:]](\w*[a-z]$)/\1/p")
+								else
+									_msc_short="$_msc_val"
+								fi
+								_msc_arg=$(echo -e "$_msc_val"| sed -n "s/^-//p")
+								_msc_var=("wine_arg_$_msc_short")
+								if [[ $(cat $option_log| egrep -c "$_msc_var.*;") -gt 0 && \
+								$(cat $option_log| egrep -c "$_msc_arg;$_msc_var.*;") -eq 0 ]]; then
+									_msc_short=$_msc_short"_"$msc_n
+									_msc_var=("wine_arg_$_msc_short")
+									msc_n=$[ $msc_n+1 ]
+								fi
+								if [ $(cat $option_log| egrep -c "$_msc_arg") -eq 0 ]; then
+									if [ $(echo "${reconf_list[@]}"| egrep -c "$_msc_arg") -eq 0 ]; then
+										## last number in file insertion tell if option is add to default menu.
+										printf "$_msc_short;$_msc_arg;$_msc_var;0\n" >> $option_log
+									fi
+								fi
+							done
 						else
 							if [ "${#_args[@]}" -ge 1 ]; then
 								_args+=('')
 							else
+								## if value is unset, automation need to know this is unset
+								## to fill a blank value. 
 								_args+=('unset')
 							fi
 						fi
@@ -1519,19 +1556,67 @@ $nf Check here the sections you would like to configure.$end"
 				game_dir=$bottle_prefix/drive_c/$root_key
 				game_exe=$bottle_prefix/drive_c/$root_key	
 			fi
-#			special_cmd=0; start_cmd=0
-#			if [ $_extended = 1 ]; then
-#				wine_arg_gl=0; wine_arg_sdx=0; wine_arg_msc=''
-#			fi
 			IFS=$ifs
 			fn_create_prefix
 	} 
 	fn_wine_config(){
-		unset basic_sets misc_sets field_list chk_list track_list pol_bin_list local_bin_list def_args
+		unset basic_sets misc_sets field_list chk_list track_list pol_bin_list local_bin_list \
+		def_args _msc_plus
 		# check install elf type
 		fn_wine_elf_query		
-		# check already setted variables
-		def_args=('wine_arg_gl,opengl' 'wine_arg_sdx,no-cf-sandbox' 'wine_arg_msc,unset')
+		# check already setted variables, if any.
+		chk_arg_opts(){
+			ifs=$IFS
+			IFS=$(echo -en "\n\b")
+			def_args=( $(cat $HOME/.winestarter/resources/options.list) )
+			w_args_list=$(echo "$wine_opts"|tr '\ ' '\n')
+			_n='21'
+			for val in ${def_args[@]}; do
+				_arg=$(printf "$val"| cut -d';' -f1)
+				_def=$(printf "$val"| cut -d';' -f2)
+				if [ $(printf "$_arg"| egrep -c "[[:punct:]]") -gt 0 ]; then
+					_short=$(printf "$_arg"| sed -nE "s/^.*[[:punct:]](\w*[a-z]$)/\1/p")
+				else
+					_short="$_arg"
+				fi
+				_var=("wine_arg_$_short")
+				if [[ $_arg != misc ]]; then
+					if [ $(echo "$wine_opts"| grep -Fc "$_arg") -gt 0 ]; then
+						_def_arg='1'
+						_g_pat="$_g_pat\-$_arg "
+						_rev_pat+=("$_arg")
+					else
+						_def_arg='0'
+					fi
+					## add field for each listed options in options.list
+					# "23;$wine_arg_sdx;wine_arg_sdx;;$w_wine_cmd_sdx;CHK;;;"
+					cmd_line_opts+=("$[ $_n+1 ];$_def_arg;$_var;;$_def ($_arg);CHK;;;")
+					reconf_list+=("$_short;$_arg;$_var;$_def_arg")
+					_n=$[ $_n+1 ]
+				fi
+#					
+				if [[ $_arg == misc ]]; then
+#					# better to 'sed' here than anything else
+#					_arg_msc="\\$(echo -e "${w_args_list[*]}"| sed -n  "s/$_g_pat//p")"
+#					wine_arg_msc=$_arg_msc
+					IFS=$ifs
+					for _patt in $w_args_list; do
+						sed_conv=$(echo "$_patt"| sed -n "s/^-//p")
+						if [ $(echo -e "${_rev_pat[@]}"| egrep -c "$sed_conv") -eq 0 ]; then
+							_arg_msc+=($_patt)
+						fi
+					done
+					wine_arg_msc="\\$(echo "${_arg_msc[*]}")"
+					if [ $(echo "$wine_arg_msc"| egrep -cx '^\\$') -eq 1 ]; then
+						wine_arg_msc='unset'
+					fi
+					ifs=$IFS
+					IFS=$(echo -en "\n\b")
+				fi
+			done	
+			IFS=$ifs
+		}
+		# def_args=('wine_arg_gl,opengl' 'wine_arg_sdx,no-cf-sandbox' 'wine_arg_msc,unset')
 		if [ $from_config = 1 ]; then
 			if [[ $_extended =~ [0-9] ]]; then
 				sed -ni "s|^\(_extended\)=\([0-9]\)$|\1=$_extended|i;p" $config_file
@@ -1548,43 +1633,21 @@ $nf Check here the sections you would like to configure.$end"
 			if [[ $game_path == '' ]]; then game_path="$HOME/"; fi
 			IFS=$ifs
 			if [ $_extended = 1 ]; then
-				w_args_list=( $wine_opts )
-				arg_n="${#w_args_list[@]}"
-				def_n="${#def_args[@]}"
-				for val in ${def_args[@]}; do
-					_def=$(printf "$val"| cut -d',' -f1)
-					_arg=$(printf "$val"| cut -d',' -f2)
-					if [ $(echo "$wine_opts"| grep -Fc "$_arg") -gt 0 ]; then
-						def_arg=("$_def=1")
-						g_pat="$g_pat\-$_arg "
-					else
-						def_arg=("$_def=0")
-					fi
-					local $def_arg
-					## FIXME : redifine this, it's garbages !!
-					if [[ $_def == wine_arg_msc ]]; then
-						# better to 'sed' here than anything else
-						if [[ $_arg == unset ]]; then
-#						if [[ $_arg_msc != '' ]]; then
-							_arg_msc="\\$(echo -e "${w_args_list[*]}"| sed -n  "s/$g_pat//p")"
-							wine_arg_msc=$_arg_msc
-#							wine_arg_msc="$(echo -e "${w_args_list[*]}"| sed -n  "s/$g_pat//p")"
-						else
-							wine_arg_msc=''
-						fi
-					fi
-				done
+				chk_arg_opts
 			fi
 		else
 			special_cmd=0; start_cmd=0
 			if [ $_extended = 1 ]; then
-				## TODO > push in a list if more options in displayed list		
-	#			for trk in ${def_list(@)}; do
-				wine_arg_gl=0; wine_arg_sdx=0; wine_arg_msc='unset' 
-	#			done
-			fi
+				chk_arg_opts
 		fi
+		## set the wine options files in resources and bottle
+		export option_log=$bottle_prefix/options.log
+		export option_conf=$HOME/.winestarter/resources/options.list
+		## tell to main script the last options conf modification time in EPOC at this point.
+		_option_log_pre=$(stat -c %Y $option_log )
 		
+		export bottle_prefix=$bottle_prefix
+		option_edit_cmd="bash $bash_opt \"edit_wine_options\""
 		# window messages
 		w_wine_user_prefix="$vb\\Set user prefix if not the user's default one:$end"
 		w_wine_prefix="$vb\\Set the Wine Bottle prefix to use:$end"
@@ -1602,7 +1665,7 @@ $nf Check here the sections you would like to configure.$end"
 		w_wine_cmd_gl="Force OpenGL only (opengl)"
 		w_wine_cmd_sdx="Prevent Steam bottle sandboxing (no-cef-sandbox)"
 		w_wine_cmd_msc="$nf Custom cmdline argument$end"
-		w_wine_cmd_note="$nf\\Note$end: winestarter will keep all working user commandline options in its user directory for future possible use."
+		w_wine_cmd_note="$nf\\Note$end: winestarter will keep all working user commandline options in its user directory for future possible use. If your custom option(s) is fully working, you could add it to the default menu with the button below."
 		
 		elf=$elf
 		ifs=$IFS
@@ -1633,14 +1696,11 @@ $nf Check here the sections you would like to configure.$end"
 		"19;;;;;LBL;;;"
 		"20;;;;$w_wine_cmd;LBL;;;"
 		"21;;;;$w_wine_cmd_tip;LBL;;;"
-		"22;$wine_arg_gl;wine_arg_gl;;$w_wine_cmd_gl;CHK;;;"
-		"23;$wine_arg_sdx;wine_arg_sdx;;$w_wine_cmd_sdx;CHK;;;"
-		"24;$wine_arg_msc;wine_arg_msc;;$w_wine_cmd_msc;CBE;$_arg_msc;;"
-		"25;;;;$w_wine_cmd_note;LBL;;;"
+		"${cmd_line_opts[@]}"
+		"$[ $_n+1 ];$wine_arg_msc;wine_arg_msc;;$w_wine_cmd_msc;CBE;;;"
+		"$[ $_n+2 ];;;;$w_wine_cmd_note;LBL;;;"
+		"$[ $_n+3 ];$option_edit_cmd;;;$vb click here to edit options menu$end,$img_wine_mod;FBTN;;;"
 		)
-#		"19;;;;$w_wine_wine_pol;LBL;;;"
-#		"20;^unset;wine_bin;;$nf Select package$end;CB;$wine_bin_list;;"
-#		)
 		if [ $_extended = 1 ]; then
 			basic_sets=(
 			"${basic_sets[@]}"
@@ -1812,7 +1872,7 @@ $nf Check here the sections you would like to configure.$end"
 				reg_dll_msg="$vb\\Registered DLLs ($sys_elf):$end"
 				dlls_var_list=( "$[ $dn+1 ];;;;$reg_dll_msg $reg_dlls_field;LBL;;;" )
 				dn=$[ $dn+1 ]
-				echo "${dlls_var_list[@]}"
+#				echo "${dlls_var_list[@]}"
 			fi
 		fi
 			
@@ -2714,7 +2774,71 @@ $nf\\All custom maunal changes in the text area will be merge with others preset
 	fi
 	
 }
-
+edit_wine_options(){
+	colors ; icons_set
+	# form: "$_msc_short;$_msc_arg;$_msc_var;0"
+	## make a readable list
+	options_list=( $(cat "$option_log") )
+	for opt in ${options_list[@]}; do
+		## cut the sets in file to make variables
+		_active=$(printf "$opt"| cut -d";" -f4)
+		_option=$(printf "$opt"| cut -d";" -f2)
+		## define if variables are already active in resources conf file
+		if [ -s $option_conf ]; then
+			if [ $(cat "$option_conf"| egrep -c "$_option") -gt 0 ]; then
+				_definition="$(cat "$option_conf"| egrep "$_option"| cut -d";" -f2)"
+				_active=1
+			else
+				_definition="enter a short description"
+			fi
+		fi
+		## define the default tip message
+		# _help_tip=""
+		## make 'active' conf usable by yad
+		if [ $_active -gt 0 ]; then
+			col+=("TRUE" "$_option" "$_definition")
+		else
+			col+=("FALSE" "$_option" "$_definition")
+		fi
+	done
+	## set tip and help texts
+	conf_txt="$bf\\Add options to default list$end\\n$vb\\Choose manually added options to default options menu list. They will be kept for all future bottles.$end\\n$rb\\WARNING:$end Added options can be only remove from the original bottle or by manual edit into default options list file."
+	## create the yad window with the properly setted variables 
+	change_opts=$($yad_bin --width=500 --height=400 --title= --image="$img_wine_opts" \
+	--window-icon="$img_desktop" --list --checklist --text="$conf_txt" --editable --separator=";" \
+	--print-all --column="Active" --column="Option" --column="Descriptions" \
+	"${col[@]}")
+	## second part: load pined options into opntions.list
+	## form: TRUE;option;description; > option;description
+	## prepare script to read yad output lines
+	ifs=$IFS
+	IFS=$(echo -en "\n\b")
+	## analyse yad output and add or remove in options conf file
+	for _chg_opt in ${change_opts[@]}; do
+		## cut the sets in file to make variables
+		_chg_active=$(printf "$_chg_opt"| cut -d";" -f1)
+		_chg_option=$(printf "$_chg_opt"| cut -d";" -f2)
+		_chg_definition=$(printf "$_chg_opt"| cut -d";" -f3)
+		## probe if variables active or inactive, then add or remove them if any
+		if [[ $_chg_active == TRUE ]]; then
+			## add option to default winestarter wine option conf
+			_act_num=1
+			if [ $(cat $option_conf| grep -c "$_chg_option") -eq 0 ]; then
+				sed -E -ni "s/(^misc.*$)/$_chg_option;$_chg_definition\n\1/i;p" $option_conf
+			fi
+		else
+			_act_num=0
+			## if unset, remove custom wine option from wine options conf 
+			if [ $(cat $option_conf| grep -c "$_chg_option") -gt 0 ]; then
+				modified_conf=$(cat $option_conf| grep -v "$_chg_option")
+				printf "$modified_conf" > $option_conf
+			fi
+		fi
+		sed -E -ni "s/(^.*;$_chg_option.*);([0-9])/\1;$_act_num/i;p" $option_log
+	done
+	## restore IFS and exit to previous window
+	IFS=$ifs
+}
 select_wine_bin(){
 	colors ; icons_set
 	bin_class=0
@@ -2726,7 +2850,7 @@ select_wine_bin(){
 	select_wine_binary
 }
 select_wine_dis(){
-	colors ;icons_set
+	colors ; icons_set
 	bin_class=1
 	if [ $wine_elf = 1 ]; then http_elf='x86_64'; else http_elf='i686'; fi
 	dl_address="https://dl.winehq.org/wine-builds/fedora/25/$http_elf/"
@@ -2747,16 +2871,11 @@ select_wine_binary(){
 		# list dosnload is done from there (i686 repo)
 		file_temp=$(mktemp --tmpdir ftp1.XXXXXXXX)
 		list_temp=$(mktemp --tmpdir ftp3.XXXXXXXX)
-#		rpm_temp=$(mktemp --tmpdir rpm_tmp)
-#		bin_temp=$(mktemp --tmpdir bin_tmp)
-	#	dl_address="https://dl.winehq.org/wine-builds/fedora/25/$http_elf/"
 		p_text="$vb\Retrieving $site server information$end"
 		wget -O $file_temp $dl_address
 		if [ $bin_class -eq 0 ]; then
 			dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2)" )
 		else
-#			tac $file_temp| egrep "wine-staging$elf-[0-9]+"| sed -n "s/^.*$elf-\([0-9]\.[0-9]*\)-.*$http_elf.*$/\1-staging/p" > $rpm_temp
-#			dl_bin_list=( "$(cat $rpm_temp)" )
 			dl_bin_list=( "$(tac $file_temp| egrep "wine-staging$elf-[0-9]+"| sed -n "s/^.*$elf-\([0-9]\.[0-9]*\)-\([0-9]\).$http_elf.*$/\1-\2-staging/p")" )
 		fi
 		for r_bins in ${dl_bin_list[@]}; do
@@ -2770,7 +2889,6 @@ select_wine_binary(){
 			done
 			printf "$r_bins$out," >> $list_temp
 		done
-#		wine_bin_list=$(cat $list_temp| sed -n "s/,$//p")
 		wine_bin_list=$(cat $list_temp)
 		wine_bin=$($yad_bin --width=300 --title "$w_title" --image="$window_img" \
 		--window-icon="$window_ico" --form --text="$w_text" --separator=" " --item-separator="," \
@@ -3212,7 +3330,7 @@ main_text0="$bf\\Stay simple with yours Wine bottles$end $vb\\\"Don't be a clic 
 $vb\\What do you want to do?$end\\n$vn(Hover buttons show tooltips)$end"
 
 export -f colors icons_set
-export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_wine_dis select_wine_binary edit_reg_bin edit_regfile
+export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_wine_dis select_wine_binary edit_reg_bin edit_regfile edit_wine_options
 export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt"
 $yad_bin --width=482 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons \
 --form --text="$main_text0" --image=$the_big_button \

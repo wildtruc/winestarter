@@ -23,12 +23,14 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
-
-*( 10/08/28 ) v0.98.6*
+*( 20/08/17 ) v0.98.7*
+ - wtc - Added wine option extended fetaure (improvement of original): Now, manual edits can be added to default wine/app options for use in other app botlles. Function has been debuged, but could still have some unknown issues.
+ 
+*( 10/08/17 ) v0.98.6*
  - wtc - Bug fix in wine options extended feature: bad filter.
  - wt  - Bug fix in fn_download_ui, site name regex filter didn't work on debian. 
   
-*( 08/08/28 ) v0.98.5* - wtc - wt
+*( 08/08/17 ) v0.98.5* - wtc - wt
  - wt - Add a symlink to .winebin amd64 binary dir to x86 binary dir, x86_64 packages containing already wine32 binaries and libs.
  - wtc - Added an auto hide function for Nvidia section when Nvidia device are not detected.
  - wtc - Added a config file editor at config file selector for fast edit.
@@ -39,7 +41,7 @@ wtc => winestarter_conf, wt => winestarter
  - Added fn_install_exe ability to download binary package directly by only changing executable path by downloadable package URL. Then, script detect the URL form and try to download the binary before install process.
  - Changed fn_convert_desktop_file in wt to only popup at install time. Still looking for a beter display.
  
-*( 30/07/28 ) v0.98.3* - wtc
+*( 30/07/17 ) v0.98.3* - wtc
  - v0.98.2 issues #1 - fixed.
  - Fixed an issue in regedit function when user_reg value in config file is empty. It was removing too much lines under the targeted one.
  - Video memory is not display by default in scroll selector anymore. All graphics adaptors do not return memory at command line and it was too much confusing at config time.

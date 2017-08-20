@@ -1,0 +1,3 @@
+opengl;Force OpenGL only
+no-cf-sandbox;Prevent Steam bottle sandboxing
+misc;Custom cmdline argument
