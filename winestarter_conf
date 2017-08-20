@@ -1583,7 +1583,7 @@ $nf Check here the sections you would like to configure.$end"
 				if [[ $_arg != misc ]]; then
 					if [ $(echo "$wine_opts"| grep -Fc "$_arg") -gt 0 ]; then
 						_def_arg='1'
-						_g_pat="$_g_pat\-$_arg "
+#						_g_pat="$_g_pat\-$_arg "
 						_rev_pat+=("$_arg")
 					else
 						_def_arg='0'
@@ -1632,13 +1632,10 @@ $nf Check here the sections you would like to configure.$end"
 			game_exe="$game_dir/$game_exe"
 			if [[ $game_path == '' ]]; then game_path="$HOME/"; fi
 			IFS=$ifs
-			if [ $_extended = 1 ]; then
-				chk_arg_opts
-			fi
+			if [ $_extended = 1 ]; then chk_arg_opts; fi
 		else
 			special_cmd=0; start_cmd=0
-			if [ $_extended = 1 ]; then
-				chk_arg_opts
+			if [ $_extended = 1 ]; then chk_arg_opts; fi
 		fi
 		## set the wine options files in resources and bottle
 		export option_log=$bottle_prefix/options.log
