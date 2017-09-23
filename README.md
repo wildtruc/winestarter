@@ -3,6 +3,12 @@ A not very simple script to start and install wine emulated applications
 
 ![winestarter logo](/png/defaults/winestarter_128.png)
 
+-------
+
+**WARNING**: winetrciks part seams to be broken, and because I'm working on complete rewrite to speed up the processes in winestarter_conf, this bug wont be fix on the currnet release. Nevertheless, if you  want this bug to be fix right now, feel free to ask.
+
+-------
+
 Consider this like a mix between PlayOnLinux and Wine usual command line. It use winetricks for DLLs and everything winetrciks can do.
 
 Config file and configuration UI are completly independent and script can work without the UI, but it can do a lot of thing to help you during your journey to install your apps under Wine layer.  
@@ -54,7 +60,7 @@ Note to MAC users: The script will probably works for you (don't know for Yad), 
  - Download and configure a custom Wine binaries directory (PoL & WinHQ-staging)
  - Install Winestricks packages
  - Create and configure a Wine registry
- - Install a software form a file or downloaded.
+ - Install a software from a file or downloaded.
  - Create or modify a desktop file entry
  - Configure Nvidia apps environment options
  - Configure Xrandr behaviour
