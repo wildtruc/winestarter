@@ -5,7 +5,7 @@ A not very simple script to start and install wine emulated applications
 
 -------
 
-**WARNING**: winetrciks part seams to be broken, and because I'm working on complete rewrite to speed up the processes in winestarter_conf, this bug wont be fix on the currnet release. Nevertheless, if you  want this bug to be fix right now, feel free to ask.
+**WARNING**: winetrciks part seams to be broken for an unknown reason (yet), and because I'm working on complete rewrite to speed up the processes in winestarter_conf, this bug wont be fix on the currnet release. Nevertheless, if you  want this bug to be fix right now, feel free to ask. 
 
 -------
 
