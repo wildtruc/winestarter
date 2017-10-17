@@ -9711,11 +9711,13 @@ load_wmi()
     # WMI for NT4.0 need validation: https://www.microsoft.com/en-us/download/details.aspx?id=7665
     # See also https://www.microsoft.com/en-us/download/details.aspx?id=16510
     # Originally at: https://download.microsoft.com/download/platformsdk/wmi9x/1.5/W9X/EN-US/wmi9x.exe
+    # 2017/10/14: ftp://59.124.141.94 is dead
     # Mirror list: http://www.filewatcher.com/_/?q=wmi9x.exe
-    w_download ftp://59.124.141.94/Sharpdesk/Redist/Enu/WMI/wmi9x.exe 1d5d94050354b164c6a19531df151e0703d5eb39cebf4357ee2cfc340c2509d0
+    w_download ftp://82.162.138.211/pub/Install/Microsoft/Win9x/Update/wmi9x.exe 1d5d94050354b164c6a19531df151e0703d5eb39cebf4357ee2cfc340c2509d0
 
     w_set_winver win98
     w_override_dlls native,builtin wbemprox wmiutils
+
     # Note: there is a crash in the background towards the end, doesn't seem to hurt; see https://bugs.winehq.org/show_bug.cgi?id=7920
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" wmi9x.exe $W_UNATTENDED_SLASH_S
@@ -15133,113 +15135,6 @@ load_gta_vc()
         # this is a hack, hopefully the wine bug will be fixed soon
         sed -i "s,Exec=.*,$myexec," "$mymenu"
     fi
-}
-
-#----------------------------------------------------------------
-
-w_metadata hegemonygold_demo games \
-    title="Hegemony Gold" \
-    publisher="Longbow Games" \
-    year="2011" \
-    media="download" \
-    file1="HegemonyGoldInstaller.exe" \
-    installed_exe1="$W_PROGRAMS_X86_WIN/Longbow Digital Arts/Hegemony Gold/Hegemony Gold.exe" \
-    homepage="https://www.longbowgames.com/forums/topic/?id=2146" \
-    rating="bronze"
-
-load_hegemonygold_demo()
-{
-    # 2012/03/08: 143a6335b20855922907e3e266fe0ab286ac274dab434f1fca749c7b19c2ab49
-    w_download "https://www.longbowgames.com/downloads/Hegemony%20Gold%20Installer.exe" 143a6335b20855922907e3e266fe0ab286ac274dab434f1fca749c7b19c2ab49 HegemonyGoldInstaller.exe
-
-    w_try_cd "$W_CACHE/$W_PACKAGE"
-
-    w_ahk_do "
-        SetWinDelay 500
-        SetTitleMatchMode, 2
-        Run, HegemonyGoldInstaller.exe
-        WinWait,Hegemony
-        if ( w_opt_unattended > 0 ) {
-            ControlClick Button2 ; Next
-            WinWait,Hegemony, License
-            ControlClick Button2 ; Agree
-            WinWait,Hegemony, Components
-            Click, Left, 187, 185
-            Sleep 500
-            ControlClick Button2 ; Next
-            WinWait,Hegemony, Location
-            ControlClick Button2 ; Next
-            WinWait,Hegemony, shortcuts
-            ControlClick Button2 ; Install
-            WinWait,Hegemony, Completing
-            ControlFocus,Button4,launch
-            Sleep 1000
-            Send {Space}
-            Sleep 500
-            ControlClick Button2 ; finish
-        }
-        WinWaitClose,Hegemony
-    "
-}
-
-#----------------------------------------------------------------
-
-w_metadata hegemony_demo games \
-    title="Hegemony: Philip of Macedon Demo" \
-    publisher="Longbow Games" \
-    year="2010" \
-    media="download" \
-    file1="Hegemony_Philip_of_Macedon_Installer.exe" \
-    installed_exe1="$W_PROGRAMS_X86_WIN/Longbow Digital Arts/Hegemony Philip of Macedon/Hegemony Philip of Macedon.exe"
-
-load_hegemony_demo()
-{
-    # 2017/03/27: 697879215eadfda213c4105de653d056c69ed85ecb06ebafcc19d9344f70751c
-    w_download "https://www.longbowgames.com/downloads/Hegemony%20Philip%20of%20Macedon%20Installer.exe" 697879215eadfda213c4105de653d056c69ed85ecb06ebafcc19d9344f70751c Hegemony_Philip_of_Macedon_Installer.exe
-
-    w_try_cd "$W_CACHE/$W_PACKAGE"
-
-    w_ahk_do "
-        SetTitleMatchMode, 2
-        run, Hegemony_Philip_of_Macedon_Installer.exe
-        winwait, Hegemony, installation
-        if ( w_opt_unattended > 0 ) {
-            controlclick, Button2
-            Sleep 500
-            winwait, Hegemony, License
-            controlclick, Button2
-            winwait, Hegemony, Components
-            controlclick, Button2
-            winwait, Hegemony, Install Location
-            controlclick, Button2
-            winwait, Hegemony, shortcuts
-            controlclick, Button2
-            Loop
-            {
-                ; Work around wine bug 24484
-                IfWinExist, Log message, IKnownFolderManager
-                {
-                    send {Enter}
-                }
-                ; Work around wine bug 21261
-                IfWinExist, Log message, Games Explorer
-                {
-                    send {Enter}
-                }
-                IfWinExist, Hegemony, has been installed
-                {
-                    break
-                }
-                Sleep (2000)
-            }
-            winwait, Hegemony, has been installed
-            Sleep 500
-            controlclick, Button4
-            Sleep 500
-            controlclick, Button2
-        }
-        WinWaitClose,Hegemony
-    "
 }
 
 #----------------------------------------------------------------
