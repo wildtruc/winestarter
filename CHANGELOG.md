@@ -2,7 +2,7 @@
 wtc => winestarter_conf, wt => winestarter
 
 ### Issues
- - [ ] winestarter yad popups don't looking very nice and need improvement.
+ - [x] winestarter yad popups don't looking very nice and need improvement.
  - [x] *v0.98.2* - wtc
  	- #1 Bad images export in WineHQ, PoL download selectors.
  - [x] *v0.98.1* - wt & wtc
@@ -23,6 +23,15 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 15/11/17 ) v0.99*
+ - beta release before upgrade v1.0 after complete rewrite. There realy too much things to tell to be wroten in Changelog.
+ - all parts have been rewrite to be faster.
+ - winetricks binary take place now fully in the git repo (daily updated) 
+ - winetricks dll list appears now entirely instead of presets list.
+ - all menu have been redesign to easely add new features.
+ - it is now possible to use a standalone Wine, even if it's not present in system tree.
+ - and many more (too many!)
+ 
 *( 20/08/17 ) v0.98.7*
  - wtc - Added wine option extended fetaure (improvement of original): Now, manual edits can be added to default wine/app options for use in other app botlles. Function has been debuged, but could still have some unknown issues.
  

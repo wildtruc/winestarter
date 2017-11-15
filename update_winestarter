@@ -1,18 +1,40 @@
 #! /bin/bash
 
+## let some time to desktop interface to start up. 
+sleep 30
 ## define winestarter git source
 wine_data=$HOME/.winestarter
 wine_src=$wine_data/.git
+wine_git='https://github.com/wildtruc/winestart'
+w_tricks=$(find /usr/{bin,local/bin} -name winetricks)
+w_bin=$(find /usr/{bin,local/bin} -name wine)
+w_tricks_reserve=$wine_data/resources/tricks_workaround.txt
+w_tricks_dlls=$wine_data/resources/tricks_dlls.txt
 ## make a temp file for git fetch output and execute
-temp=$(mktemp --tmpdir git.XXXXXXXX)
+temp_data=$(mktemp --tmpdir git.XXXXXXXX)
+temp_http=$(mktemp --tmpdir http.XXXXXXXX)
 cd $wine_data
-git fetch --dry-run &>$temp
+git fetch --dry-run &>$temp_data
 ## if the word master appears in log, then process, otherwise exit.
-if [ $(cat $temp|grep -c "master") -eq 1 ]; then
+if [ $(cat $temp_data| grep -c "master") -eq 1 ]; then
+	## control if update is winetricks
+#	tricks_check=$(git log --oneline| sed -En '1s/^.* winetricks ([0-9]{8}).*$/\1/p')
+	tricks_check=$(git log --oneline| sed -En '1s/^.*([0-9]{8}).*$/\1/p')
+	wget -q -O $temp_http $wine_git
+#	tricks_version=$(sed -En "s/^.*<a href=.*commit.*winetricks git ([0-9]*).*$/\1/p" $temp_http)
+	tricks_version=$(cat $temp_http| sed -En "s/^.*<a href=.*commit.* git ([0-9]*).*$/\1/p"| uniq)
+	if [[ -n $tricks_check && $tricks_version -ne $tricks_check ]]; then
+		more_msg="\n\\(Winetricks update $tricks_version)"
+		if [ -x $w_bin ]; then
+			$w_tricks settings list|sed -n "/^---/,/---$/d;p"| egrep -v "^Using.*$"|awk '{print $1}' \
+			>$w_tricks_reserve
+			$w_tricks dlls list| grep "downloadable" >$w_tricks_dlls
+		fi
+	fi
 	## send a notification to user desktop.
 	win_icon=$wine_data/png/defaults/wine48r.png
-	msg="Winestarter GIT update!"
-	zenity --notification --window-icon=$win_icon --text="$msg"
+	msg="Winestarter GIT repo update.$more_msg"
+	zenity --timeout=10 --notification --window-icon=$win_icon --text="$msg"
 fi
 ## got out of there
 exit 0

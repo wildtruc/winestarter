@@ -28,6 +28,7 @@
 scpt_dir=$HOME/.winestarter
 w_tricks=$(find /usr/{bin,local/bin} -name winetricks)
 yad_bin=$(find /usr/{bin,local/bin} -name yad)
+zen_bin=$(find /usr/{bin,local/bin} -name zenity)
 convert_bin=$(find /usr/{bin,local/bin} -name convert)
 wrestool_bin=$(find /usr/{bin,local/bin} -name wrestool)
 strings_bin=$(find /usr/{bin,local/bin} -name strings)
@@ -76,22 +77,35 @@ filesave=$png_stock/'wine-install48.png'
 warning=$png_stock/'wine-warn48.png'
 inform=$png_stock/'wine-info48.png'
 # text=""; dialog_list="$text;gtk-close;$inform"; yad_warnings
-yad_warnings(){
+yad_warning(){
 #	d_txt=$(printf "$dialog_list"|cut -d';' -f1)
 	d_btt=$(printf "$dialog_list"|cut -d';' -f1)
 	d_img=$(printf "$dialog_list"|cut -d';' -f2)
 	w_width=500
-	$yad_bin --width=$w_width --height=$(($w_width/3)) --title "" --button="$d_btt":1 \
-	--image=$d_img --text="$text" --timeout=3
+	if [ $yad_bin ]; then
+		$yad_bin --width=$w_width --height=$(($w_width/3)) --title "" --borders 15 --button="$d_btt":1 \
+		--image=$d_img --text="$text" --timeout=3
 #	$yad_bin --width=400 --height=100 --title "" --button="$d_btt":1 \
 #	--image=$d_img --timeout=3 --form --field="$text":LBL ''
+	else
+		[ $zen_bin ]&& zen_warning
+	fi
 #	zenity --height=150 --title='' --warning --window-icon=$d_img --text="$text" --timeout=3
+}
+zen_warning(){
+	d_btt=$(printf "$dialog_list"|cut -d';' -f1)
+	d_img=$(printf "$dialog_list"|cut -d';' -f2)
+	div=$(printf "$dialog_list"|cut -d';' -f3)
+	w_width=400 ; w_height=$(($w_width/$div))
+	$zen_bin --width=$w_width --height=$w_height --title='' --warning --window-icon="$d_img" \
+	 --timeout=4 --text="$text"
 }
 ## optimus special sets
 fn_optimus(){
 	export vblank_mode=$opti_VBLK
 	export PRIMUS_SYNC=$opti_SYNC
-	opti_run="$opti_starter $opti_accel"
+	if [[ $opti_starter != primusrun ]]; then opti_opt='-b '; fi
+	opti_run="$opti_starter $opti_opt$opti_accel"
 }
 ## additional function for wine process
 fn_regedit(){
@@ -101,7 +115,7 @@ fn_regedit(){
 		if [[ $(cat -n $user_prefix/$bottle_prefix/$reg_file| grep -c .) -ge 3 ]]; then
 #			printf "boom!\n"
 			$wine_bin regedit $user_prefix/$bottle_prefix/$reg_file
-			$wineboot_bin -r
+			$wine_bin_path$wineboot_bin -r
 		else
 			IFS=$ifs ; exit 0
 		fi
@@ -120,7 +134,7 @@ fn_regedit(){
 				printf "" > $user_prefix/$bottle_prefix/$reg_file
 			fi
 		fi
-		$wineboot_bin -r
+		$wine_bin_path$wineboot_bin -r
 		rm -f $user_prefix/$bottle_prefix/$reg_file.new
 		
 #		previous_reg=$(( $(cat $user_prefix/$bottle_prefix/$reg_file| grep -c .)+1 ))
@@ -180,7 +194,7 @@ fn_mime_asso(){
 				fi
 			fi
 		done
-		$wineboot_bin -r
+		$wine_bin_path$wineboot_bin -r
 		rm -f $reg_temp
 	fi
 }
@@ -214,7 +228,7 @@ fn_reg_dlls(){
 					fi
 				done
 			done
-			$wineboot_bin -r
+			$wine_bin_path$wineboot_bin -r
 		fi
 	fi
 }
@@ -229,20 +243,52 @@ fn_download_ui(){
 #	site=$(printf "$pkgs"| sed -n "s/\(^.*\/\/\)\(.*\.\w*[a-z]\)\/*.*$/\2/p")
 	pkg_ext=$(printf "$pkgs"| sed -n "s/^.*\.//p")
 #	site=$(printf "$pkgs"| sed -n -E "s/(^.*\/\/)(.*\.\w*[a-z])\/*.*\.(w*$pkg_ext)$/\2/p")
-	site=$(printf "$pkgs"| sed -n -E "s/(^.*:\/\/)(.*\.\w*[a-z]*)\/(.*).(\w*$pkg_ext)$/\2/p")
+	site=$(printf "$pkgs"| sed -E -n "s/(^.*:\/\/)(\w+)\.(\w+)\.(\w+)\/.*$/\2.\3.\4/p")
 	pack=$(printf "$pkgs"| sed -n "s/^.*\///p")
-	w_text="$vb\\Downloading $pack from $site server.$end"
+#	w_text="$vb\\Downloading $pack from $site server.$end"
+	w_text="Downloading from $site server."
 	## yad progress bar
-	dl_cmd | track | $yad_bin --width=550 --title "$w_title" --text="$w_text" \
-	--window-icon=filesave --image=$filesave --progress --auto-close
+#	dl_cmd | track | $yad_bin --width=550 --title "$w_title" --text="$w_text" \
+#	--window-icon=filesave --image=$filesave --progress --auto-close
+#	dl_cmd | track | $zen_bin --width=550 --title "$w_title" --text="$w_text" \
+	dl_cmd | track | $zen_bin --width=550 --title "$w_text" \
+	--window-icon=filesave --progress --auto-close --no-cancel
 }
 fn_use_winepath(){
-	unset dl_list
+	unset dl_list os_version
 	## create tmp dir for package download
 	dl_dir=$(mktemp --tmpdir -d wine_dl.XXXXXXXX)	
 	pkg_ver=$(printf $wine_ver| cut -d'-' -f1)
 	pkg_rel=$(printf $wine_ver| cut -d'-' -f2)
 	
+	download_list(){
+		wget -O $file_temp $dl_address/
+		os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
+		sed -En "s/^.*([0-9]{2}).*$/\1/p")
+	
+		for os_v in ${os_version[@]}; do
+			wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
+			dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-staging$b_elf-[0-9]+"| \
+			sed -En "s/^.*$b_elf-([0-9]\.[0-9]*)-([0-9]).$http_elf.*$/\1-\2-staging,$os_v/p")
+			if [ $os_v_p ]; then
+				if [ $os_v -ne $os_v_p ]; then
+					new_output=$(echo "${dl_bin_list[$os_v]}"| cut -d',' -f1)
+					prev_output=$(echo "${dl_bin_list[$os_v_p]}"| cut -d',' -f1)
+					_diff=$(echo "$new_output"| grep -vc "$prev_output")
+					if [ $_diff -gt 0 ]; then
+						_added=$(echo "${dl_bin_list[$os_v]}"| grep -v "$prev_output")
+						dl_bin_list[$os_v]=$(echo -e "${dl_bin_list[$os_v_p]}\n$_added")
+						dl_final_list=${dl_bin_list[$os_v]}
+					fi
+					os_v_p=$os_v
+				fi
+			else
+				os_v_p=$os_v
+			fi
+		done
+#		dist_dl_ver=$(echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2)
+		echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2 > $file_temp.[stamp]
+	}
 	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; b_elf='64'; else ftp_elf='x86'; b_elf=''; fi
 	if ! [ -n $wine_path/$ftp_elf ]; then mkdir -p $HOME/.winebin/$ftp_elf; fi
 	if [ -d $wine_path/$ftp_elf/$wine_ver ]; then
@@ -260,8 +306,27 @@ fn_use_winepath(){
 			unpack_list=( $dl_pkg )
 		else
 			if [ $wine_elf = 1 ]; then http_elf='x86_64'; b_elf='64'; else http_elf='i686'; b_elf=''; fi
-			dl_address_0="https://dl.winehq.org/wine-builds/fedora/25/$http_elf"
-			dl_address_1="https://dl.winehq.org/wine-builds/fedora/25/i686"
+			
+			file_temp=$(mktemp --tmpdir ftp.XXXXXXXX)
+			dl_address="https://dl.winehq.org/wine-builds/fedora"
+			dl_text="$vb\\Building WineHQ packages repository list.$end"
+			
+#			$zen_bin --width=550 --title "$w_title" --window-icon=filesave \
+#			--progress --pulsate --auto-close --no-cancel --text="$dl_text" &
+#			WAIT_UI=$(ps -A | grep "zenity" | awk '{print $1}'| sed -n '1p')
+#			download_list
+			
+			download_list | $zen_bin --width=550 --title "$w_title" --text="$dl_text" \
+			--window-icon=filesave --progress --pulsate --auto-close --no-cancel
+			dist_dl_ver=$(cat $file_temp.[stamp])
+			
+#			echo "$dl_final_list"			
+			
+#			dist_dl_ver=$(echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2)
+			dl_address_0="$dl_address/$dist_dl_ver/$http_elf"
+			dl_address_1="$dl_address/$dist_dl_ver/i686"
+#			dl_address_0="https://dl.winehq.org/wine-builds/fedora/25/$http_elf"
+#			dl_address_1="https://dl.winehq.org/wine-builds/fedora/25/i686"
 			dl_list=(
 				"$dl_address_0/wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
 				"$dl_address_1/wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
@@ -271,14 +336,14 @@ fn_use_winepath(){
 				"wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
 			)
 		fi
-		
+		kill $WAIT_UI
 		cd $dl_dir
 		for pkgs in ${dl_list[@]}; do
 			dl_installer=0
 			pack_name=$wine_ver
 			fn_download_ui
 		done
-			
+
 		for dwld in ${unpack_list[@]}; do
 			if [ $wine_pack = 0 ]; then 
 				un_tar(){ tar -xf $dwld; }
@@ -287,18 +352,23 @@ fn_use_winepath(){
 			fi
 			if [ $(ls -1 $dl_dir| egrep -c "$pkg_ver") -gt 0 ]; then
 			e_text="$vb\\Extracting $dwld to $wine_path.$end"
-			$yad_bin --width=550 --title "$w_title" --text-align=center --no-buttons \
-			--window-icon=filesave --progress --pulsate --auto-close --text="$e_text"  --progress-text="" &
-			WAIT_UI=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+#			$yad_bin --width=550 --title "$w_title" --text-align=center --no-buttons \
+#			--window-icon=filesave --progress --pulsate --auto-close --text="$e_text"  --progress-text="" &
+#			WAIT_UI=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+			$zen_bin --width=550 --title "$w_title" --window-icon=filesave \
+			--progress --pulsate --auto-close --no-cancel --text="$e_text" &
+			WAIT_UI=$(ps -A | grep "zenity" | awk '{print $1}'| sed -n '1p')
 #			un_tar | $yad_bin --width=500 --title "$w_title" --text-align=center --no-buttons\
 #			--window-icon=filesave --progress --pulsate --auto-close --text="$e_text" --progress-text=""
 			un_tar
 			kill $WAIT_UI
 			_use_winepath_env=1
 			else
-				printf "# Downloaded package missing. Using defautl Wine.\n"
-				text="$bf\\Downloaded package missing$end$vb.\nUsing system default Wine$end"
-				dialog_list="gtk-close;$warning"; yad_warnings
+				echo -e "»»»» Downloaded package missing. Using defautl Wine."
+				if [ $zen_bin ]; then
+					text="$bf\\Downloaded package missing$end$vb.\nUsing system default Wine$end"
+					dialog_list="gtk-close;$warning;4"; zen_warning
+				fi
 			fi
 		done
 		
@@ -311,73 +381,89 @@ fn_use_winepath(){
 			if [ $b_elf = 64 ]; then cd $wine_path/x86; ln -sf ../$ftp_elf/$wine_ver ; fi
 		fi
 	fi
+	
 }
 fn_install_tricks(){
-	## control winetricks installed
-#	c_count=0
 #	unset new_tricks_list
 	unset diff_tricks
 	i_list_file=$user_prefix/$bottle_prefix/tricks_install.log
 	w_list_file=$user_prefix/$bottle_prefix/winetricks.log
-	## when DLLs are installed by winetricks gui only,
-	## don't push anything in winestarter log and turn tricks process to off.
-	if [[ -e $w_list_file && ! -e $i_list_file ]]; then
-		w_install_tricks=0
-		perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
-	fi
-	## make the diff between winetricks log and winestarter log
-	if [ -s $i_list_file ]; then
-		c_tricks_list=$(printf "$w_tricks_list"|tr ',' '\n')
-		diff_tricks=$(printf "$c_tricks_list" | grep -vFf "$i_list_file")
-		diff_count=$(printf "$diff_tricks" | egrep -c .)
-	else
-		diff_count=0
-	fi
-	## if any diff, choose the right list to parse
-	if [ $diff_count -gt 0 ]; then
-		w_tricks_list=( $diff_tricks )
-	else
-		w_tricks_list=( $(echo "$w_tricks_list"| sed -n "s/,/\n/g;p") )
-	fi
-	## now, let's do winetricks job
-	if [ $w_install_tricks -gt 0 ]; then
-		if [ "$w_tricks_list" ]; then
-			if [ -x $w_tricks ]; then
-				e_text="$vb\\Winetricks is working$end"		
-				(for w_list in "${w_tricks_list[@]}"; do
-					echo "# Installing $w_list"
-					$w_tricks $w_tricks_opts $w_list
-					printf "$w_list\n" >> $i_list_file
-				done
-				)| $yad_bin --width=250 --title "$w_title" --text-align=center --text="$e_text" \
-				--window-icon=filesave --progress --pulsate --auto-close --no-buttons
-				perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
-			else
-				printf "# Winetricks was not found, install it first\n"
-				text="$bf\\Winetricks was not found$end\n$vb\\Install it first$end"
-				dialog_list="gtk-close;$warning"; yad_warnings
-				exit 0
-			fi
+	w_tricks_reserve=$scpt_dir/resources/tricks_workaround.txt
+	
+	## winestarter has its own wintricks binary, but some weird thibgs happens some time, so
+	## let's check if it is really in system tree, esle exit.
+	if [ -x $w_tricks ]; then
+	## set the dlls list to install.
+		## check winetricks workaround list for winetricks log filtering
+		if ! [ -s $w_tricks_reserve ]; then
+			$w_tricks settings list|sed -n "/^---/,/---$/d;p"| egrep -v "^Using.*$"|awk '{print $1}' \
+			>$w_tricks_reserve
 		fi
-		## add winetricks already installed to winestarter log
+		## set filters from winetricks settings list command.
+		w_filters=$(cat $w_tricks_reserve| tr '\n' '|')'w_workaround'
+		tmp_log=$(mktemp --tmpdir log1.XXXXXXXX)
+		## set w_tricks_list readable for diff.
+		_w_tricks_list=$(echo "$w_tricks_list"| tr ',' '\n')
+
 		if [ -s $w_list_file ]; then
-			w_tricks_res=$scpt_dir/resources/tricks_wo.txt
-			if ! [ -s $w_tricks_res ]; then
-				mkdir -p $scpt_dir/resources
-				$w_tricks settings list| awk '{print $1}' >$w_tricks_res
+			## sort winetricks log alphabetiquely to avoir mistakes, if any.
+			_w_list_file=$(cat $w_list_file| egrep -v "$w_filters")
+			echo "$_w_list_file"| sort -bd >$tmp_log
+			if [ $(echo "$_w_tricks_list"| grep -c .) -gt 0 ]; then
+				## find diff between w_tricks_list and already installed.
+				diff_tricks=$(echo "$_w_tricks_list"| grep -vFf "$tmp_log")
+				w_tricks_loop=( $diff_tricks )
 			fi
-			diff_list=$(cat $w_list_file | grep -vFf $w_tricks_res |grep -vwFf $i_list_file | egrep -v "bug")
-			diff_c=$(echo "$diff_list"| grep -c .)
-			if [ $diff_c -gt 0 ]; then
-				if [ $diff_c -gt 1 ]; then
-					new_list=$(echo "$diff_list"| tr '\n' ','| sed -n "s/,$//p")
-				else
-					new_list=$diff_list
-				fi
-				printf "$diff_list\n" >>$i_list_file
-				sed -ni "s|^w_tricks_list=\"\(.*\)\"$|w_tricks_list=\"\1,$new_list\"|i;p" $config_file
-			fi
+		else
+			w_tricks_loop=( $(echo "$w_tricks_list"| tr ',' '\n') )
 		fi
+		## now, let's do winetricks job
+		## Check that tricks install process is set to 'on' and take w_install_tricks is not empty.
+		## else, send error and exit.
+		if [[ $w_install_tricks -gt 0 && ${#w_tricks_loop[@]} -gt 0 ]]; then
+#			if [ "$w_tricks_list" ]; then
+			e_text="$vb\\Winetricks is working$end"		
+			(for w_list in "${w_tricks_loop[@]}"; do
+				echo "# Installing $w_list"
+				$w_tricks $w_tricks_opts $w_list
+			done
+#				)| $yad_bin --width=250 --title "$w_title" --text-align=center --text="$e_text" \
+#				--window-icon=filesave --progress --pulsate --auto-close --no-buttons
+			)| $zen_bin --width=250 --title="$w_title" --text="$e_text" \
+			--window-icon=filesave --progress --pulsate --auto-close --no-cancel
+#				perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
+			if [ -s $w_list_file ]; then
+				## analyse winetricks log again to get newly installed dlls.
+				cat $w_list_file| egrep -v "$w_filters"| sort -bd > $tmp_log
+				## ensure all dlls are installed, else, display error/info message.
+				diff_logs=$(echo "$_w_tricks_list"| grep -vFf "$tmp_log")
+				if [[ $diff_logs != '' ]]; then
+					warn_msg=$(echo "$diff_logs"| tr '\n' ','| sed -n "s/,$//g;p")
+					echo -e "»»»» DLLs install error. $warn_msg are missing or won't install.\n»»»» See config file w_tricks_list field or try to launch winestarter again."
+					if [ $zen_bin ]; then
+						text="$bf\\DLLs install error$end$vb.\n$warn_msg are missing or won't install.\nLook at $config_file or try to launch Winestarter again$end"
+						dialog_list="gtk-close;$warning;4"; zen_warning
+					fi
+				fi
+				## finaly, replace old w_tricks_list by tne new one in config.
+				_new_tricks=$(cat $tmp_log| tr '\n' ','| sed -n "s/,$//p")
+				sed -ni "s|^w_tricks_list=\"\(.*\)\"$|w_tricks_list=\"\1,$_new_tricks\"|i;p" $config_file
+			fi
+		else
+			echo -e "»»»» Winetricks install list is empty.\n»»»» Don't to set up Winetricks dlls install when DLLs list is empty."
+			if [ $zen_bin ]; then
+				text="$bf\\Winetricks install list is empty$end$vb.Don't to set up Winetricks dlls install when DLLs list is empty\n$end"
+				dialog_list="gtk-close;$warning;4"; zen_warning
+			fi
+			exit 0
+		fi
+	else
+		echo -e "»»»» Winetricks was not found, install it first."
+		if [ $zen_bin ]; then
+			text="$bf\\Winetricks was not found$end\n$vb\\Install it first$end"
+			dialog_list="gtk-close;$warning;4"; zen_warning
+		fi
+		exit 0
 	fi
 }
 fn_extract_lnk(){
@@ -429,12 +515,18 @@ fn_extract_lnk(){
 				if [ -x $yad_bin ]; then
 					target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/
 					exe_text="$vb\\Please, select the executable in $game_dir.$end"
-					exe_seek=$($yad_bin --width=400 --title "$w_title" --form --image=stock_dialog_question \
-					--window-icon=filesave --separator="" \
-					--field="$exe_text":LBL '' --field="":FL "$target_dir")
-					abort=$?
-					if [ $abort = 0 ]; then
-						game_exe=$(printf "$exe_seek"|sed -n "s/^.*\///g;p")
+#					exe_seek=$($yad_bin --width=400 --title "$w_title" --form --image=stock_dialog_question \
+#					--window-icon=filesave --separator="" \
+#					--field="$exe_text":LBL '' --field="":FL "$target_dir")
+					$zen_bin --width=400 --title "$w_title" --question --window-icon=$filesave \
+					--text="$exe_text"
+					if [ $? = 0 ]; then
+						exe_seek=$($zen_bin --width=400 --title "$w_title" --question --window-icon=$filesave \
+						--file-selection --filename=$target_dir --directory)
+						abort=$?
+						if [ $abort = 0 ]; then
+							game_exe=$(printf "$exe_seek"|sed -n "s/^.*\///g;p")
+						fi
 					fi
 				fi
 			fi
@@ -480,19 +572,30 @@ fn_convert_desktop_file(){
 			fi
 			if [ $w_install_exe -gt 0 ]; then
 				if ! [ -s $dsk_dir/$dsk_name.desktop ]; then
-					if [ -x $yad_bin ]; then
+					if [ -x $zen_bin ]; then
+#					if [ -x $yad_bin ]; then
 						d_text0="$vb\\Desktop file auto detection for $dsk_key failed.\\nSelect a desktop file entry manually. Or just cancel to pass.$end"
 						d_text1="$vb\\You can also use winestarter_conf after and choose button:$end$rb\nEdit or create a desktop file$end"
-						dsk_list=$(printf "${desktop_file_list[*]}"| sed -n "s/.desktop//g;p"|tr '\n' '!')
-						dsk_seek=$($yad_bin --width=400 --title "$w_title" --form --image=$inform \
-						--window-icon=filesave --timeout=10 --timeout-indicator=bottom --separator="" \
-						--field="$d_text0":LBL '' --field="":CB "$dsk_list" \
-						--field="$d_text1":LBL ''
-						)
-						if ! [ "$dsk_seek" = '' ]; then dsk_name=$dsk_seek; fi #else
+#						dsk_list=$(printf "${desktop_file_list[*]}"| sed -n "s/.desktop//g;p"|tr '\n' '!')
+#						dsk_seek=$($yad_bin --width=400 --title "$w_title" --form --image=$inform \
+#						--window-icon=filesave --timeout=10 --timeout-indicator=bottom --separator="" \
+#						--field="$d_text0":LBL '' --field="":CB "$dsk_list" \
+#						--field="$d_text1":LBL ''
+#						)
+#						if ! [ "$dsk_seek" = '' ]; then dsk_name=$dsk_seek; fi #else
 	#					text="$bf\\There no desktop file entry for your app$end\n$vb\\If you want one, launch winestarter_conf and choose button:$end$rb\nEdit or create a desktop file$end"
-	#					dialog_list="gtk-close;$warning"; yad_warnings
+	#					dialog_list="gtk-close;$warning;4"; zen_warning
 	#					fi
+#					else
+						w_width=400; div=4
+						w_height=$(($w_width/$div))
+						$zen_bin --width=$w_width --height=$w_height --title='' --window-icon="$d_img" \
+						--question --text="$d_text0\n$d_text1"
+						if [ $? = 0 ]; then
+							dsk_seek=$($zen_bin --title='Winestarter fiel selector' --window-icon="$d_img" \
+							--file-selection --filename=$HOME/Bureau/ --file-filter=*.desktop)
+						fi
+						if ! [ "$dsk_seek" = '' ]; then dsk_name=$dsk_seek; fi
 					fi
 				fi
 			fi
@@ -534,17 +637,22 @@ fn_convert_desktop_file(){
 			fi
 		else
 			## not found
-			echo "»»»» NO DESKTOP FILE TO PROVIDE. PASSED."
+			echo -e "»»»» NO DESKTOP FILE TO PROVIDE. PASSED."
 			if [ $w_install_exe -gt 0 ]; then
-				text="$brf\\No desktop file found for convertion$end$vb.\nPlease process with winestarter_conf instead$end"
-				dialog_list="gtk-close;$inform"; yad_warnings
+				echo -e "»»»» PLEASE PROCESS WITH WINESTARER_CONF INSTEAD, IF AVAILABLE."
+				if [ $zen_bin ]; then
+					text="$brf\\No desktop file found for convertion$end$vb.\nPlease process with winestarter_conf instead$end"
+					dialog_list="gtk-close;$inform;4"; zen_warning
+				fi
 			fi
 		fi		
 	fi
 	else
-		echo "»»»» WARNING: IMAGEMAGIK CONVERT BINARY NOT FOUND. PASSED."
-		text="$brf\\ImageMagick converter not found.$end$vb\nIf you xant to have desktop file entry convertion you need to install ImageMagick first.$end"
-		dialog_list="gtk-close;$warning"; yad_warnings
+		echo -e "»»»» WARNING: IMAGEMAGIK CONVERT BINARY NOT FOUND. PASSED."
+		if [ $zen_bin ]; then
+			text="$brf\\ImageMagick converter not found.$end$vb\nIf you xant to have desktop file entry convertion you need to install ImageMagick first.$end"
+			dialog_list="gtk-close;$warning;4"; zen_warning
+		fi
 	fi
 }
 fn_install_exe(){
@@ -556,23 +664,27 @@ fn_install_exe(){
 			fn_download_ui
 		fi		
 	}
+	echo "######################## 1"
+	pkgs_log=$user_prefix/$bottle_prefix/packages.log
+	
 	if [ "$w_exe_path" != '' ]; then
-		if [[ $w_exe_path =~ ^(http*|ftp*) ]]; then
-			pkgs=$w_exe_path
-			sub_download
-			w_exe_path=$dl_dir/$pack_name
-		fi
 		msi=$(printf "$w_exe_path"| grep -c "\.msi")
-#		if [ $start_cmd = 0 ]; then
+		new_pkg=$(printf "$w_exe_path"| sed -n "s/^.*\///g;p")
+		if  ! [ -s $pkgs_log ]||[ $(cat $pkgs_log| grep -wc "$new_pkg") -eq 0 ]; then 
+			if [[ $w_exe_path =~ ^(http*|ftp*) ]]; then
+				pkgs=$w_exe_path
+				sub_download
+				w_exe_path=$dl_dir/$pack_name
+			fi
 			if [ $msi = 0 ]; then
 				$wine_bin $w_exe_path $w_exe_opts
 			else
 				$wine_bin msiexec \/i $w_exe_path $w_exe_opts
 			fi
-#		else
-#			# pull wine start command line in unix style
-#			$opti_run $wine_bin start /unix "$w_exe_path" $w_exe_opts
-#		fi
+			echo "$new_pkg" >> $pkgs_log
+		else
+			echo -e "»»»» $new_pkg already installed, pass."
+		fi
 		fn_extract_lnk
 		sleep 1
 		abort=0
@@ -581,19 +693,33 @@ fn_install_exe(){
 #		exit 0
 	fi
 	if [ $(printf "$w_more_pkgs"| grep -c .) -gt 0 ]; then
+		extra_log=$user_prefix/$bottle_prefix/extra_pcks.log
+#		w_more_pkgs_list=( $(echo "$w_more_pkgs"| tr ',' '\n') )
 		for pkg in ${w_more_pkgs[@]}; do
-			if [[ $pkg =~ ^(http*|ftp*) ]]; then
-				pkgs=$pkg
-				sub_download
-				pkg=$dl_dir/$pack_name
-			fi
 			msi=$(printf "$pkg"| grep -c "\.msi")
-			if [ $msi = 0 ]; then
-				$wine_bin $pkg $w_exe_opts
+			prev_pck=$(echo -e "$pkg"| sed -n "s/^.*\///g;p")
+			if ! [ -s $extra_log ]||[ $(cat $extra_log| grep -wc "$prev_pck") -eq 0 ]; then
+				if [[ $pkg =~ ^(http*|ftp*) ]]; then
+					pkgs=$pkg
+					sub_download
+					pkg=$dl_dir/$pack_name
+				fi
+				if [ $msi = 0 ]; then
+					$wine_bin $pkg $w_exe_opts
+				else
+					$wine_bin msiexec \/i $pkg $w_exe_opts
+				fi
+				echo "$prev_pck" >> $extra_log
 			else
-				$wine_bin msiexec \/i $pkg $w_exe_opts
+				echo -e "»»»» $prev_pkg already installed, pass."
 			fi
-			printf $(echo -e "$pkg"| sed -n "s/^.*\///g;p") >> $user_prefix/$bottle_prefix/extra_pcks.log
+#			if [ -s  ]; then
+#				if [ $(cat $user_prefix/$bottle_prefix/extra_pcks.log| grep -wc "$prev_pck") -eq 0 ]; then
+#					echo "$prev_pck" >> $user_prefix/$bottle_prefix/extra_pcks.log
+#				fi
+#			else
+#				echo "$prev_pck" >> $user_prefix/$bottle_prefix/extra_pcks.log
+#			fi
 		done
 		abort=0
 #	else
@@ -606,44 +732,63 @@ fn_install_exe(){
 			target_dir=$user_prefix/$bottle_prefix/drive_c/$w_install_dir
 		else
 			target_dir=$user_prefix/$bottle_prefix/drive_c/
-			if [ -x $yad_bin ]; then
+			if [ -x $zen_bin ]; then
 				dir_text="$vb\\Please, select or create the target directory in C: drive.$end"
-				w_install_dir=$($yad_bin --width=400 --title "$w_title" --form \
-				--image=stock_dialog_question --window-icon=filesave --separator="" \
-				--field="$dir_text":LBL '' --field="":CDIR "$target_dir")
+#				w_install_dir=$($yad_bin --width=400 --title "$w_title" --form \
+#				--image=stock_dialog_question --window-icon=filesave --separator="" \
+#				--field="$dir_text":LBL '' --field="":CDIR "$target_dir")
+				$zen_bin --width=400 --title "$w_title" --question --window-icon=$filesave \
+				--text="$dir_text"
+				if [ $? = 0 ]; then
+					w_install_dir=$($zen_bin --title "$w_title" --window-icon=$filesave \
+					--file-selection --filename=$target_dir --directory)
+				fi
 				abort=$?
 				target_dir=$w_install_dir
 				w_install_dir=$(printf "$target_dir"| sed -n "s/^.*\///g;p")
 			fi
 		fi
-		mkdir -p $target_dir
-		game_dir=$w_install_dir
-		if [[ $w_install_zip =~ ^(http*|ftp*) ]]; then
-			pkgs=$w_install_zip
-			sub_download
-			w_install_zip=$dl_dir/$pack_name
-		fi
-		if [ $(printf "$w_install_zip"| grep -c ".zip") -gt 0 ]; then
-#			unzip -o -D ISO-8859-15 $w_install_zip -d $w_install_dir
-			unzip -o $w_install_zip -d $target_dir
-		elif [ $(printf "$w_install_zip"| grep -c ".rar") -gt 0 ]; then
-			cd $target_dir
-			unrar x -y -o+ -inul $w_install_zip
-		elif [ $(printf "$w_install_zip"| grep -c ".7z") -gt 0 ]; then
-			if [ $(printf "$w_install_zip"| grep -c "tar.7z") -gt 0 ]; then
-				7z x -y -so $w_install_zip | tar -xf -
-			else
-				cd $target_dir
-				7z x -y $w_install_zip
+		new_pkg=$(printf "$w_install_zip"| sed -n "s/^.*\///g;p")
+		if  ! [ -s $pkgs_log ]||[ $(cat $pkgs_log| grep -wc "$new_pkg") -eq 0 ]; then
+			mkdir -p $target_dir
+			game_dir=$w_install_dir
+		
+			if [[ $w_install_zip =~ ^(http*|ftp*) ]]; then
+				pkgs=$w_install_zip
+				sub_download
+				w_install_zip=$dl_dir/$pack_name
 			fi
-		elif [ $(printf "$w_install_zip"| grep -c ".exe") -gt 0 ]; then
-			$wine_bin $w_install_zip $wine_opts
+			if [ $(printf "$w_install_zip"| grep -c ".zip") -gt 0 ]; then
+	#			unzip -o -D ISO-8859-15 $w_install_zip -d $w_install_dir
+				unzip -o $w_install_zip -d $target_dir
+			elif [ $(printf "$w_install_zip"| grep -c ".rar") -gt 0 ]; then
+				cd $target_dir
+				unrar x -y -o+ -inul $w_install_zip
+			elif [ $(printf "$w_install_zip"| grep -c ".7z") -gt 0 ]; then
+				if [ $(printf "$w_install_zip"| grep -c "tar.7z") -gt 0 ]; then
+					7z x -y -so $w_install_zip | tar -xf -
+				else
+					cd $target_dir
+					7z x -y $w_install_zip
+				fi
+			elif [ $(printf "$w_install_zip"| grep -c ".exe") -gt 0 ]; then
+				$wine_bin $w_install_zip $wine_opts
+			fi
+			echo "$new_pkg" >> $pkgs_log
+		else
+			echo -e "»»»» $new_pkg already installed, pass."
 		fi
-		if [ -x $yad_bin ]; then
+		if [ -x $zen_bin ]; then
 			exe_text="$vb\\Please, select the executable to launch in $game_dir.$end"
-			exe_seek=$($yad_bin --width=400 --title "$w_title" --form --image=stock_dialog_question \
-			--window-icon=filesave --separator="" \
-			--field="$exe_text":LBL '' --field="":FL "$target_dir")
+#			exe_seek=$($yad_bin --width=400 --title "$w_title" --form --image=stock_dialog_question \
+#			--window-icon=filesave --separator="" \
+#			--field="$exe_text":LBL '' --field="":FL "$target_dir")
+			$zen_bin --width=400 --title "$w_title" --question --window-icon=$filesave \
+			--text="$exe_text"
+			if [ $? = 0 ]; then
+				exe_seek=$($zen_bin --width=400 --title "$w_title" --window-icon=$filesave \
+				--file-selection --filename=$target_dir --file-filter=*.{exe,EXE})
+			fi
 			abort=$?
 			if [ $abort = 0 ]; then
 				game_exe=$(printf "$exe_seek"|sed -n "s/^.*\///g;p")
@@ -661,9 +806,12 @@ fn_install_exe(){
 	fi	
 	if [ $abort = 1 ]; then
 #	if ! [ -x $user_prefix/$bottle_prefix/drive_c/Program\ Files"$w_elf_ext"$game_dir/$game_exe ]; then
-		printf "# EXE path was not found.\n# Defining the right install executable path is mandatory.\n# EXIT.\n"
-		text="$brf\\EXE path was not found.$end$vb\nDefining the right install executable path is mandatory.\n\nEXIT.$end"
-		dialog_list="gtk-close;$warning"; yad_warnings
+		
+		echo -e "»»»» EXE path was not found.\n# Defining the right install executable path is mandatory.\n# EXIT.\n"
+		if [ $zen_bin ]; then
+			text="$brf\\EXE path was not found.$end$vb\nDefining the right install executable path is mandatory.\n\nEXIT.$end"
+			dialog_list="gtk-close;$warning"; zen_warning
+		fi
 		exit 0
 	else
 		perl -ni -pe "s|(w_install_exe)=[0-9]|\1=0|i" $config_file
@@ -671,42 +819,80 @@ fn_install_exe(){
 }
 fn_game_dir_exist(){
 	## search where is the "Prgram Files" dir and type.
+	echo "######################## 2"
 	fn_root_key
 	if [[ $game_dir == '' && $game_exe == '' ]]; then
 		mkdir -p $user_prefix/$bottle_prefix/drive_c/Program\ Files"$elf_ext"
 	fi
 	## search if there any app path in "Program Files" or root. If none, link the predifine app dir if any.
 	if [[ $game_path != '' ]]; then
+#	if [[ $game_path == '' ]]; then
 		link=$(printf "$game_path"| sed -n "s/^.*\///g;p")
 		target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"$link/
 		if ! [ -d $target_dir ]; then
 			ln -sf $game_path $user_prefix/$bottle_prefix/drive_c/$root_key
 		fi
 		target_app=$user_prefix/$bottle_prefix/drive_c/"$root_key"
-		if [ -d $target_dir ]; then
-			if [ "$game_dir" == '' ]; then game_dir='none'; fi
-			if ! [ -d $target_app$game_dir ]; then
-				if [ $(ls -1 $target_dir| grep -c .) -gt 1 ]; then
-					d_text="$vb\\More that one directory found in path$end"
-					target_ls=$( ( ls -1 $target_dir| tr '\n' '!' )| yad --title 'WARMING' --width=400 \
-					--form --field="Please select one":CB --separator='' --text="$d_text" )
-					game_dir=$target_dir$target_ls
-				else
-					game_dir=$target_dir$(ls -1 $target_dir)
+		if [ $zen_bin ]; then
+		echo "######################## 3"
+			if [ -d $target_dir ]; then
+				if [ "$game_dir" == '' ]; then game_dir='none'; fi
+#				if [ "$game_dir" != '' ]; then game_dir='none'; fi
+				if ! [ -d $target_app$game_dir ]; then
+#				if [ -d $target_app$game_dir ]; then
+					if [ $(ls -1 $target_dir| grep -c .) -gt 1 ]; then
+						d_text="$vb\\More that one directory found in path$end"
+#						target_ls=$( ( ls -1 $target_dir| tr '\n' '!' )| yad --title 'WARMING' --width=400 \
+#						--form --field="Please select one":CB --separator='' --text="$d_text" )
+						## TODO > list field
+						_n_val=1
+#						_val_list=$(ls -1 $target_dir| egrep ".(exe|EXE)$")
+						_dir_list=$(du -ah -d 1 $target_dir| egrep -v ".(EXE|exe|dlls|bin)$"| \
+						sed -En "s/^.*[\.]?\/(.*)$/\1/p")
+						for _dir in ${_dir_list[@]}; do
+							_list_dir+=('false' "$_n_val" "$_dir")
+							_output_dir+=("$_dir")
+							_n_val=$(($_n_val+1))
+						done
+						w_title='Select app directory'
+						target_ls=$($zen_bin --width=400 --title "$w_title" --window-icon=$filesave \
+						--text="$d_text" --list --radiolist --hide-header --column "1" --column "2" \
+						--column "3" --separator=";" --hide-column=2 "${_list_dir[@]}")
+						_out_target=$(($target_ls-1))
+						game_dir=$target_dir${_output_dir[$_out_target]}
+#						game_dir=$target_dir$target_ls
+					else
+						game_dir=$target_dir$(ls -1 $target_dir)
+					fi
+					if [ "$sed_key" != '' ]; then
+						game_dir=$(echo "$game_dir"| sed -n "s/^.*$sed_key//g;p")
+					fi
+					sed -ni "s|^\(\w*game_dir=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_dir\4|i;p" $config_file
 				fi
-				if [ "$sed_key" != '' ]; then
-					game_dir=$(echo "$game_dir"| sed -n "s/^.*$sed_key//g;p")
+				if [ "$game_exe" == '' ]; then game_exe='none'; fi
+				if ! [ -s $target_app$game_dir/$game_exe ]; then
+					w_title='Select app exe in directory'
+					d_text="$vb\\App executable is not set:\\nChoose one in the list below.$end"
+#					exe_ls=$( ( ls -1 $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/| tr '\n' '!'
+#					)| $yad_bin --title 'WARMING' --width=400 --form --field="Please select one":CB \
+#					--separator='' --text="$d_text" )
+					## TODO > list field
+					_n_val=1
+					_exe_list=$(ls -1 $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/ | \
+					egrep ".(exe|EXE)$")
+					for _exe in ${_exe_list[@]}; do
+						_list_exe+=('false' "$_n_val" "$_exe")
+						_output_exe+=("$_exe")
+						_n_val=$(($_n_val+1))
+					done
+					exe_ls=$($zen_bin --width=400 --title "$w_title" --window-icon=$filesave \
+					--text="$d_text" --list --radiolist --hide-header --column "1" --column "2" \
+					--column "3" --separator=";" --hide-column=2 "${_list_exe[@]}")
+					_out_exe=$(($exe_ls-1))
+					game_exe=${_output_exe[$_out_exe]}					
+#					game_exe=$exe_ls
+					sed -ni "s|^\(\w*game_exe=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_exe\4|i;p" $config_file
 				fi
-				sed -ni "s|^\(\w*game_dir=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_dir\4|i;p" $config_file
-			fi
-			if [ "$game_exe" == '' ]; then game_exe='none'; fi
-			if ! [ -s $target_app$game_dir/$game_exe ]; then
-				d_text="$vb\\App executable is not set:\\nChoose one in the list below.$end"
-				exe_ls=$( ( ls -1 $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/| tr '\n' '!'
-				)| $yad_bin --title 'WARMING' --width=400 --form --field="Please select one":CB \
-				--separator='' --text="$d_text" )
-				game_exe=$exe_ls
-				sed -ni "s|^\(\w*game_exe=\)\(\"\)\(.*\)\(\"$\)|\1\2$game_exe\4|i;p" $config_file
 			fi
 		fi
 	fi
@@ -761,6 +947,7 @@ fn_wine_binary(){
 #		export PATH
 #		echo "$LD_LIBRARY_PATH"
 		wine_bin=$WINELOADER
+		wine_bin_path=$wine_elf_path/bin/
 	#	wineboot -u
 	#	wine --version
 	fi
@@ -835,10 +1022,12 @@ if [ $w_config = 1 ]; then fn_wineconf ; fi
 #if ! [ -s $user_prefix/$bottle_prefix/drive_c/Program\ Files/$game_dir/$game_exe ] || \
 if ! [ -s $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; then
 	IFS=$ifs 
-	echo "»»»» Can't find $game_exe for $user_prefix/$bottle_prefix
+	echo -e "»»»» Can't find $game_exe for $user_prefix/$bottle_prefix
 »»»» ABORT & EXIT"
-	text="$bf\\Can't find an executable for:$end\n$rb\\$user_prefix/$bottle_prefix$end\n\n$vb\\Script will now end on exception.$end"
-	dialog_list="gtk-close;$warning"; yad_warnings
+	if [ $zen_bin ]; then
+		text="$bf\\Can't find an executable for:$end\n$rb\\$user_prefix/$bottle_prefix$end\n\n$vb\\Script will now end on exception.$end"
+		dialog_list="gtk-close;$warning"; zen_warning
+	fi
 	exit 0
 fi
 

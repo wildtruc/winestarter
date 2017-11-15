@@ -6,7 +6,7 @@ PREFIX = /usr/local
 USER_DIR = /home/$(C_USER)
 CONF_DIR = $(USER_DIR)/.winestarter
 
-.PHONY: all install update uninstall safeuninstall
+.PHONY: install update uninstall safeuninstall
 
 all: install
 

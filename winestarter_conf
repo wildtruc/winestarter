@@ -35,6 +35,14 @@ brf='<span color="'$warn'" weight="bold" font="'$font1' '$size1'">'
 nf='<span weight="bold" font="'$font0' '$size0'">'
 vz='<span color=\"'$main'\" weight=\"bold\" font=\"'$size0'\">'
 end='</span>'
+## Script colours Vars.
+#t='\e[0;39m'	#default terminal colour
+#r='\e[1;31m'	#red
+g_notif='\e[1;31m'	#green
+c_notif='\e[1;32m'	#cyan
+#j='\e[1;33m'	#yellow
+i_notif='\e[40m\e[1m\e[37m''\e[1;31m'
+e_notif='\e[0;39m'
 }
 icons_set(){
 	png_stock=$HOME/.winestarter/png/defaults
@@ -69,493 +77,491 @@ icons_set(){
 }
 main_code(){
 		default_win_design(){
-		for sets in "${basic_sets[@]}"; do
-			c_tab=$(printf "$sets"| cut -d';' -f1)
-			c_set=$(printf "$sets"| cut -d';' -f2) #*
-			c_var=$(printf "$sets"| cut -d';' -f3) #*
-			c_name=$(printf "$sets"| cut -d';' -f4)
-			c_msg=$(printf "$sets"| cut -d';' -f5)
-			c_box=$(printf "$sets"| cut -d';' -f6)
-			c_opt=$(printf "$sets"| cut -d';' -f7)
-			n_var=$(printf "$sets"| cut -d';' -f8)
-			fn_op=$(printf "$sets"| cut -d';' -f9)
-			t_img=$(printf "$sets"| cut -d';' -f10)
-			if [ $from_config = 1 ]&&[ $c_box != 'LBL' ]; then
-				if [ $c_box == 'CB' ]||[ $c_box == 'CBE' ]; then
-					if [ "$c_set" != 'unset' ]; then extend=$item_sep'unset'; else extend=''; fi
-				fi
-			fi
-			# regedit filter to parse full text in UI
-			if [[ $c_var == user_reg ]]; then
-				c_set=$(cat $reg_file| perl -pe "s|\\\|\\\\\\\|g;p"| tr '*' '\n')
-			fi
-			if [ $c_box == '' ]; then chk_box="$c_set"; fi 
-			if [ $c_box == 'CHK' ]; then 
-				if [ $c_set = 0 ]||[[ $c_set == unset ]]; then chk_box=FALSE;	else chk_box=TRUE; fi
-			fi
-			if [ $c_box == 'NUM' ]; then chk_box="$c_set$item_sep$c_opt"; fi
-			if [ $c_box == 'LBL' ]; then chk_box=''; fi
-			if [ $c_box == 'CB' ]; then chk_box="$c_set$item_sep$c_opt$extend"; fi
-			if [ $c_box == 'CBE' ]; then 
-				chk_box="$c_set$item_sep$c_opt$extend"
-				if [ $(echo "$chk_box"| grep -cF ",,") -gt 0 ]; then
-					chk_box="$c_set$c_opt$extend"
-				fi
-			fi
-			if [ $c_box == 'DIR' ]; then chk_box="$c_set"; fi
-			if [ $c_box == 'CDIR' ]; then chk_box="$c_set"; fi
-			if [ $c_box == 'FL' ]; then chk_box="$c_set"; fi
-			if [ $c_box == 'MFL' ]; then chk_box="$c_set"; fi
-			if [ $c_box == 'SFL' ]; then chk_box="$c_set"; fi
-			if [ $c_box == 'TXT' ]; then chk_box="$c_set"; fi
-			if [ $c_box == 'FBTN' ]; then chk_box="$c_set"; fi
-				
-			field_list+=("--field=$c_msg:$c_box")
-			# preconfigured sets
+		echo -e "$i_notif\n@@@@ default_win_design @@@@\n$e_notif"
+		## reset IFS to include white space
+		ifs=$IFS
+		IFS=$(echo -ne "\n\b")
+		## reset field values
+		unset field_list chk_list
+		## common sets values are represented under this form:
+		## base form : 
+		## 1/ input var data (and extended data for combo);
+		## 2/ input var name;
+		## 3/ tab title (for fn_create_prefix);
+		## 4/ field message and information;
+		## 5/ field class (CHK,LBL,CB,etc); 
+		## 6/ function name (for fn_create_prefix and tab creation);
+		## 7/ section tab left side image 
+		## >> "TRUE;\2;\3;\4;\5;\6;\7"
+		## and catch by the following regex:
+		regex_0='^0;(.*;CHK;.*)'
+		regex_1='^1;(.*;CHK;.*)'
+		regex='(.*);(.*);(.*);[ ]?(.*);([A-Z]{0,4});(.*);(.*)'
+		## convert CHK numeric values to TRUE/FALSE
+		basic_sets=$(echo "$basic_sets" | sed -E -n "s/$regex_0/FALSE;\1/i;p"| \
+		sed -E -n "s/$regex_1/TRUE;\1/i;p")
 		
-			chk_list+=("$chk_box")
-			# tabs configuration fields ex:
-			# "14;0;THREAD;;$msg_nvidia;CHK;;__GL_THREADED_OPTIMIZATIONS"
-			## ignore first winestarter selector window
-			if [ $ignore_loop = 0 ]; then
-				tmp_cut+=("$tmp_key;$c_var;$c_tab")
-			fi
-		done
+		## fields and corresponding values are then all parsed at the same time and displayed faster.
+		field_list=$(echo "$basic_sets" | sed -E -n "s/$regex/--field=\4:\5/p")
+		chk_list=$(echo "$basic_sets"| sed -E -n "s/$regex/\1/p" | \
+		sed -E -n "s/^([0-9],[0-9],[0-9].*)$/\1,unset/i;p")
+
+		# sortie : ';;TRUE;TRUE;FALSE;TRUE;TRUE;;;FALSE;FALSE;;;TRUE;FALSE;;;;FALSE;'
+		# origin regex form: regex='(.*);(.*);(.*);[ ]?(.*);([A-Z]{2,4});(.*);(.*)'
+		# corresponding to : "TRUE;\2;\3;\4;\5;\6;\7"
+		## extract basic_sets data without labeled line and get exploitable datas only.
+		from_basic=$(echo "$basic_sets"|	 egrep -v 'LBL'| sed -E -n "s/$regex/\1;\2;\3;\6;\7/p")
+
 		# ne pas tenir compte des labels
 		if [ $win_type = 0 ]; then
 			def_win=$($yad_bin --width=$w_width --title "$w_title" --image=$img_wine_ui \
-			--window-icon=$img_desktop \
-			--form "${field_list[@]}" "${chk_list[@]}" --separator=';' --item-separator="$item_sep" \
-			--align=left --text "$bf$w_text$end" \
-			)
-#			YAD_02=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+			--window-icon=$img_desktop --form --separator=';' --item-separator="$item_sep" \
+			--align=left --text "$bf$w_text$end" $(echo "$field_list") $(echo "$chk_list") )
 			if [ $? = 1 ]; then exit 0; fi
-			default_win=$(printf "${def_win[@]}"|sed -n "s/;/?;?/g;p"| \
-			perl -pe "s/\?(\w*[\/A-Za-z0-9]+)\?/\1/g, s/^(\w*[\/A-Za-z0-9]+)\?/\1/;p, s/\;\?/;/g;p, s/([\;]+$)$/\1?/p")
-			form_win=$(printf "${default_win[@]}"|tr ';' '\n')			
+			from_output=$(echo "$def_win"| sed -n "s/;/\n/g;p"| cat -b| awk 'NF'| \
+			sed -E -n "s/^.*\ ([0-9]{1,3})\t(.*$)/\1#\2/;s/TRUE/1/g;s/FALSE/0/g;p")
 		fi
 		if [ $win_type = 1 ]; then
+			## fields and corresponding values are then all parsed at the same time and displayed faster.
+			field_list=( $(echo "$basic_sets" | sed -E -n "s/$regex/--field=\4:\5/p") )
+			chk_list=( $(echo "$basic_sets"| sed -E -n "s/$regex/\1/p" | \
+			sed -E -n "s/^([0-9],[0-9],[0-9].*)$/\1,unset/i;p") )
+		
+		
+			## extract basic_sets data without labeled line and get exploitable datas only. 
+			echo "$basic_sets"| egrep -v "LBL|FBTN"| sed -E -n "s/$regex/\1;\2;\3;\6;\7/p" > $temp_a
+			echo -e "$g_notif >>>> CHECK ME$e_notif"
+
 			w_width=$((594+$scale))
-			$yad_bin --width=$w_width $t_plug --text="$w_text" --form $extended_opts \
-			"${field_list[@]}" "${chk_list[@]}" --separator=';' --item-separator="$item_sep" > $temp &
-#			YAD_03=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+			$yad_bin --width=$w_width $t_plug $t_rank $t_icon --text="$w_text" \
+			$extend_height $extend_pol --form --separator=';' --item-separator="$item_sep" $focus \
+			"${field_list[@]}" "${chk_list[@]}" > $temp_b &
 		fi
 #		if [ $win_type = 2 ]; then
 #			"${field_list[@]}" "${chk_list[@]}"
 #		fi
-#		if [ $basic_set = 1 ]; then
-#			fn_wine_basic_feed
-#		fi
+
+		## restore IFS to previous state
+		IFS=$ifs
+		## from here, yad window is waiting for validation to go to next process.
+		echo -e "$g_notif\n>>>> $temp_a\n>>>> $(cat $temp_a)$e_notif"
+		echo -e "$g_notif\n>>>> $temp_b\n>>>> $(cat $temp_b)$e_notif"
 	}
-	default_tab_design(){
+		default_tab_design(){
+		echo -e "$i_notif\n@@@@ default_tab_design @@@@\n$e_notif"
+		wait_message='CREATE UI'
 		fn_plz_wait &
-		n_cfg=1
-		n_set=1
-		for cfg_form in ${form_win[@]}; do
-			if [[ $cfg_form =~ ^[A-Z]+ ]]; then
-				if [ $cfg_form = 'FALSE' ]; then w_set=0; else w_set=1; fi
-				for order in "${basic_sets[@]}"; do
-					c_tab=$(printf "$order"| cut -d';' -f1)
-					c_box=$(printf "$order"|grep "$c_tab"|cut -d';' -f6)
-					if [ $c_tab = $n_cfg ];then
-						if [ $(printf "$order"| awk '{print $1}'|grep -c "$c_tab") = 1 ]; then
-							if [ $(printf "$order"|grep -c 'LBL') = 0 ]; then			
-								if [ $cfg_form != 'FALSE' ]; then
-									c_var=$(printf "$order"|grep "$n_cfg"|cut -d';' -f3)
-									c_name=$(printf "$order"|grep "$n_cfg"|cut -d';' -f4)
-									c_fn_op=$(printf "$order"|grep "$n_cfg"|cut -d';' -f9)
-									c_img=$(printf "$order"|grep "$n_cfg"|cut -d';' -f10)
-									if [ $c_var == _extended ]; then
-										## special set to insert in first place before creating the whole thing
-										export _extended=$w_set	 
-									else
-										cfg_set+=("$c_var=$w_set")
-										tab_set+=("$n_set;$c_var;$c_name;$c_fn_op;$c_img")
-										n_set=$[ $n_set+1 ]
-									fi
-								else
-									c_var=$(printf "$order"|grep "$n_cfg"|cut -d';' -f3)
-									if [ $c_var == _extended ]; then
-										export _extended=$w_set
-									else
-										cfg_set+=("$c_var=$w_set")
-									fi
-								fi
-							else
-								n_cfg=$[ $n_cfg+1 ]
-							fi
-						fi
-					fi
-				done	
+		WAIT_UI_1=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+#		n_cfg=1
+		_num_tab=1 
+		
+		## This, represent only window tab order and making.
+		## compare input and output datas.
+		## redefine regex for new output form.
+		## output data to be treated are represented under this form : 
+		## 1/ output var data;
+		## 2/ input>output var name;
+		## 3/ tab title (for fn_create_prefix);
+		## 6/ function name (for fn_create_prefix and tab creation);
+		## 7/ section tab left side image
+		regex='(.*);(.*);(.*);(.*);(.*)'
+		### valeur spécifiques
+		for _out_var in ${from_output}; do
+			_line=$(printf "$_out_var"| cut -d'#' -f1)
+			_val=$(printf "$_out_var"| cut -d'#' -f2)
+			if [[ $_val =~ TRUE|FALSE ]]; then
+				if [[ $_val == 'TRUE' ]]; then _val=1; else _val=0; fi
 			fi
-			n_cfg=$[ $n_cfg+1 ]
+			if [ $(printf "$_line"| grep -c .) -gt 0 ]; then
+				## extract variable value by emulating cut.
+				_out_var=$(echo "$from_basic"| sed -n $_line\p| sed -E -n "s/$regex/\2/p" ) #/2
+				if [ $_val -gt 0 ]; then
+					## define if the basic_sets come from initial tab creation or not.
+					if [ $(echo "$from_basic"| sed -n $_line\p| \
+					sed -E -n "s/$regex/\3/p"| grep -c .) -gt 0 ]; then
+						_out_tab=$(echo "$from_basic"| sed -n $_line\p| sed -E -n "s/$regex/\3/p" ) #/3
+						_out_fun=$(echo "$from_basic"| sed -n $_line\p| sed -E -n "s/$regex/\4/p" ) #/4
+						_out_img=$(echo "$from_basic"| sed -n $_line\p| sed -E -n "s/$regex/\5/p" ) #/5
+						## prepare tab values per section and add them to tab list.
+						tab_set+=("$_num_tab;$_out_var;$_out_tab;$_out_fun;$_out_img")
+						## increment by 1 at each loop.
+						_num_tab=$[ $_num_tab+1 ]
+					fi
+				else
+					_val=0
+				fi
+			fi
+			## independently of any previous filters, sent output var to local script environment.	
+			if [[ $_out_var == _extended ]]; then
+				export $_out_var=$_val 
+			else
+				local $_out_var=$_val
+			fi
+			echo -e "$g_notif\n>>>> tab_set \n>>>> ${tab_set[@]}$e_notif"
 		done
+		
 	}
 	default_tab_create(){
-#		fn_plz_wait &
-		WAIT_UI_1=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+		echo -e "$i_notif\n@@@@ default_tab_create @@@@\n$e_notif"
+		## after each tab lists are defined, analyse them by loop to create corresponding window tabs.
+		## cycle between each defined tabs to prepare their temp files 
 		for tab_vars in ${tab_set[@]}; do
+			## extract all vars from tab_set list.
 			t_num=$(printf "$tab_vars"| cut -d';' -f1)
 			t_var=$(printf "$tab_vars"| cut -d';' -f2)
 			t_name=$(printf "$tab_vars"| cut -d';' -f3)
 			t_fn_op=$(printf "$tab_vars"| cut -d';' -f4)
-			t_img=$(printf "$tab_vars"| cut -d';' -f5)
+			t_img=$(printf "$tab_vars"| cut -d';' -f5)			
+			## if tab number is not null create corresponding temp files and fields data.
 			if [ $t_num -gt 0 ]; then 
-				temp=$(mktemp --tmpdir tab$t_num.XXXXXXXX)
-				tmp_key=$(printf "$temp"|sed -n "s|^.*\.||p")
-				t_plug="--plug=$key --tabnum=$t_num --image=$t_img"
+				temp_a=$(mktemp --tmpdir tab$t_num.a.XXXXXXXX)
+				temp_b=$(mktemp --tmpdir tab$t_num.b.XXXXXXXX)
+				tmp_key_a=$(printf "$temp_a"|sed -n "s|^.*\.||p")
+				tmp_key_b=$(printf "$temp_b"|sed -n "s|^.*\.||p")
+				t_plug="--plug=$key"
+				t_rank="--tabnum=$t_num"
+				t_icon="--image=$t_img"
 				t_name=$(printf "$t_name"| tr '*' ' ')
 				t_display+=("--tab=$t_name")
+				
 				t_val=1
 			else
 				t_val=0
 			fi
-			tab_temp+=("$t_var;$t_val;$t_name;$temp;$tmp_key")
-			if [ $t_num -gt 0 ]; then ${t_fn_op}; fi
+			## add/create window tab data to be listed in extract_tmp_settings section.
+			tab_temp+=("$t_var;$t_val;$t_name;$temp_a;$temp_b;$tmp_key_a;$tmp_key_b")
+			echo -e "$g_notif\n>>>> tab temp\n>>>> ${tab_temp[@]}$e_notif"
+			## if specific function is associated, execute it to get datas.
+			## each time a tab is assigned, start associated function to load tab content in temp files.
+			if [ $t_num -gt 0 ]; then ${t_fn_op}; fi ## <<<< SOOOO, IMPORTANT
+			
+			
 		done
 		if [ $win_type = 1 ]; then
+		## give more time to winetricks
+		while [[ $(pgrep 'winetricks') ]]; do
+			sleep 1
+		done
 		kill $WAIT_UI_1
-			w_width=$((700+$scale))
-			$yad_bin --width=$w_width --title "$w_title" --window-icon=$img_wine_desk_ui $main_opts \
-			--notebook --key=$key --tab-pos=right --tab-border=2 --text="$main_tab_text" \
-			"${t_display[@]}"
+			w_width=$((800+$scale))
+			$yad_bin --width=$w_width --title "$w_title" --window-icon=$img_wine_desk_ui --borders=15 \
+			$main_height $main_scroll --notebook --key=$key --tab-pos=right --tab-border=2 \
+			--text="$main_tab_text" "${t_display[@]}"
 			e_exit=$?
+			## yad tabed window is displayed here.
 			if [ $t_var == _resume ]; then
 				if [ $e_exit -ge 0 ]; then exit 0; fi
 			else
-#				exit 0
 				if [ $e_exit = 1 ]; then
 					exit 0
 				else
-					if [ $t_var == _wfirst ]; then fn_wine_basic_feed; else extract_tmp_settings; fi
+					if [ $t_var == _wfirst ]; then
+						fn_wine_basic_feed
+					else
+						extract_tmp_settings
+					fi
 				fi
 			fi
 		fi
-	}
-	
-	extract_tmp_settings(){
-#	sleep 5
-	fn_plz_wait &
-	WAIT_UI_2=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
-	unset conf_prep _reg_var _unset_var _chg_var
-	for sets in "${tab_temp[@]}"; do
-		unset conf_prep new_conf_list
-		s_var=$(printf "$sets"| cut -d';' -f1)
-		s_var_val=$(printf "$sets"| cut -d';' -f2)
-		s_name=$(printf "$sets"| cut -d';' -f3)
-		s_tmp=$(printf "$sets"| cut -d';' -f4)
-		s_key=$(printf "$sets"| cut -d';' -f5)
-		M=0
-		for s_rank in ${tmp_cut[@]}; do
-			c_key=$(printf "$s_rank"| cut -d';' -f1)
-			c_vars=$(printf "$s_rank"| cut -d';' -f2)
-			c_rank=$(printf "$s_rank"| cut -d';' -f3)
 
-			if [[ $s_key == $c_key ]]; then
-				if [[ $c_vars != '' ]]; then
-					if [ $(cat $s_tmp | grep -oc "HKEY_CURRENT_USER") = 1 ]; then
-						perl -ni -pe "s|\\\n|*|i" $s_tmp
-					fi
-					conf_set=$(cat "$s_tmp"|cut -d';' -f$c_rank)
-					conf_prep+=("$s_var;$s_var_val;$c_vars;$conf_set")
-				fi
-			fi
-		done
-		# start write here
-		for ins in "${conf_prep[@]}"; do
-			_fn_var=$(printf "$ins"| cut -d';' -f1)
-			_fn_val=$(printf "$ins"| cut -d';' -f2)
-			_var=$(printf "$ins"| cut -d';' -f3)
-			_val=$(printf "$ins"| cut -d';' -f4)
-			reconf=(reconf$_fn_var)
+	}
+	## from here, this meaning tab data are modified/set and validation button has been pressed.
+	extract_tmp_settings(){
+		echo -e "$i_notif\n@@@@ extract_tmp_settings @@@@\n$e_notif"
+		wait_message='WORKING'
+		fn_plz_wait &
+		WAIT_UI_2=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+		echo -e "$g_notif\n>>>> tab temp resume :\n${tab_temp[@]}$e_notif"
+		for sets in "${tab_temp[@]}"; do
+			unset _out_conf_sets
+			_out_var=$(printf "$sets"| cut -d';' -f1)
+			_out_var_val=$(printf "$sets"| cut -d';' -f2)
+			_out_tmp_a=$(printf "$sets"| cut -d';' -f4)
+			_out_tmp_b=$(printf "$sets"| cut -d';' -f5)
+			fn_reconf=(reconf$_out_var)
 			
+			from_basic=$(cat $_out_tmp_a)
+			## convert yad tab output datas to usable data for basic>output diff.
+			
+			## filter per conf type first. Output analysis is not necessary the same for all.
+			if [ $_out_var == _tricks ]; then
+				from_output=$(cat $_out_tmp_b| sed -n "s/;/\n/g;p"| cat -b | grep -v "FALSE" | awk 'NF'| \
+				sed -E -n "s/^.*\ ([0-9]{1,3})\t(.*$)/\1#\2/;s/TRUE/1/g;p")
+			else
+				from_output=$(cat $_out_tmp_b| sed -n "s/;/\n/g;p"| cat -b | awk 'NF'| \
+				sed -E -n "s/^.*\ ([0-9]{1,3})\t(.*$)/\1#\2/;s/TRUE/1/g;s/FALSE/0/g;p")
+			fi
+			regex='(.*);(.*);(.*);(.*);(.*)'
+			ifs=$IFS
+			IFS=$(echo -ne "\n\b")
+			for _conf_var in ${from_output}; do
+				_line=$(printf "$_conf_var"| cut -d'#' -f1)
+				_val=$(printf "$_conf_var"| cut -d'#' -f2)
+					_out_line=$(echo "$from_basic"| sed -n $_line\p| sed -E -n "s/$regex/\2/p" )
+				if [[ $_out_line ]]; then
+					## send all output datas in a single list that be used at the beginning of reconf part. 
+					_out_conf_sets+=($_out_line=$_val)
+				fi				
+			done
+			
+			echo -e "$g_notif\n>>>> $_out_var vars list:\n${_out_conf_sets[@]}\n$e_notif"
+			
+			## define the config write method.
+			## If config file exist choose between 2 method:
 			if [ $from_config = 1 ]; then
-				_fn_exist=$(cat $config_file| grep -wc "$_fn_var")
+			## section already exist:
+				_fn_exist=$(cat $config_file| grep -wc "$_out_var")
+				## start the reconf section.
+				echo -e "$g_notif >>>>> reconf section for $_out_var$e_notif"
+				${fn_reconf}
+				## If section exist, enter changes then insert it in tempory conf file.
 				if [ $_fn_exist -gt 0 ]; then
-					if [ $_fn_val = 1 ]; then
-						insert_section=0
-						conf_set=($_var=$_val)
-						local "${conf_set}"
-						${reconf}
-						# TODO : think to remove this in nead future !!
-#						if [[ $_var == user_reg ]]; then
-#							cat $config_file | sed -n "/^user_reg='/,/'/{;s/.*/user_reg=''/};p"| \
-#							uniq > $reg_temp
-#								perl -ni -pe "s|^user_reg=''|user_reg='$(cat $reg_edit)'|i" $reg_temp
-#								if [ $insert_section = 0 ]; then
-#									cat $reg_temp > $config_file
-#								fi
-#						elif [[ $_var == w_more_pkgs ]]; then
-#							if [ $old_val -gt 1 ]; then
-#								cat $config_file | sed -n "/^w_more_pkgs='/,/'/{;s/.*/w_more_pkgs=''/};p"| \
-#								uniq > $conf_temp
-#								
-#							else
-#								cat $config_file | sed -n "s/^w_more_pkgs='.*'/w_more_pkgs=''/g;p" > $conf_temp
-#							fi
-#								perl -ni -pe "s|^w_more_pkgs=''|w_more_pkgs='$(cat $conf_edit)'|p" $conf_temp
-#								if [ $insert_section = 0 ]; then
-#									cat $conf_temp > $config_file
-#								fi
-#						else
-						if [ $insert = 1 ]; then
-							if [ "$_val" != discard ]; then
-								if [ "$_val" != '' ]; then
-									if [ $(cat "$config_file"| egrep -c "(^\s*$_var.*['\|\"])") -gt 0 ]; then
-										sed -ni "s|^\(\w*$_var=\)\(['\|\"]\)\(.*\)\(['\|\"]\)$|\1\2$_val\4|i;p" $config_file
-									else
-										sed -ni "s|^\(\w*$_var\)=\(.*\)$|\1=$_val|i;p" $config_file
-									fi
-								else
-									sed -ni "s|^\(\w*$_var=\)\(['\|\"]\)\(.*\)\(['\|\"]\)$|\1\2\4|i;p" $config_file
-								fi
-							fi
-						fi
-					fi
+				## define the beginning and the end of section text.
+					echo -e "$g_notif >>>>> write temp file for $_out_var $e_notif"
+					_first=$(echo "$_section"| sed -n '1p'|sed -n "s|/|\\\/|g;p" )
+					_last=$(echo "$_section"| sed -n '$p')
+					## suppress previous section text from the conf file and replace it with section keyword
+					## in temporary conf file.
+					cat $TEMP_conf| sed -n "/$_first/,/^$_last/{;s/.*/$_out_var/};p"| uniq > $TEMP_edit
+					## Then replace the keyword by the modified section text.
+					perl -ni -pe "s|^$_out_var|$(echo "$_section")|i" $TEMP_edit
+					mv -f $TEMP_edit $TEMP_conf
 				else
-					if [ $_fn_val = 1 ]; then
-						insert_section=1
-						new_conf=(newconf$_fn_var)
-						new_conf_set=($_var=$_val)
-						local "${new_conf_set}"
-						${reconf}
-					fi
+				## section doesn't exist: Then, just add at the end of the temporary conf file.
+					echo -e "$_section\n" >> $TEMP_conf
 				fi
 			else
-				_fn_exist=0
-				insert_section=0
-				new_conf=(newconf$_fn_var)
-				new_conf_set=($_var=$_val)
-				local "${new_conf_set}"
-				${reconf}
+			## For new fresh conf, just write by pushing section conf text at the end of the file
+				echo -e "$g_notif >>>>> new fresh section for $_out_var$e_notif"
+				${fn_reconf}
+				echo -e "$_section\n" >> $TEMP_conf
 			fi
-			
-			if [ -n $M ]; then
-				if [ $M -gt 0 ]; then _fn_val=1; else _fn_val=0; fi
-				if [ $from_config = 1 ]; then
-					perl -ni -pe "s|(^$_fn_var)=([0-9]*)$|\1=$_fn_val|i" $config_file
-				fi
-			fi
+			IFS=$ifs
 		done
-		if [ $_extended = 1 ]; then
-			if [ "${#_args[@]}" -gt 0 ]; then
-				if [[ ${_args[*]} == unset ]]; then _args=''; fi
-				
-				if [[ $from_config = 1 || $insert_section = 0 ]]; then
-					sed -ni "s|\(^wine_opts=\"\).*\(\"\)$|\1${_args[*]}\2|i;p" $config_file
-				else
-					new_conf_list+=("wine_opts=${_args[*]}")
-				fi
-			fi
+		## if conf file is new one, define the conf name before copying.
+		if [ $from_config = 0 ]; then
+			config_file=$(printf "$bottle_prefix"| sed -n "s/^\.//p")'.conf'
+			cp -f -T $TEMP_conf $HOME/.winestarter/configs/$config_file
+		else
+			cp -f -T $TEMP_conf $config_file
 		fi
-		if [[ $insert_section = 1 || $from_config = 0 ]]; then
-			local "${new_conf_list[@]}"
-			${new_conf}
-		fi
-	done
-	## if conf fiole is new one, send first temp conf to real conf before testing.
-	if [ $from_config = 0 ]; then config_file=$tmp_conf; fi 
-	## tell to conf file if function module is 'on' or 'off'
-	if [ $(printf "${activ_mod[*]}"| grep -c ".*") -gt 0 ]; then
-		
-		for activ in ${activ_mod[@]}; do
-			_A_mod=$(printf "$activ"| cut -d',' -f1) 
-			_A_val=$(printf "$activ"| cut -d',' -f2)
-			perl -ni -pe "s|(^$_A_mod)=.*$|\1=$_A_val|i" $config_file
-		done
-	fi
-	kill $WAIT_UI_2
-	if [ $from_config = 0 ]; then cp -f -T $tmp_conf $new_config_file.conf; fi	
-	end_game_display
-	if [ $? -ge 0 ]; then exit 0; fi
+		kill $WAIT_UI_2
+		end_game_display
+		if [ $? -ge 0 ]; then exit 0; fi
 	}
 	## wait patiently window
 	fn_plz_wait(){
-		$yad_bin --width=200 --title "" --text-align=center --no-buttons --window-icon=$img_wine_ui \
-		--progress --pulsate --auto-close --text="$vb\\WORKING$end" --progress-text=""
-#		WAIT_=$YAD_PID
+		$yad_bin --width=200 --title "Please wait..." --text-align=center --no-buttons $on_top \
+		--window-icon=$img_wine_ui --progress --pulsate --auto-close \
+		--text="$vb\\$wait_message$end" --progress-text=""
 	}
 	## end process window and tab
 	end_game_display(){
-		unset basic_sets tab_set tab_temp cfg_set t_display form_win 
+		unset  tab_set tab_temp cfg_set t_display form_win 
 		# launch default start window
 		conf_target=$(printf "$bottle_prefix"|  sed -n "s/^.*[\/.\|.]\(\w*[Aa-Zz]\.\w*[Aa-Zz]*\)/\1/g;p")
 		w_title="Wine Starter"
 		main_tab_text="$bf Configuration applied to$end $brf$conf_target$end"
-		tab_set=(
-		"1;_resume;Resume;fn_end_game_1;$img_wine_desk_ui")
+		tab_set=("1;_resume;Resume;fn_end_game_1;$img_wine_desk_ui")
 #		"2;_resume;Warnings;fn_end_game_2;$img_wine_desk_ui")
 		# window style and function
-		
 		win_type=1
+		focus='--focus-field=2'
 		# create main window variables
 		default_tab_create
 	}
 	fn_end_game_1(){
 		## --field="$vb New Wine prefix $end"#$img_wine_add
 		## "Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \
-		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
+		
 		res_action="bash $bash_opt \"winestarter "$conf_target".conf\""
 		res_launch="$vb Launch Winetarter$end"
 		res_special="$vb Launch or relaunch boot features:$end"
-#		w_text="$vb\All change are saved to the bootle configuration.\\n\
-#You can launch the script now or later by command line from a terminal window :$end\\n\
-#$nf\winetstarter $conf_target.conf$end"
 		w_text="$vb\All change are saved to the bootle configuration.\\n\
 You can launch the script now or later from the desktop file entry (if any) or from a terminal window with the command line:$end\\n\
 $nf\winetstarter $conf_target.conf$end"
 		w_res_0="Note and warnings : When using this tool, you can occur window crash or freeze. This is a Yad issue that will be hopefuly fix in a near futur."
-		basic_sets=(
-		"1;;;;;LBL;;;"
-		"2;$res_action;;;$res_launch;FBTN;;;"
-		"3;;;;;LBL;;;"
-		"4;;;;$w_res_0;LBL;;;"
-		)
+		basic_sets="'';;;;LBL;;
+$res_action;;;$res_launch;FBTN;;
+'';;;;LBL;;
+'';;;$w_res_0;LBL;;"
 		item_sep='!'
 		# start form display
 		win_type=1
-		ignore_loop=0
 		default_win_design
 		# create main window variables
 	}
-	fn_end_game_2(){
-		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
-		w_text="Blabla"
-		w_res_1="Blobloblo"
-		basic_sets=(
-		"1;;;;$w_res_1;LBL;;;"
-		"2;;;;;LBL;;;")
-		# start form display
-		win_type=1
-		ignore_loop=0
-		default_win_design
-		# create main window variables
-	}
+#	fn_end_game_2(){
+#		w_text="Blabla"
+#		w_res_1="Blobloblo"
+#		basic_sets="'';;;$w_res_1;LBL;;
+#'';;;;LBL;;"
+#		# start form display
+#		win_type=1
+#		default_win_design
+#		# create main window variables
+#	}
 	reconf_wine(){		
 		# "user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
-		echo "##### reconf_wine ######"
-#		if [[ $_var == special_cmd || $_var == wine_elf ]]; then
-		if [[ $_var == special_cmd || $_var == start_cmd || $_var == app_portable ]]; then
-			if [[ $_val == TRUE ]]; then _val=1; else _val=0; fi
-		fi
-		if [[ $_var == bottle_prefix ]]; then
-			if [[ $_val != $HOME ]]; then _val=$(printf "$_val"| sed -n "s|^.*/||g;p"); else _val=''; fi
-		fi
-		if [[ $_var == game_path ]]; then
-			if [[ $_val != $HOME ]]; then game_key=$(printf "$_val"| \
-			sed -n "s|^.*/||g;p"); else _val=''; fi
-		fi
-		if [[ $_var == game_dir ]]; then
-			if [[ $_val != $HOME ]]; then
-				game_dir="$_val"
-				if [[ $game_key != '' ]]; then
-					if [ $(printf "$_val"| grep -c "$game_key") -gt 0 ]; then
-						_val=$(printf "$_val"| perl -pe "s|^.*(\w*$game_key)(.*$)|$game_key\2|p")
-					fi
-				else
-					if [ $(printf "$_val"| grep -c "Program\ Files") -gt 0 ]; then
-						_val=$(printf "$_val"| sed -n "s|^.*\(Program\ Files$elf_ext/\)\(.*\)$|\2|p")
+		echo -e "$g_notif\n##### reconf_wine $e_notif"
+		## send output datas to local script env.
+		local ${_out_conf_sets[@]}
+		## rewrite specifics variables for correct display and use.
+		for _list in ${_out_conf_sets[@]}; do
+			_var=$(printf "$_list"|cut -d'=' -f1)
+			_val=$(printf "$_list"|cut -d'=' -f2)
+			eval _listed='$'$_var
+			if [[ $_listed =~ ^$HOME[\/]?$ ]]; then
+				if [[ $_var != user_prefix ]]; then local $_var=''; fi
+			fi
+			case $_var in
+				'bottle_prefix') bottle_prefix=$(printf "$bottle_prefix"| sed -n "s|^.*/||g;p") ;;
+				'game_path')
+					game_key=$(printf "$game_path"| sed -n "s|^.*/||g;p")
+					if [[ $game_key =~ $USER ]]; then game_key=''; fi
+					if [[ $game_path == $HOME ]]; then game_path=''; fi
+				;;
+				'game_dir')
+					if [[ $game_key != '' ]]; then
+						if [ $(printf "$game_dir"| grep -c "$game_key") -gt 0 ]; then
+							game_dir=$(printf "$game_dir"| \
+							sed -E -n "s|^.*(\w*$game_key)(.*$)|$game_key\2|p")
+						fi
 					else
-						_val=$(printf "$_val"| sed -n "s|^.*\(drive_c/\)\(.*\)$|\2|g;p")
-					fi
-				fi
-			else
-				_val=''
-			fi
-		fi
-		if [[ $_var == game_exe ]]; then
-			if [[ $_val != $HOME ]]; then _val=$(printf "$_val"| sed -n "s|^\($game_dir\)\/\(.*\)$|\2|p")
-			else _val=''; fi
-		fi
-		if [[ $_var == wine_bin ]]; then
-			if [[ $_val != unset ]]; then
-				if [[ $_val != $wine_ver ]]; then _var=wine_ver; fi
-			else
-				_val=''
-			fi
-		fi
-		if [ $_extended = 1 ]; then
-#			args_list=( '-opengl' '-no-cf-sandbox' )
-			if ! [ -e $bottle_prefix/options.log ]; then
-				touch $bottle_prefix/options.log
-			fi
-			if [[ $_val == TRUE || $_val == FALSE ]]; then
-				if [[ $_val == TRUE ]]; then					
-					for opts in ${reconf_list[@]}; do
-						_opt_short=$(printf "$opts"| cut -d';' -f1)
-						_opt_id=$(printf "$opts"| cut -d';' -f2)
-						_opt_var=$(printf "$opts"| cut -d';' -f3)
-						_opt_val=$(printf "$opts"| cut -d';' -f4)
-						if [[	$_var == $_opt_var ]]; then _args+=("-$_opt_id"); fi
-					done
-				fi
-			else
-				if [[ $_val != '' ]]; then
-					if [[	$_var == wine_arg_msc ]]; then
-						if [[ $_val != unset ]]; then
-							unset msc_arg_list
-							## at this state options list is complete
-							_args+=("$_val")
-							msc_arg_list=("$_val")
-							msc_n=0
-							_option_log_mod=$(stat -c %Y $option_log )
-							if [ $_option_log_mod -gt $_option_log_pre ]; then
-								for _mod_line in ${reconf_list[@]}; do
-									_mod_opt=$(printf "$_mod_line"| cut -d";" -f2)
-										## if modified option take a value of 1 in option_log
-										if [ $(echo "${msc_arg_list[*]}"| grep -c "$_mod_opt") -eq 0 ]; then
-											msc_arg_list+=("-$_mod_opt")
-										fi
-								done
-							fi
-							echo "${msc_arg_list[@]}"
-							for _msc_val in ${msc_arg_list[@]}; do
-								
-								if [ $(echo -e "$_msc_val"| egrep -c "[[:punct:]]") -gt 0 ]; then
-									_msc_short=$(echo -e "$_msc_val"| sed -nE "s/^.*[[:punct:]](\w*[a-z]$)/\1/p")
-								else
-									_msc_short="$_msc_val"
-								fi
-								_msc_arg=$(echo -e "$_msc_val"| sed -n "s/^-//p")
-								_msc_var=("wine_arg_$_msc_short")
-								if [[ $(cat $option_log| egrep -c "$_msc_var.*;") -gt 0 && \
-								$(cat $option_log| egrep -c "$_msc_arg;$_msc_var.*;") -eq 0 ]]; then
-									_msc_short=$_msc_short"_"$msc_n
-									_msc_var=("wine_arg_$_msc_short")
-									msc_n=$[ $msc_n+1 ]
-								fi
-								if [ $(cat $option_log| egrep -c "$_msc_arg") -eq 0 ]; then
-									if [ $(echo "${reconf_list[@]}"| egrep -c "$_msc_arg") -eq 0 ]; then
-										## last number in file insertion tell if option is add to default menu.
-										printf "$_msc_short;$_msc_arg;$_msc_var;0\n" >> $option_log
-									fi
-								fi
-							done
+						if [ $(printf "$game_dir"| grep -c "Program\ Files") -gt 0 ]; then
+							game_dir=$(printf "$game_dir"| \
+							sed -E -n "s|^.*(Program\ Files$elf_ext/)(.*)$|\2|p")
 						else
-							if [ "${#_args[@]}" -ge 1 ]; then
-								_args+=('')
-							else
-								## if value is unset, automation need to know this is unset
-								## to fill a blank value. 
-								_args+=('unset')
-							fi
+							game_dir=$(printf "$game_dir"| sed -E -n "s|^.*(drive_c/)(.*)$|\2|g;p")
 						fi
 					fi
+				;;
+				'game_exe')
+					if [[ $game_exe =~ ^.*\.(exe|EXE)$ ]]; then
+						game_exe=$(printf "$game_exe"| \
+						sed -E -n "s|^.*($game_dir)/(.*)([exe|EXE]?)$|\2\3|p")
+					else
+						game_exe=''
+					fi
+				;;
+			esac
+		done
+		## Extended appears in tab only if extended option check pbox is setted.
+		if [ $_extended = 1 ]; then
+			if ! [ -e $user_prefix/$bottle_prefix/options.log ]; then
+				touch $user_prefix/$bottle_prefix/options.log
+			fi
+			for opts in ${reconf_list[@]}; do
+				_opt_var=$(printf "$opts"| cut -d';' -f3)
+				_opt_id=$(printf "$opts"| cut -d';' -f2)
+				eval _var='$'$_opt_var
+				if [ $_var -gt 0 ]; then
+					_args+=("-$_opt_id")
+				fi
+			done
+			if [ $wine_arg_msc ]; then
+				if [[ $wine_arg_msc != unset ]]; then
+					## add editable option to args list.
+					_args+=("$wine_arg_msc")
+					##* At the point wine args options list is complete and ready to be wrote.
+					##* Next process is for changes and write of bottle options.log.
+					## Check if a diff appears between present options and bottle options.log:
+					## Make of wine_arg_msc a usable list.
+					msc_arg_list=("$wine_arg_msc")
+					## Control last modification EPOC time.
+					if [ -s $option_log ]; then
+						_option_log_mod=$(stat -c %Y $option_log )
+					else
+						_option_log_mod=$(date +%s)
+					fi
+					## compare previous EPOC check and new EPOC check.
+					if [ $_option_log_mod -gt $_option_log_pre ]; then
+						## first, check if elements of wine_arg_msc are not in bottle options menu.
+						for _mod_line in ${reconf_list[@]}; do
+							_mod_id=$(printf "$_mod_line"| cut -d";" -f2)
+								## if option in bottle options menu list is not in wine_arg_msc,
+								## add it to wine_opts value for config file write.
+								if [ $(echo "${msc_arg_list[*]}"| grep -c "$_mod_id") -eq 0 ]; then
+									msc_arg_list+=("-$_mod_opt")
+								fi
+						done
+					fi
+					##* Now, we need to compare and evaluate if wine_arg_msc elements have to be add to 
+					##* bottle options.log.
+					for _msc_val in ${msc_arg_list[@]}; do
+						## create the short tag for wine_arg_msc elements. If element has ponctuation like
+						## '_' or '-', remove all words before till leaving one unique word. If not
+						## ponctuation is detected, leave as it is.
+						if [ $(echo -e "$_msc_val"| egrep -c "[[:punct:]]") -gt 0 ]; then
+							_msc_short=$(echo -e "$_msc_val"| sed -nE "s/^.*[[:punct:]](\w*[a-z]$)/\1/p")
+						else
+							_msc_short="$_msc_val"
+						fi
+						## remove all options suffix element to create unique ID per element.
+						_msc_arg=$(echo -e "$_msc_val"| sed -n "s/^-//p")
+						_msc_var=("wine_arg_$_msc_short")
+						## if short tag already exist, number it to make a different ID.
+						if [[ $(cat $option_log| egrep -c "$_msc_var.*;") -gt 0 && \
+						$(cat $option_log| egrep -c "$_msc_arg;$_msc_var.*;") -eq 0 ]]; then
+							_msc_short=$_msc_short"_"$msc_n
+							_msc_var=("wine_arg_$_msc_short")
+							msc_n=$[ $msc_n+1 ]
+						fi
+						## Final step check if option is not present neither in bottle options.log and
+						## bottle menu options list, then write it to bottle options.log with a value of
+						## 0 (not in bottle options menu list yet)
+						if [ $(cat $option_log| egrep -c "$_msc_arg") -eq 0 ]; then
+							if [ $(echo "${reconf_list[@]}"| egrep -c "$_msc_arg") -eq 0 ]; then
+								## last number in file insertion tell if option is add to default menu.
+								printf "$_msc_short;$_msc_arg;$_msc_var;0\n" >> $option_log
+							fi
+						fi
+					done
+				else
+				## if global options value return 0 or 'unset' 
+					_args+=('')
 				fi
 			fi
+			wine_opts="${_args[@]}"
 		fi
-		ifs=$IFS
-		IFS=$(echo -en "\n\b")
-		new_conf_list+=("$_var=$_val")
-		IFS=$ifs
-		((M++))
-		insert=1
+		_wine=1
+		if [ $from_config = 0 ]; then newconf_headers; fi
+		newconf_wine
 	}
 	newconf_wine(){
-		## create temp file and insert script headers at first config step
-		if [ $insert_section = 0 ]; then
-			tmp_conf=$(mktemp --tmpdir wine_conf.XXXXXXXX)
-			conf_headers="#! /bin/bash\n
+			_section="## Allow extended features for winestarter configurator; off (0), on (1)
+_extended=$_extended\n
+## default is $HOME
+user_prefix=$user_prefix
+## game/appli prefix name
+bottle_prefix=\"$bottle_prefix\"
+## default system path of the game/appli if not in the chosen Wine prefix
+game_path=\"$game_path\"
+## Full game dir name in Program Files (including Program Files dir name)
+game_dir=\"$game_dir\"
+game_exe=\"$game_exe\"
+## set if the app is portable or to be installed in C: drive root: no (0), yes (1).
+app_portable=$app_portable
+## if classic wine command fail, execute .exe inside the directory
+special_cmd=$special_cmd
+## wine can use \"start\" command to launch apps or installer from absolute path
+## useful on old or recalcitrant buggy app.
+start_cmd=0
+## set a 64 bits bottle: false (0), true (1)
+wine_elf=$wine_elf
+
+## In some apps, it's possible to send extended options at the end of command line.
+## It can be some extra DLLs, game map, etc. Add them here.
+wine_opts=\"$wine_opts\"
+
+## to lauch winecfg at first launch
+w_config=1
+## Do not remove or edit below except if you don't use winestarter configurator.
+_wine=$_wine"
+	}
+	newconf_headers(){
+		## insert script headers at first config step
+		conf_headers="#! /bin/bash\n
 ##  Winestarter Configurator
 ##  Fri Feb  10 14:00:00 2017
 ##  Copyright  2017  PirateProd
@@ -576,171 +582,137 @@ $nf\winetstarter $conf_target.conf$end"
 
 ## comments with '##' are user help comments
 ## comments with '#' are unset feature
-
-## Allow extended features for winestarter configurator; off (0), on (1)
-_extended=$_extended
 "
-			## define the config name
-			new_config_file=$HOME/.winestarter/configs/$(printf "$bottle_prefix"| sed -n "s/^.//p")
-			## print headers in config file
-			printf "$conf_headers" > $tmp_conf
-			_wine_conf="
-## default is $HOME
-user_prefix=$user_prefix
-## game/appli prefix name
-bottle_prefix=\"$bottle_prefix\"
-## default system path of the game/appli if not in the chosen Wine prefix
-game_path=\"$game_path\"
-## Full game dir name in Program Files (including Program Files dir name)
-game_dir=\"$game_dir\"
-game_exe=\"$game_exe\"
-## set if the app is portable or to be installed in C: drive root: no (0), yes (1).
-app_portable=$app_portable
-## if classic wine command fail, execute .exe inside the directory
-special_cmd=$special_cmd
-## wine can use \"start\" command to launch apps or installer from absolute path
-## useful on old or recalcitrant buggy app.
-start_cmd=0
-## set a 64 bits bottle: false (0), true (1)
-wine_elf=$wine_elf\n
-## In some apps, it's possible to send extended options at the end of command line.
-## It can be some extra DLLs, game map, etc. Add them here.
-wine_opts=\"$wine_opts\"\n
-## to lauch winecfg at first launch
-w_config=1"
-			printf "$_wine_conf\n" >> $tmp_conf
-			printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
-		fi
+		echo -e "$conf_headers" > $TEMP_conf
 	}
+
 	reconf_wbin(){
-		echo "##### reconf_wbin ######"
-		if [[ $_val == TRUE || $_val == FALSE ]]; then
-			if [[ $_val == TRUE ]]; then _val=1; else _val=0; fi	
-		fi
-		if [[ $_var == wine_path ]]; then
-			if [[ $_val != $HOME ]]; then 
-				if [[ $_val != $user_prefix/.winebin ]]; then 
-					_val=$_val
-				else
-					_val=$user_prefix/.winebin
-				fi
-			else
-				_val=$user_prefix/.winebin
-			fi
-		fi
-		if [[ $_var == wine_ver ]]; then
-			if [ -s /tmp/w_bin_tmp ]; then
-				_val=$(cat /tmp/w_bin_tmp| sed -n "s/ //p")
-				wine_pack=$(printf $_val| cut -d';' -f2)
-				_val=$(printf $_val| cut -d';' -f1)	
-				if [ $from_config = 1 ]; then
-					sed -ni "s|^\(wine_pack\)=\([0-9]\)$|\1=$wine_pack|i;p" $config_file
-				fi
-			else
-				if [[ $_val != $HOME ]]; then
-					_val=$(printf "$_val"| sed -n "s|^.*/||g;p")
-				else
-					_val=''
-				fi
-			fi
-			rm -f /tmp/w_bin_tmp
-		fi
-		ifs=$IFS
-		IFS=$(echo -en "\n\b")
-		new_conf_list+=("$_var=$_val")
-		IFS=$ifs
-		((M++))
-		insert=1
+		echo -e "$g_notif\n##### reconf_wbin $e_notif"
+		## send output datas to local script env.
+		local ${_out_conf_sets[@]}
+		## take care that wine_path is not HOME prefix. user_prefix/winebin dir is default, but could
+		## different as user want. 
+		for _list in ${_out_conf_sets[@]}; do
+			_var=$(printf "$_list"|cut -d'=' -f1)
+			_val=$(printf "$_list"|cut -d'=' -f2)
+			case $_var in
+				'wine_path')
+					_def_val=.winebin
+					if [[ $_val != $HOME || $_val != $user_prefix/$_def_val ]]; then
+						_def_val=$(printf "$_val"| sed -n "s/^.*\///p")
+						_prefix=$(printf "$_val"| sed -E -n "s/^(.*)\/(.*)$/\1/p")
+						wine_path=$_prefix/$_def_val
+					else
+						wine_path=$user_prefix/$_def_val
+					fi
+				;;
+				'wine_ver')
+					## if taken from download popup window, wine_ver is read in w_bin_tmp file, else from
+					## main dir chooser.
+					wine_bin_temp=/tmp/w_binary.*
+#					if [ -s /tmp/w_bin_tmp ]; then
+					if [ -s $wine_bin_temp ]; then
+#						## remove all empty space from w_bin_tmp file.
+#						_val=$(cat /tmp/w_bin_tmp)
+						_val=$(cat $wine_bin_temp)
+						## w_bin_tmp get two parts, cut to define the pack kind, PoL or WineHQ (wine_pack)
+						## and version (wine_ver).
+						wine_pack=$(printf $_val| cut -d';' -f2)
+						wine_ver=$(printf $_val| cut -d';' -f1)
+					else
+#						if [[ $_val =~ \.winebin$ ]]; then
+						if [[ $_val =~ $_def_val$ ]]; then
+							wine_ver=''
+						else
+							wine_ver=$(printf "$_val"| sed -n "s|^.*/||g;p")
+						fi
+					fi
+					rm -f $wine_bin_temp
+				;;
+			esac
+		done
+		if [ $use_winepath = 1 ]; then _wbin=1; fi
+		newconf_wbin
 	}
 	newconf_wbin(){
-		_wbin_conf="
-## Use a specific Wine path: yes (1), no (0).
+		_section="## Use a specific Wine path: yes (1), no (0).
 use_winepath=$use_winepath
-## where is your custom Wine binary, if any 
+## where is your custom Wine binary, if any
 wine_path=\"$wine_path\"
 ## custom Wine binary name
 wine_ver='$wine_ver'
 ## Which kind of packages do you want to use:
-## PlayOnLinux (0), WineHQ staging (1)
-wine_pack=$wine_pack"
-		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
-		printf "$_wbin_conf\n" >> $tmp_conf
-		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
+## PlayOnLinux (0), WineHQ staging (1), leave empty if already in bin directory.
+wine_pack=$wine_pack
+## Do not remove or edit below except if you don't use winestarter configurator.
+_wbin=$_wbin"
 	}
 	reconf_install(){
-		echo "##### reconf_install #####"
-		if [[ $_val == TRUE ]]||[[ $_val == FALSE ]]; then
-			if [[ $_var == w_tricks_opts ]]; then
-				if [[ $_val == TRUE ]]; then _val='--no-isolate'; else _val='';fi
+		echo -e "$g_notif\n##### reconf_install $e_notif"
+		M=0
+		local ${_out_conf_sets[@]}
+		for _list in ${_out_conf_sets[@]}; do
+			_var=$(printf "$_list"|cut -d'=' -f1)
+			_val=$(printf "$_list"|cut -d'=' -f2)
+			eval _listed='$'$_var
+			if [[ $_listed =~ ^$HOME[\/]?$ ]]; then
+				local $_var=''
 			fi
-			if [[ $_var == w_install_exe ]]; then
-				if [[ $_val == TRUE ]]; then _val=1; A=1; else _val=0; A=0;fi
-				activ_mod+=("w_install_exe,$A")
-			fi
-		else
-			_val=$_val
-		fi
-		if [[ $_var == w_exe_path ]]; then
-			exe_key=$(printf "$_val"| sed -n "s|^.*/||g;p")
-			if [[ -n $exe_key && $(printf "$_val"| grep -ic ".exe\|.msi") -gt 0 ]]; then
-				((M++))
-			else
-				_val=''
-			fi
-		fi
-		if [[ $_var == w_more_pkgs ]]; then
-			if [[ "$_val" != '' && "$_val" != $HOME/ ]]; then				
-				if [ $(echo "$_val"| grep -c "\,") -gt 0 ]; then
-					_val=$(printf "$_val"| tr ',' '*')
-					printf "$_val"| tr '*' '\n' > $conf_edit
-					
-				else
-					printf "$_val" > $conf_edit
-				fi
-				((M++))
-			else
-				_val=''
-			fi
-			if [ $old_val -gt 1 ]; then
-				cat $config_file | sed -n "/^w_more_pkgs='/,/'/{;s/.*/w_more_pkgs=''/};p"| \
-				uniq > $conf_temp
-				
-			else
-				cat $config_file | sed -n "s/^w_more_pkgs='.*'/w_more_pkgs=''/g;p" > $conf_temp
-			fi
-			perl -ni -pe "s|^w_more_pkgs=''|w_more_pkgs='$(cat $conf_edit)'|p" $conf_temp
-			if [ $insert_section = 0 ]; then
-				cat $conf_temp > $config_file
-			fi
-			insert=0
-		fi
-		
-		if [[ $_var == w_install_zip ]]; then if [ "$_val" == $HOME/ ]; then _val=''; fi; fi
-		if [[ $_var == w_install_dir ]]; then 
-			if [[ "$_val" != '' ]]; then
-				if [[ "$w_install_zip" != '' && "$w_install_zip" != $HOME/ ]]; then
-					if [[ $(printf "$w_install_zip"| egrep -c "^.*-") -gt 0 ]]; then
-						exe_dir=$(printf "$w_install_zip"| sed -n "s/\([[:alnum:]]*\)-.*$/\1/;s/^.*\///g;p")
-						_val=$exe_dir
+			case $_var in
+				'w_exe_path')
+					if [[ $_listed =~ ^.*\.(exe|EXE|msi|MSI)$ ]]; then
+						if ! [ -s $config_file ]; then
+							w_install_exe=1
+						fi
+						((M++))
 					fi
-					((M++))
+				;;
+				'w_tricks_opts')
+					if [ $_listed = 1 ]; then w_tricks_opts='--no-isolate'; else w_tricks_opts=''; fi
+				;;
+				'w_more_pkgs')
+#					if [[ $_listed ]]; then
+					if [ $(echo "$_listed"| grep -c "\,") -gt 0 ]; then
+						w_more_pkgs=$(echo -e "$_listed"| sed -E -n "s/,/\n/g;p")
+						((M++))
+					fi
+				;;
+				'w_install_dir')
+					if [[ $w_install_zip ]]; then
+						if [[ $(printf "$_listed"| egrep -c "^.*-") -gt 0 ]]; then
+							w_install_dir=$(printf "$_listed"| \
+							sed -En "s/([[:alnum:]]*)-.*$/\1/;s/^.*\///g;p")
+						fi
+						((M++))
+					else
+						w_install_dir=''
+					fi
+				;;
+				'w_download_dir')
+					w_download_dir=$XDG_DOWNLOAD_DIR
+				;;
+			esac
+			if [ $M -gt 0 ]; then
+				if [ -s $user_prefix/$bottle_prefix/packages.log ];then
+					check=$(printf "$_listed"| sed -n "s/^.*\///g;p")
+					if [ $(cat $user_prefix/$bottle_prefix/packages.log| grep -wc "$check" ) -gt 0 ]; then
+						w_install_exe=0
+					else
+						w_install_exe=1
+					fi
+				else
+					w_install_exe=1
 				fi
 			fi
-			if [ "$_val" == $HOME/ ]; then _val=''; fi
-		fi
-		if [[ $_var == w_download_dir ]]; then if [ "$_val" == $HOME/ ]; then _val=''; fi; fi
-		if [[ $_var == w_extra_script ]]; then if [ "$_val" == $HOME/ ]; then _val=''; fi; fi
-		ifs=$IFS
-		IFS=$(echo -en "\n\b")
-		new_conf_list+=("$_var=$_val")
-		IFS=$ifs
-		insert=1
-		}
+		done
+#		if [ $M -gt 0 ]; then _install=1; fi
+#		_install=1
+		if [ $w_install_exe = 1 ]; then _install=1; else _install=0; fi
+		newconf_install
+	}
 	newconf_install(){
-		if [ $(printf "$w_more_pkgs"| grep -c "*") -gt 0 ]; then w_more_pkgs=$(cat $conf_edit); fi
 		if [[ $w_extra_script == $HOME/ ]]; then w_extra_script=''; fi
-		_install_conf="
-## This option allow to install .exe or .msi through winestarter process.
+		_section="## This option allow to install .exe or .msi through winestarter process.
 ## It's possible to replace file name path by an internet URL for download it.
 w_install_exe=$w_install_exe
 ## Winetricks options, if any
@@ -758,527 +730,380 @@ w_download_dir=\"$w_download_dir\"
 ## user script: You can add here a personal or a community script (updater, logs, etc)
 ## It will be automaticaly pasted in the installed app directory.
 ## This is very optional and at your own risk
-w_extra_script=\"$w_extra_script\""
-		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
-		printf "$_install_conf\n" >> $tmp_conf
-		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
+w_extra_script=\"$w_extra_script\"
+## Do not remove or edit below except if you don't use winestarter configurator.
+_install=$_install"
 	}
 	reconf_tricks(){
-		echo "##### reconf_tricks #####"
-		if [[ $_val != TRUE ]]&&[[ $_val != FALSE ]]; then
-			if [[ $_val != unset ]]; then
-				_tricks_var+=("$_val")
+		echo -e "$g_notif\n##### reconf_tricks $e_notif"
+		M=0
+		local ${_out_conf_sets[@]}
+		for _list in ${_out_conf_sets[@]}; do
+			_var=$(printf "$_list"|cut -d'=' -f1)
+			_val=$(printf "$_list"|cut -d'=' -f2)
+			eval _listed='$'$_var
+			if [[ $_var =~ (ie8|ie7|ie6) ]]; then _var="$_var wininet winhttp"; fi
+			if [[ $_listed = 1 ]]; then
+				_tricks_var+=("$_var")
 			fi
-			if [ $(printf "${extra_sets[*]}"| grep -c .) -gt 0 ]; then
-				if [ "${#extra_sets[*]}" -gt 1 ]; then
-					extra_dlls=$(printf "${extra_sets[*]}"| sed -n "s/\ /,/g;p")
-				else
-					extra_dlls=${extra_sets[@]}
+		done
+		w_tricks_list_prev=$w_tricks_list
+		if [[ $w_tricks_list_prev == '' ]]; then
+			if [ ${#_tricks_var[*]} -gt 0 ]; then
+				w_install_tricks=1
+			else
+				w_install_tricks=0
+			fi
+		fi
+		w_tricks_list=$(echo -e "${_tricks_var[@]}"|tr ' ' ',')
+		if [[ $w_tricks_list_prev ]]; then
+			for _prev in ${_tricks_var[@]}; do
+				if [ $(printf "$w_tricks_list_prev"| grep -c "$_prev") -eq 0 ]; then
+					_tricks_var_new+=("$_prev")
 				fi
-				_val="$extra_dlls"
-				_tricks_var+=("$_val") 	
-			fi	
-		fi		
-		if [[ $_val == TRUE ]]; then 
-			if [ $_var == ie8 ]; then _var='ie8 wininet winhttp'; fi
-			_tricks_var+=("$_var")
-			A=1
-		else
-			A=0
+			done
+			_tricks_list_new=$(echo -e "${_tricks_var_new[@]}"|tr ' ' ',')
+			w_tricks_list=$(printf "$w_tricks_list_prev"| sed -E -n "s/^(.*)/\1,$_tricks_list_new/p")
+			if [ ${#_tricks_var_new[*]} -gt 0 ]; then w_install_tricks=1; fi
 		fi
-		if [[ $_var == plus_dll ]]; then
-			_var=w_tricks_list
-			_val=$(printf "${_tricks_var[*]}"|tr ' ' ',')
-			((M++))
-			A=1
-		else
-			A=0
-		fi
-		if [ $A -gt 0 ]; then activ_mod+=("w_install_tricks,$A"); fi
-		new_conf_list+=("$_var=$_val")
-		insert=1
+		
+		if [ $(printf "$w_tricks_list"| grep -c .) -gt 0 ]; then _tricks=1; else _tricks=0; fi
+		newconf_tricks
 	}
 	newconf_tricks(){
-		
-		_tricks_conf="
-## first install launch and prefix creation (0) already set, (1) first launch
-w_install_tricks=1
+		_section="## (0) first install launch and prefix creation already set, (1) first launch
+w_install_tricks=$w_install_tricks
 ## Winetricks components list
-w_tricks_list=\"$w_tricks_list\""
-		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
-		printf "$_tricks_conf\n" >> $tmp_conf
-		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
+w_tricks_list=\"$w_tricks_list\"
+## Do not remove or edit below except if you don't use winestarter configurator.
+_tricks=$_tricks"
 	}
 	reconf_reged(){
-		echo "##### reconf_reged #####"
-#		fn_check_reg(){}
-#		fn_make_reg(){}
-		if [[ $_val != unset ]]; then
-			if [[ $_var == csmt ]]; then
-				if [[ $_val == enabled ]]; then _val='00000001'; else _val='00000000'; fi
-			fi
-			if [[ $(printf "$_val" | grep -o "HKEY") == '' ]]; then
-				if [ $(cat $reg_file| grep -c "$_var") -eq 0 ]; then
-					if ! [[ $_val =~ ^0{7}+ ]]; then
-						_reg_var+=("\"$_var\"=\"$_val\"")
+		echo -e "$g_notif\n##### reconf_reged $e_notif"
+		M=0
+		R=0
+		unset _reged_var
+		## extract first here the editable regedit field into a readable list
+		user_edit=$(echo "$from_output"| grep "HKEY_CURRENT_USER"| cut -d'#' -f2)
+	
+		local ${_out_conf_sets[@]}
+		for _list in ${_out_conf_sets[@]}; do
+			_var=$(printf "$_list"|cut -d'=' -f1)
+			_val=$(printf "$_list"|cut -d'=' -f2)
+			echo -e "$g_notif >>>>> ${_reged_var[*]} $e_notif"
+			if ! [[ $_var =~ ^dll*|^mime* ]]; then
+				if [[ $_var == user_reg ]]; then
+					if [[ $user_reg =~ ^\[.*\]$ ]]; then unset -v user_reg; _val='unset'; fi
+				fi
+				if [[ $_val != unset ]]; then
+					if [[ $_var == csmt ]]; then
+						if [[ $_val == enabled ]]; then _val='00000001'; else _val='00000000'; fi
+					fi
+					if [[ $_val =~ [0-9]{8} ]]; then
+						_reged_var+=("\"$_var\"=dword:$_val")
 					else
-						_reg_var+=("\"$_var\"=dword:$_val")
-					fi
-				else
-					if ! [[ $_val =~ ^0{7}+ ]]; then
-						_old_val=$(cat $reg_file| grep "$_var"| sed -n "s/^.*=\"\(.*\)\"$/\1/p")
-					else
-						_old_val=$(cat $reg_file| grep "$_var"| sed -n "s/^.*=dword:\(.*\)$/\1/p")
-					fi
-					if [ $_val != $_old_val ]; then
-						_chg_var+=("$_var,$_val")
+						_reged_var+=("\"$_var\"=\"$_val\"")
 					fi
 				fi
-			fi
-		else
-			if [ $(cat $reg_file| grep -c "$_var") -gt 0 ]; then _unset_var+=("$_var"); fi
-		fi
-		if [[ $_var == user_reg ]]; then
-			_reg_header=$(printf "$_val"| perl -pe "s|^(\[.*\])\*(.*)$|\1|p")
-			_reg_content=$(printf "$_val"| perl -pe "s|^(\[.*\])\*(.*)$|\2|p")
-			_reg_val=$(printf "${_reg_var[*]}"| sed -n "s| |*|g;p")
-			if [ $(printf "$_reg_content"| grep -c "option_set") = 0 ]; then
-#				if [ $(printf "${_unset_var[*]}"| grep -c .) -gt 0 ]; then
-				if [ ${#_unset_var[@]} -gt 0 ]; then
-					for _unset in "${_unset_var[@]}"; do
-						_reg_content=$(printf "$_reg_content"| \
-#						sed -n "s/\(\"$_unset\"\)=\(\"\w*[a-z]*\"\)\(*\|$\)//p")
-#						sed -n "s/\(\"$_unset\"\)=\(\(\"[a-z]*\"\)\|\([a-z]*:[0-9]*\)\(\"[0-9]*\"\)\)\(*\|$\)//p")
-						sed -n "s/\(\"$_unset\"\)=\(\(\"[a-z]*\"\)\|\([a-z]*:[0-9]\+\)\|\(\"[0-9]\+\"\)\)\(*\|$\)//p")
-#						sed -n "s/\"$_unset\"=.*$//g;p")
-					done
-				fi
-				if [ $(printf "${_chg_var[*]}"| grep -c .) -gt 0 ]; then
-					for _change in "${_chg_var[@]}"; do
-						_ch_var=$(printf "$_change"| cut -d',' -f1)
-						_ch_val=$(printf "$_change"| cut -d',' -f2)
-						if ! [[ $_ch_val =~ ^0{7}+ ]]; then
-							_reg_content=$(printf "$_reg_content"| \
-							sed -n "s/\(\"$_ch_var\"\)=\(\"\w*[a-z]*\"\)/\1=\"$_ch_val\"/p")
-						else
-							_reg_content=$(printf "$_reg_content"| \
-							sed -n "s/\(\"$_ch_var\"\)=\([a-z]*.*\)/\1=dword:$_ch_val/p")
-						fi
-					done
-				fi
-				if [ $(printf "$_reg_val"| grep -c .) -gt 0 ]; then
-					_reg_content="$_reg_content*$_reg_val"
-				fi
 			else
-				_reg_content="$_reg_val"
-			fi
-			if [ $(printf "$_reg_content"| grep -c .) -gt 0 ]; then
-				_val="$_reg_header*$_reg_content"
-				if [ $(printf "$_val"| grep -c "*$") -gt 0 ]; then
-					_val=$(printf "$_val"| sed -n "s|*$||p")
-				fi
-				printf "$_val"| sed -n "s|*|\n|g;s|\\\|\\\\\\\|g;p" > $reg_move
-				cat $reg_move | sort -u | sed -ne '/\[.*\]/{h;!H;d}; $G;p'| tac > $reg_edit
-				((M++))
-			else
-				_val=''
-			fi
-			if [ $(cat $config_file | egrep -c "^user_reg=''") -eq 0 ]; then
-				cat $config_file | sed -n "/^user_reg='/,/'/{;s/.*/user_reg=''/};p"| \
-				uniq > $reg_temp
-			else
-				cat $config_file > $reg_temp
-			fi
-			perl -ni -pe "s|^user_reg=''|user_reg='$(cat $reg_edit)'|i" $reg_temp
-			if [ $insert_section = 0 ]; then
-				cat $reg_temp > $config_file
-			fi
-		
-		fi
-		insert=0
-		## register file type and create preset. reg creation managed by winestarter
-		if [ $_extended = 1 ]; then
-			if [[ $_val != unset ]]; then
-				if [[ $_var == Selected_Files ]]; then
-					unset FileType_list selected_files_list
-					ifs=$IFS
-					IFS=$(echo -en "\n\b")
-#					selected_files_list=$(echo "$Selected_Files"| tr ',' '\n')
-					selected_files_list=$(printf "$_val"| sed -n "s/,/ /g;p")
-					selected_files_list=( "$selected_files_list" )
-					for Files in ${selected_files_list[@]}; do
-						if [ $(printf "$local_association"| grep -c .) -gt 0  ]; then
-							prev_asso="$local_association,"
-							file_ext=$(printf "$Files"| sed -n "s/^.*\.//g;p")
-							if [ $(printf "$local_association"| grep -c "$file_ext") -eq 0 ]; then
-								mime_type=$(xdg-mime query filetype $Files)
-								if [ $(printf "$mime_type"| grep -c .) -gt 0 ]; then
-									## define the the reg mime type elements
-									_filetype=$(printf "$Files"|sed -n "s/^.*\.//g;p")
-									_doctype=$(printf "$_filetype"|sed -n "s/.*/\U&/p")'file'
-									## add them to the resource list
-									res_mime=$HOME/.winestarter/resources/mime-type.lst
-									if [ $(cat $res_mime |grep -c "_doctype") -eq 0 ]; then
-										printf "$_filetype:$_doctype:$mime_type\n" >> $res_mime
+				if [ $_extended = 1 ]; then
+					if [ $_val != unset ]; then
+						case $_var in
+							'Selected_Files')
+								echo -e "$g_notif >>>>> $_var $e_notif"
+								selected_files_list=( $(echo "$_val"| sed -n "s/,/\n/g;p") )
+								for Files in ${selected_files_list[@]}; do
+									if [ $(printf "$local_association"| grep -c .) -gt 0  ]; then
+										prev_asso="$local_association,"
+										file_ext=$(printf "$Files"| sed -n "s/^.*\.//g;p")
+										if [ $(printf "$local_association"| grep -c "$file_ext") -eq 0 ]; then
+											mime_type=$(xdg-mime query filetype $Files)
+											if [ $(printf "		$mime_type"| grep -c .) -gt 0 ]; then
+												## define the the reg mime type elements
+												_filetype=$(printf "$Files"|sed -n "s/^.*\.//g;p")
+												_doctype=$(printf "$_filetype"|sed -n "s/.*/\U&/p")'file'
+												## add them to the resource list
+												res_mime=$HOME/.winestarter/resources/mime-type.lst
+												if [ $(cat $res_mime |grep -c "_doctype") -eq 0 ]; then
+													printf "$_filetype:$_doctype:$mime_type\n" >> $res_mime
+												fi
+												## add the file extension to the config file type section
+													FileType_list+=( "$_filetype" )
+											fi
+										fi
+									else
+										FileType_list+=( $(printf "$Files"|sed -n "s/^.*\.//g;p") )
 									fi
-									## add the file extension to the config file type section
-									FileType_list+=( "$_filetype" )
+								done
+								_val=$prev_asso$(printf "${FileType_list[*]}"| tr ' ' ',')
+							;;
+							'mime_preset')
+								echo -e "$g_notif >>>>> $_var $e_notif"
+								mime_preset_list=( "$_val" )
+								if [ $(printf "$local_association"| grep -c .) -gt 0  ]; then
+									for preset in ${mime_preset_list[@]}; do
+										if [ $(printf "$local_association"| grep -c "$preset") -eq 0 ]; then
+											mime_preset_add+=("$preset")
+										fi
+									done
+									if [ ${#mime_preset_add[@]} -gt 0 ]; then _sep=','; ((M++)); fi
+									prev_asso="$local_association$_sep"
+									_val=$prev_asso$(printf "${mime_preset_add[*]}"| tr ' ' ',')
+									_val=$prev_asso${mime_preset_add[*]}
+								else
+									_val=$(echo "$mime_preset"| tr ' ' ','); ((M++))
 								fi
-							fi
+								local local_association=$_val
+							;;
+							'dll_reg_type')
+								echo -e "$g_notif >>>>> $_var $e_notif"
+								if [[ $_val == register ]]; then _reg_class=1; else _reg_class=0; fi; ((R++))
+							;;
+							'dll_elf_type')
+								echo -e "$g_notif >>>>> $_var $e_notif"
+								if [[ $_val == both ]]; then
+									_reg_elf=2
+								else
+									if [[ $_val == wine32 ]];then _reg_elf=0; else _reg_elf=1; fi
+								fi
+							;;
+							'dll_file_list')
+								echo -e "$g_notif >>>>> $_var $e_notif"
+								if [[ $_val =~ \.(dll|DLL)$ ]]; then
+									_dlls_list=$(printf "$_val"| tr ',' '\n')
+									for _dlls in ${_dlls_list[@]}; do
+										_conf_dlls+=( "$(printf "$_dlls"| sed -n "s/^.*\///g;p")," )
+									done
+									echo -e "$g_notif >>>>> ${_conf_dlls[@]} $e_notif"
+									_reg_dlls=$(echo "${_conf_dlls[@]}"| sed -n "s/\ //g;s/\,$//p")
+								fi
+							;;
+						esac
+						if [ $R -gt 0 ]; then
+							dll_reg_manager="$_reg_class,$_reg_elf,$_reg_dlls"; ((M++))
 						else
-							FileType_list+=( $(printf "$Files"|sed -n "s/^.*\.//g;p") )
+							dll_reg_manager=''
 						fi
-					done
-					IFS=$ifs
-					_val=$prev_asso$(printf "${FileType_list[*]}"| tr ' ' ',')
-					
-				fi
-				if [[ $_var == mime_preset ]]; then
-					unset mime_preset_list mime_preset_add
-					mime_preset_list=( $(printf "$mime_preset"| tr ',' ' ') )
-					if [ $(printf "$local_association"| grep -c .) -gt 0  ]; then
-						for preset in ${mime_preset_list[@]}; do
-							if [ $(printf "$local_association"| grep -c "$preset") -eq 0 ]; then
-								mime_preset_add+=("$preset")
-							fi
-						done
-						if [ ${#mime_preset_add[@]} -gt 0 ]; then _sep=','; fi
-						prev_asso="$local_association$_sep"
-						_val=$prev_asso$(printf "${mime_preset_add[*]}"| tr ' ' ',')
 					else
-						_val=$mime_preset
-					fi
-					_var='local_association'
-				fi
-				
-			else
-				
-				if [ $(printf "$local_association"| grep -c .) -eq 0 ]; then _var='local_association'; fi
-				_val=''
-			fi
-			## registering/unregistering part
-			# dll_reg_type, dll_elf_type, dll_file_list - misc_reg_type,misc_reg_val
-			if [[ $_var == dll_reg_type ]]; then
-				if [[ $_val != unset ]]; then reg_proc=1; else reg_proc=0; fi
-			fi
-			if [ $reg_proc -gt 0 ]; then
-				if [[ $_var == dll_reg_type ]]; then
-					if [[ $_val == register ]]; then _reg_class=1; else _reg_class=0; fi
-				fi
-				if [[ $_var == dll_elf_type ]]; then
-					if [[ $_val == both ]]; then
-						_reg_elf=2
-					else if [[ $_val == wine32 ]];then _reg_elf=0; else _reg_elf=1; fi
+						local $_var=''
 					fi
 				fi
-				if [[ $_var == dll_file_list ]]; then
-					if [[ $_val != '' ]]; then
-							_dlls_list=$(printf "$_val"| tr '#' '\n')
-							for _dlls in ${_dlls_list[@]}; do
-								_conf_dlls+=( "$(printf "$_dlls"| sed -n "s/^.*\///g;p")," )
-							done
-						_reg_dlls=$(printf "${_conf_dlls[*]}"| sed -n "s/\ //g;s/\,$//p")
+			fi
+		done
+		if [[ $(printf "$user_edit"| grep -c .) -gt 0 || \
+		$(printf "$user_edit"| grep -c "option_set") -gt 0 ]]; then
+			for _new_reg in $(echo -e "$user_edit"); do
+				## form: "DirectDrawRenderer"="gdi"
+				## for regex form: (")(DirectDrawRenderer)(")=(")(gdi)(?>:0..1)(")
+				regex='([\"]?)(\w*)([\"]?)=([\"]?)(\w*)([:[0-9]*]?)([\"]?)$'
+				_var=$(echo "$_new_reg"| sed -E -n "s/$regex/\2/p")
+				_val=$(echo "$_new_reg"| sed -E -n "s/$regex/\5\6/p")
+				if [ $(echo "${_reged_var[*]}"| grep -c "$_var" ) -eq 0 ]; then
+					if [[ $_val =~ dword: ]]; then
+						_reged_var+=("\"$_var\"=$_val")
+					else
+						_reged_var+=("\"$_var\"=\"$_val\"")
 					fi
 				fi
-				_var=dll_reg_manager
-				_val="$_reg_class,$_reg_elf,$_reg_dlls"						
-			fi
-			if [[ $from_config = 0 || $insert_section = 1 ]]; then
-				new_conf_list+=("$_var=$_val")
-#				local local_association="$_val"
-			else
-				insert=1
-			fi
+			done
 		fi
+		if [ ${#_reged_var[*]} -gt 0 ]; then
+#			reg_final=$(echo -e "[HKEY_CURRENT_USER\\\\Software\\\\Wine\\\\Direct3D]\n${_reged_var[*]}")
+			reg_final=$(echo -e "[HKEY_CURRENT_USER\\\\\\\Software\\\\\\\Wine\\\\\\\Direct3D]\n${_reged_var[*]}")
+			((M++))
+		else
+			reg_final=''
+		fi
+		if [ $M -gt 0 ]; then _reged=1; fi
+#		_reged=1
+		newconf_reged
 	}
 	newconf_reged(){
-		_reged_conf="
-## extra wine registry specific entry
+		_section="## extra wine registry specific entry
 ## leave user_reg blank if none : user_reg=''
 ## possible values are:
-## \"StrictDrawOrdering\"=\"disabled\"
+## \"StrictDrawOrdering\"=\"enabled\/disabled\"
 ## \"DirectDrawRenderer\"=\"opengl\"
 ## \"Nonpower2Mode\"=\"repack\"
 ## \"OffscreenRenderingMode\"=\"fbo\"
 ## \"RenderTargetLockMode\"=\"auto\"
 ## \"UseGLSL\"=\"readtex\"
 ## \"VideoMemorySize\"=\"(memory size of your graphic card)\"
-user_reg=''
+user_reg='$reg_final'
 ## Allow local system apps to launch some mime-file type:
 local_association=\"$local_association\"
 ## Register/unsregister DLLs libraies (one arch at a time):
 ## example: 1,0,foo.dll,poo.dll,
 ## Where first 1 is register and 0 unregister and secondary 0/1 is wine32/wine64, 2 is both
-dll_reg_manager=\"$dll_reg_manager\""
-		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
-		printf "$_reged_conf\n" >> $tmp_conf
-		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
-		
-		if [ $(printf "$_val"| grep -c .) -gt 0 ]; then
-			perl -ni -pe "s|^user_reg=''|user_reg='$(cat $reg_edit)'|i" \
-			$tmp_conf
-		fi
+dll_reg_manager=\"$dll_reg_manager\"
+## Do not remove or edit below except if you don't use winestarter configurator.
+_reged=$_reged"
 	}
 	reconf_nvidia_1(){
-		echo "##### reconf_nvidia_1 #####"
-		unset _FSAA_list
-		if [[ $_val != unset ]]; then
-			if [[ $_val =~ [a-z]+ ]]; then
-				if [ $__GL_FSAA_MODE -gt 0 ]; then
-					if [ "$_val" == 'full control' ]; then
-						_FSAA_list=("__GL_FSAAAppControlled;0" "__GL_FSAAAppEnhanced;0")
-					
-					elif [ "$_val" == 'enhanced' ]; then
-						_FSAA_list=("__GL_FSAAAppControlled;0" "__GL_FSAAAppEnhanced;1") 
-						
-					elif [ "$_val" == 'ignored' ]; then
-						_FSAA_list=("__GL_FSAAAppControlled;1" "__GL_FSAAAppEnhanced;1") 
-				
-					fi
-					for values in ${_FSAA_list[@]}; do
-						_var=$(printf "$values"| cut -d';' -f1)
-						_val=$(printf "$values"| cut -d';' -f2)
-						if [ $_fn_exist -gt 0 ]; then
-							sed -ni "s|^.*\(export.*\w*$_var=\)\(.*\)$|\1$_val|i;p" $config_file
-							_val='discard'
-						else
-							new_conf_list+=("$_var=$_val")
-						fi
-					done
-				fi
-			else
-				if [ $_val = 0 ]; then
-					if [ $_var == __GL_FSAA_MODE ]; then
-						_FSAA_list=("__GL_FSAA_MODE" "__GL_FSAAAppControlled" "__GL_FSAAAppEnhanced")
+		echo -e "$g_notif\n##### reconf_nvidia_1 $e_notif"
+		M=0
+		local ${_out_conf_sets[@]}
+		
+		for _list in ${_out_conf_sets[@]}; do
+			_var=$(printf "$_list"|cut -d'=' -f1)
+			_val=$(printf "$_list"|cut -d'=' -f2)
+			if [[ $_val != unset ]]; then
+				case $_var in
+				'__GL_FSAA_MODE')
+					## fsaa mode comes with special text options to be convert in numerics for control type,
+					## and multiplier has to be converted from 1,2,3,4,5 conf value to driver's one.
+					if [ $__GL_FSAA_MODE -gt 0 ]; then
+						case $__GL_FSAAA_CTRL in
+							'full control') __GL_FSAAAppControlled=0; __GL_FSAAAppEnhanced=0 ;;
+							'enhanced') __GL_FSAAAppControlled=0; __GL_FSAAAppEnhanced=1 ;;
+							'ignored') __GL_FSAAAppControlled=1; __GL_FSAAAppEnhanced=1 ;;
+						esac
+						local cmt__GL_FSAAAppControlled='export'
+						local cmt__GL_FSAAAppEnhanced='export'
+						case $__GL_FSAA_MODE in
+							'2') __GL_FSAA_MODE=5;;
+							'3') __GL_FSAA_MODE=9;;
+							'4') __GL_FSAA_MODE=10;;
+							'5') __GL_FSAA_MODE=11;;
+						esac
+						local cmt$_var='export'; ((M++))
 					else
-						_FSAA_list=("$_var")
-					fi	
-					for values in ${_FSAA_list[@]}; do
-						if [ $_fn_exist -gt 0 ]; then
-						if [ $(cat $config_file| grep -c "#[a-z].*$values") = 0 ]; then	
-							sed -ni "s|^.*\(export.*\w*$values=.*\)$|#\1|i;p" $config_file
-						fi
-						else
-							new_conf_list+=("$values=unset")
-						fi
-					done
-				else
-					if [ $_fn_exist -gt 0 ]; then
-						if [ $_var == __GL_FSAA_MODE ]; then
-							if [ $_val = 2 ]; then _val=5
-							elif [ $_val = 3 ]; then _val=9
-							elif [ $_val = 4 ]; then _val=10
-							elif [ $_val = 5 ]; then _val=11
-							fi
-						fi
-						sed -ni "s|^.*\(export.*\w*$_var=\)\(.*\)$|\1$_val|i;p" $config_file
+						local cmt__GL_FSAA_MODE='#export'
+						local cmt__GL_FSAAAppControlled='#export'
+						local cmt__GL_FSAAAppEnhanced='#export'
+					fi
+#				fi
+				;;
+				'__GL_LOG_MAX_ANISO')
+					if [ $_val = 0 ]; then
+						local cmt$_var='#export'
 					else
-						new_conf_list+=("$_var=$_val")
+						local cmt$_var='export'; ((M++))
 					fi
-				fi
-				_val='discard'
-			fi
-			((M++))
-		else
-			if [[ $_var =~ __GL_FSAA[a-z]+ ]]; then
-				_FSAA_list=("__GL_FSAAAppControlled" "__GL_FSAAAppEnhanced")
+				;;
+#				`printf "$_var"| egrep '^__GL_[AL|TH|SY|Op].*$'` ) local cmt$_var='export' ;;
+				*) local cmt$_var='export'; ((M++)) ;;
+				esac
 			else
-				_FSAA_list=("$_var")
+				local $_var=0
+				local cmt$_var='#export'
 			fi
-			for values in ${_FSAA_list[@]}; do
-				if [ $(cat $config_file| grep -c "#[a-z].*$values") = 0 ]; then
-					if [ $_fn_exist -gt 0 ]; then
-						sed -ni "s|^.*\(export.*\w*$values=.*\)$|#\1|i;p" $config_file
-						_val='discard'
-					fi
-				else
-					new_conf_list+=("$values=unset")
-				fi
-				
-			done
-		fi
-		insert=1
+		done
+		if [ $M -gt 0 ]; then _nvidia_1=1; fi
+		newconf_nvidia_1
+
 	}
 	newconf_nvidia_1(){
-#		nvtemp1=$(mktemp --tmpdir nv1.XXXXXXXX)
-		_nvidia_1_conf="
-### NVIDIA ENV VARIABLE OPTIONS
+		_section="### NVIDIA ENV VARIABLE OPTIONS
 ## FSAA: Full Scene Anti Aliasing: can be set from 1 to 5:
 ## off [0], 2x (2xMS) [1], 4x (4xMS) [5], 8x (4xSS, 2xMS) [9], 8x (8xMS) [10], 16x (4xSS, 4xMS) [11]
-export __GL_FSAA_MODE=$__GL_FSAA_MODE
+$cmt__GL_FSAA_MODE __GL_FSAA_MODE=$__GL_FSAA_MODE
 ## if set, FSAA comes 2 others variables that have to be set as follow respectively :
 ## To get FSAA full control: [0] [0]
 ## To get FSAA enhanced for application using multisample : [0] [1]
 ## To get FSAA controlled by nvidia-setting ignored : [1] [1]
-export __GL_FSAAAppControlled=$__GL_FSAAAppControlled
-export __GL_FSAAAppEnhanced=$__GL_FSAAAppEnhanced
+$cmt__GL_FSAAAppControlled __GL_FSAAAppControlled=$__GL_FSAAAppControlled
+$cmt__GL_FSAAAppEnhanced __GL_FSAAAppEnhanced=$__GL_FSAAAppEnhanced
 ## FXAA, Fast approximate antialiasing: take avantage over traditional multisampling and
-## supersampling methods: (0) (1) 
-export __GL_ALLOW_FXAA_USAGE=$__GL_ALLOW_FXAA_USAGE
+## supersampling methods: (0) (1)
+$cmt__GL_ALLOW_FXAA_USAGE __GL_ALLOW_FXAA_USAGE=$__GL_ALLOW_FXAA_USAGE
 ## anisotropic texture filtering set : off (0), x2 (1), x4 (2), x8 (3), x16 (4)
-export __GL_LOG_MAX_ANISO=$__GL_LOG_MAX_ANISO
+$cmt__GL_LOG_MAX_ANISO __GL_LOG_MAX_ANISO=$__GL_LOG_MAX_ANISO
 ## synchronize vertical refresh (0), (1)
-export __GL_SYNC_TO_VBLANK=$__GL_SYNC_TO_VBLANK
-## if libpthread is not enabled by default (ex: wine), 
+$cmt__GL_SYNC_TO_VBLANK __GL_SYNC_TO_VBLANK=$__GL_SYNC_TO_VBLANK
+## if libpthread is not enabled by default (ex: wine),
 ## it can be force to be set with LD_PRELOAD env variable.
-export LD_PRELOAD=\"libpthread.so.0 libGL.so.1\" __GL_THREADED_OPTIMIZATIONS=$__GL_THREADED_OPTIMIZATIONS
+$cmt__GL_THREADED_OPTIMIZATIONS LD_PRELOAD=\"libpthread.so.0 libGL.so.1\" __GL_THREADED_OPTIMIZATIONS=$__GL_THREADED_OPTIMIZATIONS
 ## Perfomance from Nvidia Settings tool can be set to gain graphic performance instead of quality
 ## Quality (1), Mixed (2), Perfomance (3), otherwise comment it to unset.
-export __GL_OpenGLImageSettings=$__GL_OpenGLImageSettings"
-		nvtemp1=$(mktemp --tmpdir nv1.XXXXXXXX)
-		printf "$_nvidia_1_conf\n" > $nvtemp1
-		
-		nv1_list=(
-		"__GL_FSAA_MODE"
-		"__GL_FSAAAppControlled"
-		"__GL_FSAAAppEnhanced"
-		"__GL_ALLOW_FXAA_USAGE"
-		"__GL_LOG_MAX_ANISO"
-		"__GL_SYNC_TO_VBLANK"
-		"__GL_THREADED_OPTIMIZATIONS")
-		for var in ${nv1_list[@]}; do
-			if [ $(cat $nvtemp1 | grep -c "$var=unset") = 1 ]; then
-				sed -ni "s|^.*\(export.*\w*$var\)=.*$|#\1=0|i;p" $nvtemp1
-			fi
-		done
-		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
-		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $nvtemp1
-		cat $nvtemp1 >> $tmp_conf
+$cmt__GL_OpenGLImageSettings __GL_OpenGLImageSettings=$__GL_OpenGLImageSettings
+## Do not remove or edit below except if you don't use winestarter configurator.
+_nvidia_1=$_nvidia_1"
 	}
 	reconf_nvidia_2(){
-		echo "##### reconf_nvidia_2 #####"
-		if [[ $_val != unset ]]; then
-			if [ $_fn_exist -gt 0 ]; then
-				if [[ $_val =~ [A-Z]+ ]]; then
-					sed -ni "s|^.*\(export.*\w*$_var=\)\(['\|\"]\)\(.*\)\(['\|\"]\)$|\1\2$_val\4|i;p" $config_file
-				else
-					sed -ni "s|^.*\(export.*\w*$_var\)=\(.*\)$|\1=$_val|i;p" $config_file
-				fi
-				_val='discard'
+		echo -e "$g_notif\n##### reconf_nvidia_2 $e_notif"
+		local ${_out_conf_sets[@]}
+		M=0
+		for _list in ${_out_conf_sets[@]}; do
+			_var=$(printf "$_list"|cut -d'=' -f1)
+			_val=$(printf "$_list"|cut -d'=' -f2)
+			if [[ $_val != unset ]]; then
+				local cmt$_var='export'
+				((M++))
 			else
-				new_conf_list+=("$_var=$_val")
-			fi
-			
-			((M++))
-		else
-			if [ $(cat $config_file| grep -c "#[a-z].*$_var") = 0 ]; then
-				if [ $_fn_exist -gt 0 ]; then
-					sed -ni "s|^.*\(export.*\w*$_var=.*\)$|#\1|i;p" $config_file
-				fi
-				_val='discard'
-			else
-				new_conf_list+=("$_var=unset")
-			fi
-		fi
-		insert=1
-	}
-	newconf_nvidia_2(){
-#		nvtemp2=$(mktemp --tmpdir nv2.XXXXXXXX)
-		_nvidia_2_conf="
-### NVIDIA MISCELLENOUS OPTIONS
-## VBLANK can't bet set for multi screen, set here one of them only (if needed):
-export __GL_SYNC_DISPLAY_DEVICE=\"$__GL_SYNC_DISPLAY_DEVICE\"
-## to set or unset X server FBConfig behaviour : unset [0], set [1]
-export __GL_SORT_FBCONFIGS=$__GL_SORT_FBCONFIGS
-## updating window moves yield, can be useful when some window app have refresh issues,
-## value are : normal yield (''), no yield [\"NOTHING\"], background [\"USLEEP\"]
-export __GL_YIELD=\"$__GL_YIELD\"
-## allow unofficial GLX implmentation. Mostly for debug mode or test, but can be useful
-## in some case like Wine : off [0], on [1]
-export __GL_ALLOW_UNOFFICIAL_PROTOCOL=$__GL_ALLOW_UNOFFICIAL_PROTOCOL
-## if monitor can manage G-SYNC behaviour, this could improve display performance: off [0], on [1].
-## Disable __GL_SYNC_TO_VBLANK to get faster performance and also xorg conf options \"stereo\", \"overlays\"
-export __GL_GSYNC_ALLOWED=$__GL_GSYNC_ALLOWED
-## ignore GLGS extension check. Could be useful in case of some missing extension in appli GL sets.
-## This will permit the shaders to be successfuly recompile: to off [0], on [1]
-export __GL_IGNORE_GLSL_EXT_REQS=$__GL_IGNORE_GLSL_EXT_REQS"
-		nvtemp2=$(mktemp --tmpdir nv2.XXXXXXXX)
-		printf "$_nvidia_2_conf" > $nvtemp2
-		nv2_list=(
-		"__GL_SYNC_DISPLAY_DEVICE"
-		"__GL_SORT_FBCONFIGS"
-		"__GL_YIELD"
-		"__GL_ALLOW_UNOFFICIAL_PROTOCOL"
-		"__GL_GSYNC_ALLOWED"
-		"__GL_IGNORE_GLSL_EXT_REQS")
-		for var in ${nv2_list[@]}; do
-			if [ $(cat $nvtemp2 | grep -c "$var.*unset") = 1 ]; then
-				if [ $(cat $nvtemp2 | egrep -c "(\s*$var.*['\|\"])") -gt 0 ]; then
-					sed -ni "s|^.*\(export.*\w*$var\)=\(['\|\"]\).*\(['\|\"]\)$|#\1=\2\3|i;p" $nvtemp2
-				else
-					sed -ni "s|^.*\(export.*\w*$var\)=\(.*$\)|#\1=0|i;p" $nvtemp2
-				fi
+				if [[ $_var == __GL_YIELD ]]; then _val=''; else _val=0; fi
+				local $_var=$_val
+				local cmt$_var='#export'
 			fi
 		done
-		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
-		printf "\n$_warn_text\n$_fn_var=$_fn_val\n" >> $nvtemp2
-		cat $nvtemp2 >> $tmp_conf
+		if [ $M -gt 0 ]; then _nvidia_2=1; fi
+		newconf_nvidia_2
+	}
+	newconf_nvidia_2(){
+		_section="### NVIDIA MISCELLENOUS OPTIONS
+## VBLANK can't bet set for multi screen, set here one of them only (if needed):
+$cmt__GL_SYNC_DISPLAY_DEVICE __GL_SYNC_DISPLAY_DEVICE=\"$__GL_SYNC_DISPLAY_DEVICE\"
+## to set or unset X server FBConfig behaviour : unset [0], set [1]
+$cmt__GL_SORT_FBCONFIGS __GL_SORT_FBCONFIGS=$__GL_SORT_FBCONFIGS
+## updating window moves yield, can be useful when some window app have refresh issues,
+## value are : normal yield (''), no yield [\"NOTHING\"], background [\"USLEEP\"]
+$cmt__GL_YIELD __GL_YIELD=\"$__GL_YIELD\"
+## allow unofficial GLX implmentation. Mostly for debug mode or test, but can be useful
+## in some case like Wine : off [0], on [1]
+$cmt__GL_ALLOW_UNOFFICIAL_PROTOCOL __GL_ALLOW_UNOFFICIAL_PROTOCOL=$__GL_ALLOW_UNOFFICIAL_PROTOCOL
+## if monitor can manage G-SYNC behaviour, this could improve display performance: off [0], on [1].
+## Disable __GL_SYNC_TO_VBLANK to get faster performance and also xorg conf options \"stereo\", \"overlays\"
+$cmt__GL_GSYNC_ALLOWED __GL_GSYNC_ALLOWED=$__GL_GSYNC_ALLOWED
+## ignore GLGS extension check. Could be useful in case of some missing extension in appli GL sets.
+## This will permit the shaders to be successfuly recompile: to off [0], on [1]
+$cmt__GL_IGNORE_GLSL_EXT_REQS __GL_IGNORE_GLSL_EXT_REQS=$__GL_IGNORE_GLSL_EXT_REQS
+## Do not remove or edit below except if you don't use winestarter configurator.
+_nvidia_2=$_nvidia_2"
 	}
 	reconf_xrandr(){
-		echo "##### reconf_xrandr #####"
-		if [[ $_var == bck_mode ]]||[[ $_var == set_mode ]]; then
-			
-			if [[ $_val != unset ]]; then
-				if [[ $_var == bck_mode ]]; then
-						_val="xrandr --output $monitor --mode $_val --rate 60"
-						((M++)); N=1
-				fi
-				if [[ $_var == set_mode ]]; then
-						_val="xrandr --output $monitor --mode $_val --rate 60"
-						((M++)); N=$(($N+1))
-				fi
+		echo -e "$g_notif\n##### reconf_xrandr $e_notif"
+		local ${_out_conf_sets[@]}
+		M=0
+		# bck_mode=1920x1080 set_mode=1280x720 'default_desktop=compiz ccp' secondary_desktop=marco 'mouse_dev=Logitech K230' 'set_buttons=3 2 1'
+		for _list in ${_out_conf_sets[@]}; do
+			_var=$(printf "$_list"|cut -d'=' -f1)
+			_val=$(printf "$_list"|cut -d'=' -f2)
+			if [ $_val != unset ]; then
+				case $_var in
+					'bck_mode') set_xrandr="xrandr --output $monitor --mode $_val --rate 60"; auto_set=1 ;;
+					'set_mode') bck_xrandr="xrandr --output $monitor --mode $_val --rate 60";;
+					'default_desktop'|'secondary_desktop')
+						if [[ $_val == mate ]]; then local $_var='marco'; fi
+						if [[ $_val == compiz ]]; then local $_var='compiz ccp'; fi
+						set_desktop_env=1
+					;;
+					'mouse_dev')
+						mice=$(printf "${xinput_list[@]}"| grep "$mouse_dev")
+						mice_nm=$(printf "$mice"| cut -d';' -f1)
+						mice_id=$(printf "$mice"| cut -d';' -f2|sed -n "s/^.*=//p")
+						if [[ $(printf "$mice_nm"| grep -c "$_val") -gt 0 ]]; then
+							set_dev_id=$mice_id
+						fi
+						if [ $set_buttons == unset ]; then set_buttons='1 2 3'; fi
+						mouse_btn="xinput set-button-map $set_dev_id $set_buttons"
+						mouse_set=1
+					;;
+				esac
+				((M++))
 			else
-				_val=''; N=0
+				case $_var in
+					'bck_mode') local $_var=''; auto_set=0 ;;
+					'default_desktop'|'secondary_desktop') local $_var=''; set_desktop_env=0 ;;
+					mouse_dev) local $_var='' ; mouse_set=0 ;;
+					*) local $_var='';;
+				esac
 			fi
-			if [[ $_var == bck_mode ]]; then _var=bck_xrandr; else _var=set_xrandr; fi
-			if [ $N -gt 1 ]; then A=1; N=0; else A=0; fi
-			activ_mod+=("auto_set,$A")
-		fi
-		if [[ $_var == default_desktop ]]||[[ $_var == secondary_desktop ]]; then
-			if [[ $_val != unset ]]; then		
-				if [[ $_val == mate ]]; then _val='marco'; fi
-				if [[ $_val == compiz ]]; then _val='compiz ccp'; fi
-				((M++)); N=$(($N+1))
-			else
-				_val=''; N=0
-			fi
-#			((A++))
-			if [ $N -gt 1 ]; then A=1; N=0; else A=0; fi
-			activ_mod+=("set_desktop_env,$A")
-		fi
-		if [[ $_var == mouse_dev ]]||[[ $_var == set_buttons ]]; then
-			if [[ $_val != unset ]]; then
-				if [[ $_var == mouse_dev ]]; then
-					mice=$(printf "${xinput_list[@]}"| grep "$mouse_dev")
-					mice_nm=$(printf "$mice"| cut -d';' -f1)
-					mice_id=$(printf "$mice"| cut -d';' -f2|sed -n "s/^.*=//p")
-					if [[ $(printf "$mice_nm"| grep -c "$_val") -gt 0 ]]; then
-						set_dev_id=$mice_id
-					fi
-					((M++)); A=1
-				fi
-				if [[ $_var == set_buttons ]]; then
-					_var=mouse_btn
-					if [[ $mouse_dev != unset ]]; then
-						_val="xinput set-button-map $set_dev_id $_val"
-					else
-						_val=''; A=0;
-					fi
-				fi
-			else
-				_val=''; A=0;
-			fi
-			activ_mod+=("mouse_set,$A")
-		fi
-		ifs=$IFS
-		IFS=$(echo -en "\n\b")
-		new_conf_list+=("$_var=$_val")
-		IFS=$ifs
-		insert=1
+		done
+		if [ $M -gt 0 ]; then _xrandr=1; else _xrandr=0; fi
+		newconf_xrandr
 	}
 	newconf_xrandr(){
-		_xrandr_conf="
-## optional xrandr command set, useful when you have strange fullscreen beshavior
+		_section="## optional xrandr command set, useful when you have strange fullscreen beshavior
 ## set enable (1) or disable (0)
 auto_set=$auto_set
 ## fullscreen mode for your app ex: xrandr --output HDMI-1 --mode 1280x720 --rate 60
@@ -1288,60 +1113,70 @@ bck_xrandr='$bck_xrandr'
 
 ## optional desktop environment replacement:
 ## This option allow you to replace a buggy enduser graphical environment
-## by a lighter one (OpenGl glitch, etc). This suppose a second desktop UI is already installed. 
+## by a lighter one (OpenGl glitch, etc). This suppose a second desktop UI is already installed.
 ## set enable (1) or disable (0)
 set_desktop_env=$set_desktop_env
 ## selec the default UI and replacement UI
 default_desktop='$default_desktop'
 secondary_desktop='$secondary_desktop'
-## reverse mouse button  
+## reverse mouse button
 mouse_set=$mouse_set
 mouse_dev='$mouse_dev'
-mouse_btn='$mouse_btn'"
-		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
-		printf "$_xrandr_conf\n" >> $tmp_conf
-		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
+mouse_btn='$mouse_btn'
+## Do not remove or edit below except if you don't use winestarter configurator.
+_xrandr=$_xrandr"
 	}
 	reconf_optimus(){
-		echo "1010101010"
-		if [[ $_val != TRUE ]]&&[[ $_val != FALSE ]]; then
+		echo -e "$g_notif\n##### reconf_optimus $e_notif"
+		local ${_out_conf_sets[@]}
+		M=0
+		for _list in ${_out_conf_sets[@]}; do
+			_var=$(printf "$_list"|cut -d'=' -f1)
+			_val=$(printf "$_list"|cut -d'=' -f2)
 			if [ $_val != unset ]; then
-				if [[ $_var == opti_starter ]]; then ((M++)); A=1; fi
-				if [[ $_var == opti_accel ]]; then 
-					_val="-b $_val"
-					if [[ $opti_starter == primusrun ]]; then _val=''; fi
-				fi
-				
+				case $_var in
+					'opti_starter') use_optimus=1 ;;
+					'opti_accel')
+						if [[ $opti_starter == primusrun ]]; then
+							opti_accel=''
+							opti_SYNC=''
+						fi
+					;;
+				esac
+				((M++))
 			else
-				A=0; _val=''
+				case $_var in
+					'opti_starter') use_optimus=0 ;;
+				esac
+				local $_var=''
 			fi
-			activ_mod+=("use_optimus,$A")
+		done
+		if [ $use_optimus = 0 ]; then
+			opti_sets=('opti_accel' 'opti_SYNC' 'opti_VBLK')
+			for _set in ${opti_sets[@]}; do local $_set=''; done
+			_optimus=0
 		else
-			if [ $_val == TRUE ]; then _val=1; else _val=0; fi
+			if [ $M -gt 0 ]; then _optimus=1; else _optimus=0; fi
 		fi
-		ifs=$IFS
-		IFS=$(echo -en "\n\b")
-		new_conf_list+=("$_var=$_val")
-		IFS=$ifs
-		insert=1
+		newconf_optimus
 	}
 	newconf_optimus(){
-		_optimus_conf="
-## optimus starter with options
-## comment if you don't need them
-## set the optimus starter : 'optirun', 'primusrun'
+		_section="## Optimus starter with options
+## comment if you don't need them.
+## Set if you want to use Optimus laptop display:
+use_optimus=$use_optimus
+## Set the optimus starter : 'optirun', 'primusrun'.
 opti_starter=\"$opti_starter\"
-## If using 'primusrun' or 'Bumblebee default' leave 'accel' blank ('')
-## set optirun vitualizer: 'virtualgl', 'primus'
+## Set optirun vitualizer: 'virtualgl', 'primus'.
+## If using 'primusrun' or 'Bumblebee default' leave 'opti_accel' blank ('')
 opti_accel=\"$opti_accel\"
-## optimus env options
+## Optimus images sync behaviour env option.
 opti_SYNC=$opti_SYNC
 ## Optimus Vertical sync behavior, prefered is usualy off (0)
-## set enable (1) or disable (0)
-opti_VBLK=$opti_VBLK"
-		if [ $insert_section = 1 ]; then tmp_conf=$config_file; fi
-		printf "$_optimus_conf\n" >> $tmp_conf
-		printf "$_warn_text\n$_fn_var=$_fn_val\n" >> $tmp_conf
+## Set enable (1) or disable (0)
+opti_VBLK=$opti_VBLK
+## Do not remove or edit below except if you don't use winestarter configurator.
+_optimus=$_optimus"
 	}
 ################################
 ## Yad UI messages and main text	
@@ -1363,9 +1198,10 @@ opti_VBLK=$opti_VBLK"
 	}
 ## Main Yad function
 	fn_create_prefix(){
-#		key=$RANDOM
-#		unset basic_sets tab_set tab_temp cfg_set t_display form_win
-		unset basic_sets field_list chk_list form_win def_win default_win
+		## launch winetricks list building separatly before all ops,
+		## otherwise it takes too much time when tabs are in building process.
+		fn_tricks_list_build &
+		unset form_win def_win default_win
 		unset tab_set tab_temp cfg_set t_display nv_field
 		main_tab_text="$bf Select settings by theme$end \\n \
  $nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
@@ -1378,97 +1214,322 @@ $nf Check here the sections you would like to configure.$end"
 		w_title2="$vb Miscellenous options$end"
 		w_title3="$vb Advanced features$end"
 		w_sub_3="Checking this option will allow extended features for advanced users"
-#		wine_tip0="$vb Install software feature is highly experimental. For the instance, you need \
-#to already know the complete path name of the installed app.$end"
 		wine_tip0="$vb Main prefix install sections$end"
+
+		## if Nvidia device is present, add it to menu entries.
 		if [ $($lpci_bin| grep -c "NVIDIA") -gt 0 ]; then
-			nv_field+=("8;;;;;LBL;;;")
-			nv_field+=("9;;;;$w_title1;LBL")
-			nv_field+=("10;$_nvidia_1;_nvidia_1;Nvidia*(common);$msg_nvidia1;CHK;;;fn_nvidia_config_1;$img_nv_cm")
-			nv_field+=("11;$_nvidia_2;_nvidia_2;Nvidia*(extra)*;$msg_nvidia2;CHK;;;fn_nvidia_config_2;$img_nv_ext")
-			nc=11
-		else
-			nc=7
+			nv_field="'';;;;LBL;;
+'';;;$w_title1;LBL;;
+$_nvidia_1;_nvidia_1;Nvidia*(common);$msg_nvidia1;CHK;fn_nvidia_config_1;$img_nv_cm
+$_nvidia_2;_nvidia_2;Nvidia*(extra)*;$msg_nvidia2;CHK;fn_nvidia_config_2;$img_nv_ext"
 		fi
-		basic_sets=(
-		"1;;;;;LBL;;;"
-		"2;;;;$wine_tip0;LBL"
-		"3;$_wine;_wine;Wine*basics**;$msg_wine;CHK;;;fn_wine_config;$img_wine_cfg1"
-		"4;$_wbin;_wbin;Extra*binary**;$msg_wcfg;CHK;;;fn_wine_binary;$img_wine_cfg2"
-		"5;$_install;_install;Install*Software;$msg_install;CHK;;;fn_install_soft;$img_install"
-		"6;$_tricks;_tricks;Install*tricks**;$msg_tricks;CHK;;;fn_winetricks;$img_tricks"
-		"7;$_reged;_reged;Registry*options*;$msg_reged;CHK;;;fn_regedit_config;$img_reged"
-		"${nv_field[@]}"
-		"$[ $nc+1 ];;;;;LBL;;;"
-		"$[ $nc+2 ];;;;$w_title2;LBL"
-		"$[ $nc+3 ];$_xrandr;_xrandr;Display*options**;$msg_xrandr;CHK;;;fn_xrandr_config;$img_xrandr"
-		"$[ $nc+4 ];$_optimus;_optimus;Optimus*options**;$msg_optimus;CHK;;;fn_optimus_config;$img_opti"
-		"$[ $nc+5 ];;;;;LBL;;;"
-		"$[ $nc+6 ];;;;$w_title3;LBL"
-		"$[ $nc+7 ];;;;$w_sub_3;LBL"
-		"$[ $nc+8 ];$_extended;_extended;;$msg_extended;CHK;;;;")
-#		"14;$_optimus;_optimus;Optimus;$msg_optimus;CHK;;;fn_optimus_config;$img_opti"
-#		"15;$_xrandr;_xrandr;Monitor;$msg_xrandr;CHK;;;fn_xrandr_config;$img_xrandr")
-#		"10;$_nvidia_1;_nvidia_1;Nvidia*(common);$msg_nvidia1;CHK;;;fn_nvidia_config_1;$img_nv_cm"
-#		"11;$_nvidia_2;_nvidia_2;Nvidia*(extra)*;$msg_nvidia2;CHK;;;fn_nvidia_config_2;$img_nv_ext"
+		## set IFS to include white space.
+		ifs=$IFS
+		IFS=$(echo -ne "\n\b")
+		basic_sets="'';;;;LBL;;
+'';;;$wine_tip0;LBL;;
+$_wine;_wine;Wine*basics**;$msg_wine;CHK;fn_wine_config;$img_wine_cfg1
+$_wbin;_wbin;Extra*binary**;$msg_wcfg;CHK;fn_wine_binary;$img_wine_cfg2
+$_install;_install;Install*Software;$msg_install;CHK;fn_install_soft;$img_install
+$_tricks;_tricks;Install*tricks**;$msg_tricks;CHK;fn_winetricks;$img_tricks
+$_reged;_reged;Registry*options*;$msg_reged;CHK;fn_regedit_config;$img_reged
+${nv_field[@]}
+'';;;;LBL;;
+'';;;$w_title2;LBL;;
+$_xrandr;_xrandr;Display*options**;$msg_xrandr;CHK;fn_xrandr_config;$img_xrandr
+$_optimus;_optimus;Optimus*options**;$msg_optimus;CHK;fn_optimus_config;$img_opti
+'';;;;LBL;;
+'';;;$w_title3;LBL;;
+'';;;$w_sub_3;LBL;;
+$_extended;_extended;;$msg_extended;CHK;;"
+		## restore temporarly IFS.
+		IFS=$ifs
+		## item separator in output list
 		item_sep=","
-		# window style and function
+		## window style and function.
 		win_type=0
-		ignore_loop=1
 		w_width='420'
-		main_opts='--height=420 --vscroll-policy=allways'
-		extended_opts="--height=400 --scroll"
-#		main_opts='--vscroll-policy=allways'
+		main_height='--height=420'
+		main_scroll='--vscroll-policy=auto'
+		extend_height='--height=400'
+		extend_pol='--scroll'
 		default_win_design
-		# create main window variables
+		# create main window variables.
 		default_tab_design
-		# export main function variables
+		# export main function variables.
 		default_tab_create
+		
+		
 	}
 	fn_nvidia_config(){
-		unset basic_sets field_list chk_list
 		# launch default start window
 		w_title="Wine Starter"
 		main_tab_text="$bf Reconfigure Nvidia's settings$end$nf\\n \
  Items leave \'unset\' will not be set to the Winestarter config file$end"
 
-		tab_set=(
-		"1;_nvidia_1;Nvidia*(common);fn_nvidia_config_1;$img_nv_cm"
-		"2;_nvidia_2;Nvidia*(optional);fn_nvidia_config_2;$img_nv_ext")
+		tab_set=("1;_nvidia_1;Nvidia*(common);fn_nvidia_config_1;$img_nv_cm
+2;_nvidia_2;Nvidia*(optional);fn_nvidia_config_2;$img_nv_ext")
 		item_sep=","
 		# window style and function
 		win_type=1
-		ignore_loop=0
+		w_width='420'
+		main_height='--height=420'
+		main_scroll='--vscroll-policy=auto'
+		extend_height='--height=400'
+		extend_pol='--scroll'
 		# create main window variables
 		default_tab_create
 	}
-	fn_basics_config(){
-		unset basic_sets tab_set tab_temp cfg_set t_display form_win 
+	fn_binary_env(){
+		if ! [ -s $HOME/.winestarter/default-wine ]; then
+			fn_binary_config
+		fi
+#		else
+			wine_path=$(cat $HOME/.winestarter/default-wine| cut -d';' -f2)
+			wine_elf=$(cat $HOME/.winestarter/default-wine| cut -d';' -f3)
+			if [ $wine_elf = 1 ]; then	dir_elf='amd64'; else dir_elf='x86'; fi
+			wine_ver=$wine_path/$dir_elf/$(cat $HOME/.winestarter/default-wine| cut -d';' -f1)
+#		fi
+		## set wine environment variables
+		wine_elf_path=$wine_ver
+		export WINEVERPATH=$wine_elf_path
+		export PATH=$wine_elf_path/bin:$PATH
+		export WINESERVER=$wine_elf_path/bin/wineserver
+		export WINELOADER=$wine_elf_path/bin/wine
+		if [ $wine_elf = 1 ]; then
+			export WINEDLLPATH=$wine_elf_path/lib64/wine/fakedlls
+			export LD_LIBRARY_PATH=$wine_elf_path/lib:$wine_elf_path/lib64:$LD_LIBRARY_PATH
+		else
+			export WINEDLLPATH=$wine_elf_path/lib/wine
+			export LD_LIBRARY_PATH="$wine_elf_path/lib:$LD_LIBRARY_PATH"
+		fi
+		wine_bin=$WINELOADER
+		sys_version=$($wine_bin --version)
+		use_winepath=1
+		wine_pack=1
+		_wbin=1
+		wine_bin_path=$wine_elf_path/bin/
+		${wine_bin_path}wineboot -i
+		
+		## then, start as usual 
+		if [ $b_set = 1 ]; then
+			fn_basics_config
+		else
+			fn_create_prefix			
+		fi
+	}
+	fn_binary_config(){
 		# launch default start window
-		w_title="Wine Starter"
+		w_title="Download and install Wine"
+		w_text="$rb\\WARNING$end$vb : Wine executables and librairies are missing\\n\
+To use Winestarter or Winetricks you must install them with your\\n\
+packages manager or directly from WineHQ staging below.$end"
+		w_wine_conf_path0="$vb\\Set full path where the Wine package will be installed:$end"
+		w_wine_conf_path1="$vn(default is set to: $HOME/.winebin)$end"
+		w_wine_conf_path01="$rb\\Pay attention$end$vb : Previous wine binaries path detected. Select one from the list below or download a new one.$end"
+		w_wine_conf_path02=""
+		w_wine_conf_path03=""
+		w_wine_conf_txt="$nf\\Set full path$end"
+		w_wine_conf_txt1="$nf\\Select package from default Wine path$end"
+		w_wine_conf_txt2=""
+		w_wine_conf_txt3=""
+		w_wine_binary_tip="$vb\\You can choose any version from the selector, bust last is prefered.$end"
+		set_as_default_tip="$vb\\When set to default, installed package will be available to all future bottles, until you choose a different one for a specific usage.$end"
+		set_as_default=" Set package as default"
+		set_64_tip="$vb\\You can set the whole environment to 64bits bottles, but it's not recommanded for a flexible usage.$end"
+		set_64=" Set 64bits environment only"
+	
+		# x_width=$(xwininfo -stats -name "$w_title"| sed -E -n "s/^ +Width: +([0-9]+)/\1/p")
+		width=520
+		borders='15'
+		win_image=$img_wine_ui
+		c_chain=30
+		out=$(printf "%0.s " $( seq 1 $c_chain))
+		default_bin_dir=$HOME/.winebin
+		wine_dis_cmd="bash $bash_opt \"select_wine_dis\""
+		
+		ifs=$IFS
+		IFS=$(echo -en "\n\b")
+		n=0
+		_basics_fields="$w_wine_binary_tip;LBL;''
+$vb click and select a WineHQ package$end,$img_winedis_bt;FBTN;$wine_dis_cmd
+$set_as_default_tip;LBL;''
+$set_as_default;CHK;FALSE"
+		_basics_64="$set_64_tip;LBL;''
+$set_64;CHK;FALSE"
+		## define system elf type and download destination
+		if [[ $(uname -m) =~ ^.*64 ]]; then
+			export wine_elf=1
+			http_elf='x86_64'; dir_elf='amd64'; b_elf='64'
+#			_basics_fields=$(echo -e "$_basics_fields\n$_basics_64")
+			_basics_fields="$_basics_fields
+$_basics_64"
+		else
+			export wine_elf=0
+			http_elf='i686'; dir_elf='x86'; b_elf=''
+		fi
+		if [ -d $HOME/.winebin ]; then
+			if [ $(ls -1 $HOME/.winebin| grep -c .) -gt 0 ]; then
+				export wine_path=$HOME/.winebin
+				if [[ $(uname -m) =~ ^.*64 ]]; then dir_elf='amd64'; else dir_elf='x86'; fi
+				existing_list=$(ls -1 $HOME/.winebin/$dir_elf/| tr '\n' ','| sed -n "s/,$//g;p")
+				_more_basics=";LBL;''
+$w_wine_conf_path01;LBL;''
+$w_wine_conf_path1;LBL;''
+$w_wine_conf_txt$nf$out$end;CDIR;$default_bin_dir
+$w_wine_conf_txt1;CB;$existing_list"
+			_basics_fields="$_more_basics
+$_basics_fields"
+			fi
+			n=1
+		else
+			_more_basics=";LBL;''
+$w_wine_conf_path0;LBL;''
+$w_wine_conf_path1;LBL;''
+$w_wine_conf_txt$nf$out$end;CDIR;$default_bin_dir"
+			_basics_fields="$_more_basics
+$_basics_fields"
+		fi
+		_field_regex='^(.*);(.*);(.*)$'
+		_fields=( $(echo -e "$_basics_fields"| sed -En "s/$_field_regex/--field=\1:\2/p") )
+		_fields_sets=( $(echo -e "$_basics_fields"| sed -En "s/$_field_regex/\3/p") )
+		wine_bin_output=$( $yad_bin --width=$width --title "$w_title" --separator=';'  \
+		--item-separator=',' --window-icon=$img_wine_desk_ui --align=left --borders=$borders \
+		--form --text="$w_text" --image=$win_image \
+		"${_fields[@]}" "${_fields_sets[@]}")
+		if [ $? = 1 ]; then exit 0; fi
+		IFS=$ifs
+		
+		## set data coming fron the yad ui. 
+		use_winepath=1
+		wine_path=$(printf "$wine_bin_output"| cut -d';' -f4)
+		wine_default=$(printf "$wine_bin_output"| cut -d';' -f$((8+$n)))
+		wine_64=$(printf "$wine_bin_output"| cut -d';' -f$((10+$n)))
+		
+		wine_bin_temp=/tmp/w_binary.*
+#		if [ -s /tmp/w_bin_tmp ]; then
+		if [ -s $wine_bin_temp ]; then
+#			wine_ver=$(cat /tmp/w_bin_tmp|cut -d';' -f1)
+#			dist_dl_ver=$(cat /tmp/w_bin_tmp|cut -d';' -f3)
+			wine_ver=$(cat $wine_bin_temp|cut -d';' -f1)
+			dist_dl_ver=$(cat $wine_bin_temp|cut -d';' -f3)
+			unset dl_list
+			## create tmp dir for package download
+			dl_dir=$(mktemp --tmpdir -d wine_dl.XXXXXXXX)	
+			pkg_ver=$(printf $wine_ver| cut -d'-' -f1)
+			pkg_rel=$(printf $wine_ver| cut -d'-' -f2)
+
+			## control if wine bin dir exist. If not create it from default
+			if ! [ -d $wine_path/$dir_elf/ ]; then mkdir -p $wine_path/$dir_elf; fi
+			## define download source and packages
+			dl_address_0="https://dl.winehq.org/wine-builds/fedora/$dist_dl_ver/$http_elf"
+			dl_address_1="https://dl.winehq.org/wine-builds/fedora/$dist_dl_ver/i686"
+			dl_list=(
+				"$dl_address_0/wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
+				"$dl_address_1/wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
+			)
+			unpack_list=(
+				"wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
+				"wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
+			)
+			## download command
+			dl_cmd(){ wget -P $dl_dir $pkgs 2>&1; }
+			## This perl regex Analyse and parse wget stdout field, then display it in a yad window
+			track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $pack_name [\1] time left: \3\t\2\/s/"; }
+			## now download
+			cd $dl_dir
+			for pkgs in ${dl_list[@]}; do
+				pack_name=$wine_ver
+				## download UI feeds
+				pkg_ext=$(printf "$pkgs"| sed -n "s/^.*\.//p")
+				site=$(printf "$pkgs"| sed -E -n "s/(^.*:\/\/)(\w+)\.(\w+)\.(\w+)\/.*$/\2.\3.\4/p")
+				pack=$(printf "$pkgs"| sed -n "s/^.*\///p")
+				w_text="$vb\\Downloading $pack\\nfrom $site server.$end"
+				## download progress bar UI
+				dl_cmd | track | $yad_bin --width=550 --title "$w_title" --align=center --borders=$borders \
+				--text="$w_text" --window-icon=filesave --image=$img_install --progress --auto-close
+				if [ $? = 1 ]; then exit 0; fi
+			done
+			## then, extract to wine bin directory
+			if [ $(ls -1 $dl_dir| egrep -c "$pkg_ver") -gt 0 ]; then
+				for dwld in ${unpack_list[@]}; do
+					e_text="$vb\\Extracting $dwld to $wine_path.$end"
+					$yad_bin --width=550 --title "$w_title" --align=center --no-buttons --borders=$borders \
+					--window-icon=filesave --progress --pulsate --auto-close --text="$e_text" \
+					--progress-text="" &
+					## seek the extrat UI yad PID
+					WAIT_UI=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+					## extract rpm command through rpm2cpio
+					$rpm_bin $dwld | cpio -id
+					kill $WAIT_UI
+				done
+				mkdir -p $wine_path/$dir_elf/$wine_ver/
+				cp -Rf opt/wine-staging/* $wine_path/$dir_elf/$wine_ver/
+				if [ $b_elf = 64 ]; then cd $wine_path/x86; ln -sf ../$dir_elf/$wine_ver ; fi
+			fi
+		else
+			wine_ver=$(printf "$wine_bin_output"| cut -d';' -f5)
+		fi
+
+		## set if Wine env have to be set as default or not.
+		if [[ $wine_64 == TRUE ]]; then wine_elf=1; else wine_elf=0; fi
+		if [[ $wine_default == TRUE ]]; then printf "$wine_ver;$wine_path;$wine_elf" \
+		> $HOME/.winestarter/default-wine; fi
+	}
+	fn_tricks_list_build(){
+		if [ -x "$w_tricks_bin" ]; then
+			w_tricks_reserve=$HOME/.winestarter/resources/tricks_workaround.txt
+			w_tricks_dlls=$HOME/.winestarter/resources/tricks_dlls.txt
+			if [[ -d $user_prefix/$bottle_prefix || $from_config = 1 ]]; then
+				## let some time to winetricks to start building its list,
+				## otherwise it could be confused during tab creation phase. 
+				wait_message='BUILDING WINETRICKS LIST'
+				on_top='--on-top '
+				if ! [[ -s $w_tricks_reserve || -s $w_tricks_dlls ]]; then
+					fn_plz_wait &
+					WAIT_UI_3=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+					sleep 1
+					## set default arch
+					if [ $wine_elf = 1 ]; then winearch='win64'; else winearch='win32'; fi
+					## set default env
+					export WINEARCH=$winearch
+					export WINEPREFIX="$user_prefix/$bottle_prefix"
+					## now look for winetricks settable dlls and put them in a tmp file
+					$w_tricks_bin dlls list| grep "downloadable" >$w_tricks_dlls
+					## create winetricks workaround list for winetricks log filtering
+					$w_tricks_bin settings list|sed -n "/^---/,/---$/d;p"| egrep -v "^Using.*$"| \
+					awk '{print $1}' >$w_tricks_reserve
+					kill $WAIT_UI_3
+				fi
+			fi
+			dlls_list=$(cat $w_tricks_dlls| awk '{print $1}'| tr '\n' ',')
+		fi
+	}
+	fn_basics_config(){
+		unset  tab_set tab_temp cfg_set t_display form_win 
+		# launch default start window
+		w_title="Winestarter"
 		main_tab_text="$bf Configure Wine initial sets$end$nf\\n \
  It will create a basic Wine bottle, mainly useful if you plan to use an already\\n \
  existing app directory.$end"
-		tab_set=(
-		"1;_wfirst;Basics;fn_wine_basics;$img_wine_desk_ui")
-#		"2;_resume;Warnings;fn_end_game_2;$img_wine_desk_ui")
+		_wine=1
+		tab_set=("1;_wfirst;Basics;fn_wine_basics;$img_wine_desk_ui")
 		item_sep=","
 		# window style and function
 		win_type=1
-		ignore_loop=0
 		# create main window variables
-#		temp=$(mktemp --tmpdir tab0.XXXXXXXX)
 		default_tab_create
 	}
 	fn_wine_basics(){
-		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
+		echo -e "$g_notif\n>>>> start fn_wine_basics ####\n$e_notif"
+		unset basic_sets track_list # #
 		# window messages
 		w_wine_basic_tip=""
-		w_wine_user_prefix="$vb\\\Set user prefix if not the user's default one:$end"
-		w_wine_prefix="$vb\\\Set the Wine Bottle prefix to use:$end"
-		w_wine_prefix_tip="$vb\\\Example:$end$nf wine.my_bottle$end, no space and \"$nf\\wine.$end\" suffix is mandatory."
-		w_wine_game_path="$vb\\\Set the full game/appli directory if different from bottle:$end"
-		w_wine_elf_tip="$nf\\\Note:$end 32bits apps can be launch from a Wine 64bits install (from Wine 2.0 and above). In my own experience, it enhance globaly app performances. (Don't for XP 32bits apps)"
+		w_wine_user_prefix="$vb\\Set user prefix if not the user's default one:$end"
+		w_wine_prefix="$vb\\Set the Wine Bottle prefix to use:$end"
+		w_wine_prefix_tip="$vb\\Example:$end$nf wine.my_bottle$end, no space. \"$nf\\wine.$end\" prefix is mandatory."
+		w_wine_game_path="$vb\\Set the full game/appli directory if different from bottle:$end"
+		w_wine_elf_tip="$nf\\Note:$end 32bits apps can be launch from a Wine 64bits install (from Wine 2.0 and above). In my own experience, it enhance globaly app performances. (Don't for XP 32bits apps)"
 		w_text="$bf\\Configure the Wine basic environment$end"
 		
 		track_list="user_prefix bottle_prefix game_path wine_elf"
@@ -1482,34 +1543,35 @@ $nf Check here the sections you would like to configure.$end"
 		
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
-		basic_sets=(
-		"1;;;;;LBL;;;"
-		"2;;;;$w_wine_user_prefix;LBL;;;"
-		"3;$user_prefix;user_prefix;;$nf Default Wine user prefix$end;DIR;;;"
-		"4;;;;$w_wine_prefix;LBL;;;"
-		"5;;;;$w_wine_prefix_tip;LBL;;;"
-		"6;;bottle_prefix;;$nf Bottle prefix$end;;;;"
-		"7;;;;$w_wine_game_path;LBL;;;"
-		"8;$game_path;game_path;;$nf Existing appli path$end;DIR;;;"
-		"9;;;;$w_wine_elf;LBL;;;"
-		"10;;;;$w_wine_elf_tip;LBL;;;"
-		"11;$wine_elf;wine_elf;;App type is 64 bits;CHK;;;"
-		)
+		basic_sets="'';;;;LBL;;
+'';;;$w_wine_user_prefix;LBL;;
+$user_prefix;user_prefix;;$nf Default Wine user prefix$end;DIR;;
+'';;;$w_wine_prefix;LBL;;
+'';;;$w_wine_prefix_tip;LBL;;
+wine.mybottlename;bottle_prefix;;$nf Bottle prefix$end;;;
+'';;;$w_wine_game_path;LBL;;
+$game_path;game_path;;$nf Existing appli path$end;DIR;;
+'';;;$w_wine_elf;LBL;;
+'';;;$w_wine_elf_tip;LBL;;
+$wine_elf;wine_elf;;App type is 64 bits;CHK;;"
 		item_sep=","
 		IFS=$ifs
+		from_config=0
+		focus='--focus-field=6'
 		# window style and function
 		win_type=1
-		ignore_loop=0
-#		w_width='420'
 		default_win_design
 	}
+
 	fn_wine_elf_query(){
+		## if there is no initial wine install in the the system, try to set env first
+		## when wine bottle is created at first step, define the wine arch used.
 		if [ $wine_elf = 1 ]; then
 			elf=64; elf_ext=' (x86)'; w_elf_ext='\ (86)'
 		else
 			elf=32; elf_ext=''; w_elf_ext=''
 		fi
-		if ! [ -d $bottle_prefix/drive_c/Program\ Files"$elf_ext" ]; then
+		if ! [ -d $user_prefix/$bottle_prefix/drive_c/Program\ Files"$elf_ext" ]; then
 			root_key=''
 		else
 			root_key="Program Files$elf_ext/"
@@ -1518,59 +1580,64 @@ $nf Check here the sections you would like to configure.$end"
 	## at first launch for a botlle creation, sets the basics variables to access
 	## custom path dirs and new Wine dirs
 	fn_wine_basic_feed(){
+		echo -e "$g_notif\n>>>> start fn_wine_basic_feed ####\n$e_notif"
 		## initial bottle set before launching main features
-			# ';;/home/mike;;wine.botlle;;/home/games/FFXIV/SquareEnix;;;TRUE;'
-			ifs=$IFS
-			IFS=$(echo -en "\n\b")
-			basic_list=('user_prefix,3' 'bottle_prefix,6' 'game_path,8' 'wine_elf,11')
-			basic_conf=$(cat $temp)
-			for basic in ${basic_list[@]}; do
-				unset basic_values
-				basic_var=$(printf "$basic"|cut -d',' -f1)
-				basic_rank=$(printf "$basic"|cut -d',' -f2)
-				basic_val=$(printf "$basic_conf"| cut -d';' -f$basic_rank)
-				if [[ $basic_val =~ ^[A-Z]+ ]]; then
-					if [ $basic_val = 'TRUE' ]; then basic_val=1; else basic_val=0; fi
-				fi
-				if [ $basic_var = 'bottle_prefix' ]; then
-					basic_val=$user_prefix/.$basic_val
-				fi
-				basic_values=($basic_var=$basic_val)
-				local "${basic_values}" 
-			done
-			## set default arch
-			if [ $wine_elf = 1 ]; then winearch='win64'; else winearch='win32'; fi
-			## set default env
-			export WINEARCH=$winearch
-			export WINEPREFIX="$bottle_prefix"
-			wineboot -i
-			fn_wine_elf_query
-			
-			
-			if [[ $game_path != '' && $game_path != $HOME ]]; then
-				link=$(printf "$game_path"| sed -n "s/^.*\///g;p")
-				ln -sf $game_path $bottle_prefix/drive_c/$root_key
-				game_dir=$bottle_prefix/drive_c/$root_key$link
-				game_exe=$bottle_prefix/drive_c/$root_key$link
-			else
-				game_dir=$bottle_prefix/drive_c/$root_key
-				game_exe=$bottle_prefix/drive_c/$root_key	
+		# ';;/home/mike;;;wine.botlle;;/home/games/FFXIV/SquareEnix;;;TRUE;'
+		unset basic_list
+		ifs=$IFS
+		IFS=$(echo -en "\n\b")
+		basic_list=('user_prefix,3' 'bottle_prefix,6' 'game_path,8' 'wine_elf,11')
+		basic_conf=$(cat $temp_b)
+		## get back fn_wine_basic_feed data in case they come from an initial set. 
+		for basic in ${basic_list[@]}; do
+			unset basic_values
+			basic_var=$(printf "$basic"|cut -d',' -f1)
+			basic_rank=$(printf "$basic"|cut -d',' -f2)
+			basic_val=$(printf "$basic_conf"| cut -d';' -f$basic_rank)
+			if [[ $basic_val =~ ^[A-Z]+ ]]; then
+				if [ $basic_val = 'TRUE' ]; then basic_val=1; else basic_val=0; fi
 			fi
-			IFS=$ifs
-			fn_create_prefix
-	} 
+			if [ $basic_var = 'bottle_prefix' ]; then
+				basic_val=.$basic_val
+			fi
+			basic_values=($basic_var=$basic_val)
+			local "${basic_values}" 
+		done
+		
+		## set default arch
+		if [ $wine_elf = 1 ]; then winearch='win64'; else winearch='win32'; fi
+		## set default env
+		export WINEARCH=$winearch
+		export WINEPREFIX="$user_prefix/$bottle_prefix"
+		${wine_bin_path}wineboot -i
+		fn_wine_elf_query
+		
+		
+		if [[ $game_path != '' && $game_path != $HOME ]]; then
+			link=$(printf "$game_path"| sed -n "s/^.*\///g;p")
+			ln -sf $game_path $user_prefix/$bottle_prefix/drive_c/$root_key
+			game_dir=$user_prefix/$bottle_prefix/drive_c/$root_key$link
+			game_exe=$user_prefix/$bottle_prefix/drive_c/$root_key$link
+		else
+			game_dir=$user_prefix/$bottle_prefix/drive_c/$root_key
+			game_exe=$user_prefix/$bottle_prefix/drive_c/$root_key	
+		fi
+		IFS=$ifs
+		fn_create_prefix
+
+	}
+
 	fn_wine_config(){
-		unset basic_sets misc_sets field_list chk_list track_list pol_bin_list local_bin_list \
-		def_args _msc_plus
+		echo -e "$g_notif >>>> start fn_wine_config $e_notif"
+		unset  basic_sets misc_sets def_args
 		# check install elf type
 		fn_wine_elf_query		
 		# check already setted variables, if any.
 		chk_arg_opts(){
-			ifs=$IFS
-			IFS=$(echo -en "\n\b")
+#			ifs=$IFS
+#			IFS=$(echo -en "\n\b")
 			def_args=( $(cat $HOME/.winestarter/resources/options.list) )
 			w_args_list=$(echo "$wine_opts"|tr '\ ' '\n')
-			_n='21'
 			for val in ${def_args[@]}; do
 				_arg=$(printf "$val"| cut -d';' -f1)
 				_def=$(printf "$val"| cut -d';' -f2)
@@ -1583,22 +1650,17 @@ $nf Check here the sections you would like to configure.$end"
 				if [[ $_arg != misc ]]; then
 					if [ $(echo "$wine_opts"| grep -Fc "$_arg") -gt 0 ]; then
 						_def_arg='1'
-#						_g_pat="$_g_pat\-$_arg "
 						_rev_pat+=("$_arg")
 					else
 						_def_arg='0'
 					fi
 					## add field for each listed options in options.list
 					# "23;$wine_arg_sdx;wine_arg_sdx;;$w_wine_cmd_sdx;CHK;;;"
-					cmd_line_opts+=("$[ $_n+1 ];$_def_arg;$_var;;$_def ($_arg);CHK;;;")
+					cmd_line_opts+=("$_def_arg;$_var;;$_def ($_arg);CHK;;")
 					reconf_list+=("$_short;$_arg;$_var;$_def_arg")
-					_n=$[ $_n+1 ]
-				fi
-#					
+				fi	
 				if [[ $_arg == misc ]]; then
-#					# better to 'sed' here than anything else
-#					_arg_msc="\\$(echo -e "${w_args_list[*]}"| sed -n  "s/$_g_pat//p")"
-#					wine_arg_msc=$_arg_msc
+					## go back to default IFS temporarly.
 					IFS=$ifs
 					for _patt in $w_args_list; do
 						sed_conv=$(echo "$_patt"| sed -n "s/^-//p")
@@ -1613,37 +1675,42 @@ $nf Check here the sections you would like to configure.$end"
 					ifs=$IFS
 					IFS=$(echo -en "\n\b")
 				fi
-			done	
-			IFS=$ifs
+			done
 		}
-		# def_args=('wine_arg_gl,opengl' 'wine_arg_sdx,no-cf-sandbox' 'wine_arg_msc,unset')
+		ifs=$IFS
+		IFS=$(echo -en "\n\b")
 		if [ $from_config = 1 ]; then
-			if [[ $_extended =~ [0-9] ]]; then
-				sed -ni "s|^\(_extended\)=\([0-9]\)$|\1=$_extended|i;p" $config_file
-			fi
-			ifs=$IFS
-			IFS=$(echo -en "\n\b")
-			bottle_prefix="$user_prefix/$bottle_prefix"
-			if [ -d $bottle_prefix/drive_c/$game_dir ]; then
-				game_dir="$bottle_prefix/drive_c/$game_dir"
+			if [[ $game_dir != '' ]]; then
+				if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then
+					game_dir="$user_prefix/$bottle_prefix/drive_c/$game_dir"
+				else
+					game_dir="$user_prefix/$bottle_prefix/drive_c/Program Files$elf_ext/$game_dir"
+				fi
+				game_exe="$game_dir/$game_exe"
 			else
-				game_dir="$bottle_prefix/drive_c/Program Files$elf_ext/$game_dir"
+				game_dir=$HOME
+				game_exe=$HOME
 			fi
-			game_exe="$game_dir/$game_exe"
 			if [[ $game_path == '' ]]; then game_path="$HOME/"; fi
-			IFS=$ifs
 			if [ $_extended = 1 ]; then chk_arg_opts; fi
 		else
-			special_cmd=0; start_cmd=0
+			app_portable='FALSE'
+			special_cmd='FALSE'
+			start_cmd='FALSE'
+			if ! [ -d $game_path ]; then game_path="$user_prefix"; fi
 			if [ $_extended = 1 ]; then chk_arg_opts; fi
 		fi
+		
 		## set the wine options files in resources and bottle
-		export option_log=$bottle_prefix/options.log
+		export option_log=$user_prefix/$bottle_prefix/options.log
 		export option_conf=$HOME/.winestarter/resources/options.list
 		## tell to main script the last options conf modification time in EPOC at this point.
-		_option_log_pre=$(stat -c %Y $option_log )
-		
-		export bottle_prefix=$bottle_prefix
+		if [ -s $option_log ]; then
+			_option_log_pre=$(stat -c %Y $option_log )
+		else
+			_option_log_pre=$(date +%s)
+		fi
+		## button command
 		option_edit_cmd="bash $bash_opt \"edit_wine_options\""
 		# window messages
 		w_wine_user_prefix="$vb\\Set user prefix if not the user's default one:$end"
@@ -1654,7 +1721,6 @@ $nf Check here the sections you would like to configure.$end"
 		w_wine_game_exe="$vb\\Set the Wine game/app executable to launch:$end$vn (if already existing)$end"
 		w_wine_portable="$vb\\Set if the game/app is portable or you wish to install an already existing path to the C: drive root:$end"
 		w_wine_game_spl="$vb\\Set if the app have to be started from the app directory:$end"
-#		w_wine_elf="$vb Set if the app elf type is in 64 bits (experimental):$end"
 		w_wine_elf_tip="$nf\\Note:$end The initial install is actually set to Wine $nf"$elf"Bits$end. If you would like a different install type, you need to create a new prefix."
 		
 		w_wine_cmd="$bf Wine or app command line arguments$end"
@@ -1663,59 +1729,50 @@ $nf Check here the sections you would like to configure.$end"
 		w_wine_cmd_sdx="Prevent Steam bottle sandboxing (no-cef-sandbox)"
 		w_wine_cmd_msc="$nf Custom cmdline argument$end"
 		w_wine_cmd_note="$nf\\Note$end: winestarter will keep all working user commandline options in its user directory for future possible use. If your custom option(s) is fully working, you could add it to the default menu with the button below."
-		
 		elf=$elf
-		ifs=$IFS
-		IFS=$(echo -en "\n\b")
-		basic_sets=(
-		"1;;;;;LBL;;;"
-		"2;;;;$w_wine_elf_tip;LBL;;;"
-		"3;;;;;LBL;;;"
-		"4;;;;$w_wine_user_prefix;LBL;;;"
-		"5;$user_prefix;user_prefix;;$nf Default Wine user prefix$end\t\t;DIR;;;"
-		"6;;;;$w_wine_prefix;LBL;;;"
-		"7;$bottle_prefix;bottle_prefix;;$nf Bottle prefix$end;CDIR;;;"
-		"8;;;;$w_wine_game_path;LBL;;;"
-		"9;$game_path;game_path;;$nf Existing appli path$end;DIR;;;"
-		"10;;;;$w_wine_game_dir;LBL;;;"
-		"11;$game_dir;game_dir;;$nf Full Wine appli directory$end;DIR;;;"
-		"12;;;;$w_wine_game_exe;LBL;;;"
-		"13;$game_exe;game_exe;;$nf EXE file$end;FL;;;"
-		"14;;;;$w_wine_portable;LBL;;;"
-		"15;$app_portable;app_portable;;Portable app (or to be set at C: drive root);CHK;;;"
-		"16;;;;$w_wine_game_spl;LBL;;;"	
-		"17;$special_cmd;special_cmd;;execute binary file inside the directory;CHK;;;"
-		"18;$start_cmd;start_cmd;;execute binary from absolute path (using Wine \"start\" command);CHK;;;")
-#		"16;;;;;LBL;;;"
-#		"17;;;;$w_wine_elf_tip;LBL;;;"
-#		)
-		misc_sets=(
-		"19;;;;;LBL;;;"
-		"20;;;;$w_wine_cmd;LBL;;;"
-		"21;;;;$w_wine_cmd_tip;LBL;;;"
-		"${cmd_line_opts[@]}"
-		"$[ $_n+1 ];$wine_arg_msc;wine_arg_msc;;$w_wine_cmd_msc;CBE;;;"
-		"$[ $_n+2 ];;;;$w_wine_cmd_note;LBL;;;"
-		"$[ $_n+3 ];$option_edit_cmd;;;$vb click here to edit options menu$end,$img_wine_mod;FBTN;;;"
-		)
+		basic_sets="'';;;;LBL;;
+'';;;$w_wine_elf_tip;LBL;;
+'';;;;LBL;;
+'';;;$w_wine_user_prefix;LBL;;
+$user_prefix;user_prefix;;$nf Default Wine user prefix$end\t\t;DIR;;
+'';;;$w_wine_prefix;LBL;;
+$user_prefix/$bottle_prefix;bottle_prefix;;$nf Bottle prefix$end;CDIR;;
+'';;;$w_wine_game_path;LBL;;
+$game_path;game_path;;$nf Existing appli path$end;DIR;;
+'';;;$w_wine_game_dir;LBL;;
+$game_dir;game_dir;;$nf Full Wine appli directory$end;DIR;;
+'';;;$w_wine_game_exe;LBL;;
+$game_exe;game_exe;;$nf EXE file$end;FL;;
+'';;;$w_wine_portable;LBL;;
+$app_portable;app_portable;;Portable app (or to be set at C: drive root);CHK;;
+'';;;$w_wine_game_spl;LBL;;
+$special_cmd;special_cmd;;execute binary file inside the directory;CHK;;
+$start_cmd;start_cmd;;execute binary from absolute path (using Wine \"start\" command);CHK;;"
+		## extended menu
+		misc_sets="'';;;;LBL;;
+'';;;$w_wine_cmd;LBL;;
+'';;;$w_wine_cmd_tip;LBL;;
+${cmd_line_opts[*]}
+$wine_arg_msc;wine_arg_msc;;$w_wine_cmd_msc;;;
+'';;;$w_wine_cmd_note;LBL;;
+$option_edit_cmd;cmd;;$vb click here to edit options menu$end,$img_wine_mod;FBTN;;"
 		if [ $_extended = 1 ]; then
-			basic_sets=(
-			"${basic_sets[@]}"
-			"${misc_sets[@]}"
-			)
+			basic_sets="${basic_sets[@]}
+${misc_sets[@]}"
 		fi
 		item_sep=","
-#		echo "$wine_elf"; exit 0
+		## restore temporarly IFS
 		IFS=$ifs
-		# window style and function
+		## window style and function
 		win_type=1
-		ignore_loop=0
-#		w_width='420'
-		extended_opts="--height=400 --scroll"
+		## focused field
+		focus=''
+		echo -e "$g_notif\n>>>> end fn_wine_config ####\n$e_notif"
 		default_win_design
 	}
 	fn_wine_binary(){
-		unset basic_sets field_list chk_list track_list conf_dat pol_bin_list local_bin_list track_sets
+		echo -e "$g_notif\n>>>> start fn_wine_binary ####\n$e_notif"
+		unset basic_sets track_list 
 		w_wine_use_winepath="$vb Set if you want to use a custom Wine binary path:$end"
 		w_wine_binary_title="$vb\\You can choose and activate here a custom Wine binary directory. Some apps (particulary old ones) could need old Wine versions. Datas are provided by PlayOnLinux Wine server.$end"
 		w_wine_wine_path="$vb Set full path of customs Wine binaries repository:$end"
@@ -1724,94 +1781,119 @@ $nf Check here the sections you would like to configure.$end"
 		w_wine_wine_pol="$vb Download a binary package from PlayOnLinux repo:$end"
 		w_wine_wconfig="$vb\\When set, new Wine binary will setup new environment, this set will allow winecfg to start at boot:$end"
 		w_text="$bf Configure an extra Wine binary path$end"
-		# check already setted variables
-		track_list="use_winepath wine_path wine_ver"
+		## check already setted variables
+		track_list=('use_winepath' 'wine_path' 'wine_ver')
 		wineset_list=$track_list
 		wine_bin_cmd="bash $bash_opt \"select_wine_bin\""
 		wine_dis_cmd="bash $bash_opt \"select_wine_dis\""
-		if [ $wine_elf = 1 ]; then ftp_elf='amd64'; else ftp_elf='x86'; fi
+		if [ $wine_elf = 1 ]; then dir_elf='amd64'; else dir_elf='x86'; fi
 		if [ $from_config = 1 ]; then
 			ifs=$IFS
 			IFS=$(echo -en "\n\b")
-			if [[ $wine_ver != '' ]]; then wine_ver="$wine_path/$ftp_elf/$wine_ver"; else wine_ver="$HOME/"; fi
-			if [[ $wine_path == '' ]]; then wine_path="$HOME/.winebin"; fi
-			if [[ $use_winepath == '' ]]; then use_winepath=0; fi
+			for trk_set in ${track_list[@]}; do
+				eval trk_val='$'$trk_set
+				case $trk_set in
+					'use_winepath') [ $trk_val ]|| local $trk_set=0 ;;
+					'wine_path') [[ $trk_val ]] || local $trk_set="$HOME/.winebin" ;;
+					'wine_ver') if [[ $wine_ver =~ [0-9]{1,2}.[0-9]{1,2}.*$ ]]; then
+						local $trk_set="$wine_path/$dir_elf/$wine_ver"
+					else
+						local $trk_set="$HOME/.winebin"
+					fi ;;
+					*) local $trk_set="$HOME/";;
+				esac
+			done 
+#			if [[ $wine_ver != '' ]]; then wine_ver="$wine_path/$dir_elf/$wine_ver"; else wine_ver="$HOME/"; fi
+#			if [[ $wine_path == '' ]]; then wine_path="$HOME/.winebin"; fi
+#			if [[ $use_winepath == '' ]]; then use_winepath=0; fi
 			IFS=$ifs
 		else
-			for trk_set in ${track_list[@]}; do
-				unset local_set
-				if [[ $trk_set == use_winepath ]]; then trk_box=0; else trk_box="$HOME/"; fi
-				local_set+=("$trk_set=$trk_box")
-				local $local_set
-			done
+#			if [ -s $HOME/.winestarter/default-wine ]; then
+#				wine_path=$(cat $HOME/.winestarter/default_wine| cut -d';' f2)					
+#				wine_elf=$(cat $HOME/.winestarter/default_wine| cut -d';' f3)
+#				wine_ver=$wine_path/$wine_elf/$(cat $HOME/.winestarter/default_wine| cut -d';' f1)
+#				use_winepath=1
+#			else
+			if ! [ -s $HOME/.winestarter/default-wine ]; then
+				for trk_set in ${track_list[@]}; do
+	#				unset local_set
+					case $trk_set in
+						'use_winepath') local $trk_set=0 ;;
+						'wine_path'|'wine_ver') if [ -d $HOME/.winebin ]; then 
+							local $trk_set="$HOME/.winebin"
+						fi ;;
+						*) local $trk_set="$HOME/" ;;
+					esac
+		
+	#					if [[ $trk_set == use_winepath ]]; then trk_box=0; else trk_box="$HOME/"; fi
+	#					if [[ $trk_set == wine_path ]]||[[ $trk_set == wine_ver ]]; then 
+	#						if [ -d $HOME/.winebin ]; then trk_box="$HOME/.winebin"; else trk_box="$HOME/"; fi
+	#					fi
+	#					local_set+=("$trk_set=$trk_box")
+	#					local $local_set
+				done
+			fi			
 		fi
 		export wine_path=$wine_path
 		export wine_elf=$wine_elf
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
-		basic_sets=(
-		"1;;;;;LBL;;;"
-		"2;;;;$w_wine_binary_title;LBL;;;"
-		"3;$use_winepath;use_winepath;;use Wine binaries path (default:$HOME/.winebin);CHK;;;"
-		"4;;;;$w_wine_wine_path;LBL;;;"
-		"5;$wine_path;wine_path;;$nf Wine binaries dir\t\t\t\t$end;DIR;;;"
-		"6;;;;$w_wine_wine_ver;LBL;;;"
-		"7;$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;;"
-		"8;;;;;LBL;;;"
-		"9;;;;$w_wine_dl_info;LBL;;;"
-		"10;$wine_dis_cmd;;;$vb click here to download from WineHQ staging$end,$img_winedis_bt;FBTN;;;"
-		"11;$wine_bin_cmd;;;$vb click here to download a PoL Wine package$end,$img_winepol_bt;FBTN;;;"
-		"12;;;;;LBL;;;"
-		"13;;;;$w_wine_wconfig;LBL;;;"
-		"14;$w_config;w_config;;Start Winecfg at app launch;CHK;;;"
-		)
+		basic_sets="'';;;;LBL;;
+'';;;$w_wine_binary_title;LBL;;
+$use_winepath;use_winepath;;use Wine binaries path (default:$HOME/.winebin);CHK;;
+'';;;$w_wine_wine_path;LBL;;
+$wine_path;wine_path;;$nf Wine binaries dir\t\t\t\t$end;DIR;;
+'';;;$w_wine_wine_ver;LBL;;
+$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;
+'';;;;LBL;;
+'';;;$w_wine_dl_info;LBL;;
+$wine_dis_cmd;cmd;;$vb click here to download from WineHQ staging$end,$img_winedis_bt;FBTN;;
+$wine_bin_cmd;cmd;;$vb click here to download a PoL Wine package$end,$img_winepol_bt;FBTN;;
+'';;;;LBL;;
+'';;;$w_wine_wconfig;LBL;;
+$w_config;w_config;;Start Winecfg at app launch;CHK;;"
+		echo -e "$g_notif\n>>>> end fn_wine_binary ####\n$e_notif"
 		IFS=$ifs
 		item_sep=","
 		# window style and function
 		win_type=1
-		ignore_loop=0
+		## focused field
+		focus=''
 		default_win_design
 	}
 	fn_regedit_config(){
-		unset basic_sets misc_sets field_list chk_list track_list track_sets conf_dat
-#		unset basic_sets field_list chk_list track_list #conf_dat #track_sets
-		
-		# créer liste des dlls désenregistrés
-		# créer une option de suppression
+		echo -e "$g_notif\n>>>> start fn_regedit_config ####\n$e_notif"
+		unset basic_sets misc_sets
 		# config file preset
 		nv_smi=$(find /usr/{bin,local/bin} -name nvidia-smi)
 		if [ -x $nv_smi ]; then
 #		if [ -x /usr/bin/nvidia-smi ]||[ -x /usr/local/bin/nvidia-smi ] ; then
 			mem_set=$($nv_smi --query|grep -w "^.*Total.*[KMG]iB"|sed -n "s/^.*\ \([0-9]*\) [A-Z].*$/\1/;1p")
-			x_mem='unset#'$mem_set
+			x_mem='unset,'$mem_set
 			mem_comment=$mem_set'Mo detected'
 		else
 			mem_set='unset'
 			x_mem='unset'
 			mem_comment=''
 		fi
-#		vid_mem="256,512,768,1024,2048,3072,4096,6144"
+		vid_mem='128,256,512,768,1024,2048,3072,4096,6144'
 		
-		vid_mem='128#256#512#768#1024#2048#3072#4096#6144'
-		
+		echo -e "$g_notif >>>> detect previous registry $e_notif"
 		reg_file=$(mktemp --tmpdir reg1.XXXXXXXX)
-		reg_move=$(mktemp --tmpdir reg2.XXXXXXXX)
-		reg_edit=$(mktemp --tmpdir reg3.XXXXXXXX)
-		reg_temp=$(mktemp --tmpdir reg4.XXXXXXXX)
 		reg_key='HKEY_CURRENT_USER'
 		if [ $from_config = 1 ]; then
 			if [ $(printf "$user_reg"| grep -c "\[.*\]") -gt 0 ]; then
 				extract_reg=$(cat $config_file| sed -n "/^user_reg='/,/'/p"| perl -pe "s|\n|*|g"| \
-				perl -pe "s|^(user_reg=')(.*)'\*$|\2|g,s|\*|\n|g,s|\\\|\\\\\\\|;p")
+				sed -E -n "s|^.*='(.*)'.*$|\1|;s|\*|\n|g;s|\\\|\\\\\\\|g;p")
 			else
 				extract_reg='[HKEY_CURRENT_USER\\Software\\Wine\\Direct3D]'
 			fi
 			echo -e "$extract_reg\n" > $reg_file
 			export reg_file=$reg_file
-			
+			user_reg=$(awk 'NF' $reg_file | tr '\n' '*' | sed -n "s/.$//;s|\\\|\\\\\\\|g;s|*|\\\n|g;p")
 		else
 			printf "[HKEY_CURRENT_USER\\\\Software\\\\Wine\\\\Direct3D]*\\\"<option_name>\\\"=\\\"<option_set>\\\"*" > $reg_file
-			user_reg=$(cat $reg_file)
+			user_reg=$(cat $reg_file| sed -n "s/.$//;s|\\\|\\\\\\\|g;s|*|\\\n|g;p")
 		fi
 		# convert temp reg file data in usable variables
 		reg_values=('StrictDrawOrdering' 'csmt' 'DirectDrawRenderer' 'OffscreenRenderingMode' \
@@ -1823,17 +1905,21 @@ $nf Check here the sections you would like to configure.$end"
 				if [ $(cat $reg_file| grep -c "$reg_var") -gt 0 ]; then
 					## check for 'dword' reg file line structure and convert to 'enable/disable' for UI.
 					if [ $(cat $reg_file| grep "$reg_var"| grep -c "dword") -eq 0 ]; then
-						reg_val=$(cat $reg_file| grep "$reg_var"| sed -n "s|^\"\($reg_var\)\"=\"\(.*\)\"|\2|p")
+						reg_val=$(cat $reg_file| grep "$reg_var"| \
+						sed -n "s|^\"\($reg_var\)\"=\"\(.*\)\"|\2|p")
 						## check for video memory reg value. Then, move 'unset' value if needed
 						if [ $reg_var == 'VideoMemorySize' ]; then
 							if [ $reg_val -gt 0 ]; then
 								x_mem=$reg_val
-								if [ $mem_set != $reg_val ]; then vid_mem="$mem_set#$vid_mem"; fi
+								if [ $mem_set != $reg_val ]; then vid_mem="$mem_set,$vid_mem"; fi
 							fi
 						fi
 					else
-						reg_val=$(cat $reg_file| grep "$reg_var"| sed -n "s|^\"\($reg_var\)\"=dword:\(.*\)|\2|p")
-						if [[ $reg_val == '00000000' ]]; then reg_val=('disabled'); else reg_val="enabled"; fi
+						reg_val=$(cat $reg_file| grep "$reg_var"| \
+						sed -n "s|^\"\($reg_var\)\"=dword:\(.*\)|\2|p")
+						if [[ $reg_val == '00000000' ]]; then
+							reg_val=('disabled'); else reg_val="enabled"
+						fi
 					fi
 				else
 					reg_val='unset'
@@ -1845,12 +1931,12 @@ $nf Check here the sections you would like to configure.$end"
 			local $reg_variable
 		done
 		if [ $_extended = 1 ]; then
+			echo -e "$g_notif >>>> start extended features $e_notif"
 			if [ -s $HOME/.winestarter/resources/mime-preset.lst ]; then
-				res_mime_preset=$(cat $HOME/.winestarter/resources/mime-preset.lst| tr '\n' '#'| \
-				sed -n "s/#$//p")
+				res_mime_preset=$(cat $HOME/.winestarter/resources/mime-preset.lst| tr '\n' ','| \
+				sed -n "s/,$//p")
 			fi
-			dn=28
-			reg_log=$bottle_prefix/dlls_reg.log
+			reg_log=$user_prefix/$bottle_prefix/dlls_reg.log
 			if [ -s $reg_log ]; then
 				unset dlls_var_list
 				dll_base_list=("$(cat $reg_log| cut -d',' -f2)")				
@@ -1867,9 +1953,7 @@ $nf Check here the sections you would like to configure.$end"
 				done
 				reg_dlls_field=$(echo "${reg_field_list[*]}"| sed -n "s/\ /\, /g;p")
 				reg_dll_msg="$vb\\Registered DLLs ($sys_elf):$end"
-				dlls_var_list=( "$[ $dn+1 ];;;;$reg_dll_msg $reg_dlls_field;LBL;;;" )
-				dn=$[ $dn+1 ]
-#				echo "${dlls_var_list[@]}"
+				dlls_var_list=( "'';;;$reg_dll_msg $reg_dlls_field;LBL;;" )
 			fi
 		fi
 			
@@ -1879,7 +1963,7 @@ $vb\\Set here the most usual registry Direct3D graphic options$end\\n\
 $vb\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_reg_manual0="$rb\\WARNNG:$end$vn Direct3D registry config is only usable under WindowsXP bottle$end"
 		w_reg_manual1="$vb Custom Direct3D registering (manual edit).$end"
-		w_reg_manual2="$rb\\WARNING:$end$vn Remove all custom (set by yourself) or empty lines$end"
+		w_reg_manual2="$rb\\WARNING:$end$vn Don't remove lines set with the menu above, they will be kept anyway.$end"
 		w_reg_manual3="$bf\\Unusual registry commands and options$end"
 
 		w_reg_2_title="$bf\\Associate mime type to local system$end"
@@ -1910,119 +1994,202 @@ $vb\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_reg_def_VID="$nf VideoMemorySize$end$vn  $mem_comment$end"
 #		w_reg_def_=""
 #		w_reg_def_=""
-#		w_reg_def_=""
-#		w_reg_def_=""
-#		w_reg_def_=""
-#		
-		
-		basic_sets=(
-		"1;;;;;LBL;;;"
-		"2;;;;$w_reg_manual0;LBL;;;"
-		"3;$StrictDrawOrdering;StrictDrawOrdering;;$w_reg_def_SDO;CB;enabled#disabled;;"
-		"4;$csmt;csmt;;$w_reg_def_CSMT;CB;enabled#disabled;;"
-		"5;$DirectDrawRenderer;DirectDrawRenderer;;$nf DirectDrawRenderer$end;CB;opengl#gdi;;"
-		"6;$OffscreenRenderingMode;OffscreenRenderingMode;;$nf OffscreenRenderingMode$end;CB;backbuffer#fbo;;"
-		"7;$RenderTargetLockMode;RenderTargetLockMode;;$nf RenderTargetLockMode$end;CB;auto#disabled#readdraw#readtex#texdraw#textex;;"
-		"8;$UseGLSL;UseGLSL;;$nf UseGLSL$end;CB;enabled#disabled;;"
-		"9;$CheckFloatConstants;CheckFloatConstants;;$nf CheckFloatConstants$end;CB;enabled#disabled;;"
-		"10;$Nonpower2Mode;Nonpower2Mode;;$nf Nonpower2Mode$end;CB;repack;;"
-		"11;$x_mem;VideoMemorySize;;$w_reg_def_VID;CBE;$vid_mem;;"
-		"12;;;;$w_reg_manual1;LBL;;;"
-		"13;;user_reg;;$w_reg_manual2;TXT;;;"
-		)
-		misc_sets=(
-		"14;;;;;LBL;;;"
-		"15;;;;$w_reg_2_title;LBL;;;"
-		"16;;;;$w_reg_2_tip0;LBL;;;"
-		"17;;;;$w_reg_2_warn0;LBL;;;"
-		"18;;;;$w_reg_2_set_tip1;LBL;;;"
-		"19;;;;$w_reg_2_set_tip0;LBL;;;"
-		"20;;;;$w_reg_2_setted;LBL;;;"
-		"21;unset;Selected_Files;;$w_reg_2_set_1;MFL;;;"
-		"22;unset;mime_preset;;$w_reg_2_set_2;CB;$res_mime_preset;;"
-		"23;;;;;LBL;;;"
-		"24;;;;$w_reg_manual3;LBL;;;"
-		"25;;;;$w_reg_3_tip0;LBL;;;"
-		"26;;;;$w_reg_3_warn0;LBL;;;"
-		"27;;;;;LBL;;;"
-		"28;;;;$w_reg_3_titl0;LBL;;;"
-		"${dlls_var_list[@]}"
-		"$[ $dn+1 ];unset;dll_reg_type;;$w_reg_3_cmd0;CB;register#unregister;;"
-		"$[ $dn+2 ];unset;dll_elf_type;;$w_reg_3_cmd1;CB;wine32#wine64#both;;"
-		"$[ $dn+3 ];$bottle_prefix/drive_c/windows;dll_file_list;;$w_reg_3_cmd2;MFL;;;"
-		)
-#		"$[ $dn+4 ];;;;;LBL;;;"
-#		"$[ $dn+5 ];;;;$w_reg_3_title;LBL;;;"
-#		"$[ $dn+6 ];unset;misc_reg_type;;$w_reg_3_cmd3;CB;user#system;;"
-#		"$[ $dn+7 ];;misc_reg_val;;$w_reg_3_cmd4;TXT;;;"
+
+		basic_sets="'';;;;LBL;;
+'';;;$w_reg_manual0;LBL;;
+$StrictDrawOrdering,enabled,disabled;StrictDrawOrdering;;$w_reg_def_SDO;CB;;
+$csmt,enabled,disabled;csmt;;$w_reg_def_CSMT;CB;;
+$DirectDrawRenderer,opengl,gdi;DirectDrawRenderer;;$nf DirectDrawRenderer$end;CB;;
+$OffscreenRenderingMode,backbuffer,fbo;OffscreenRenderingMode;;$nf OffscreenRenderingMode$end;CB;;
+$RenderTargetLockMode,auto,disabled,readdraw,readtex,texdraw,textex;RenderTargetLockMode;;$nf RenderTargetLockMode$end;CB;;
+$UseGLSL,enabled,disabled;UseGLSL;;$nf UseGLSL$end;CB;;
+$CheckFloatConstants,enabled,disabled;CheckFloatConstants;;$nf CheckFloatConstants$end;CB;;
+$Nonpower2Mode,repack;Nonpower2Mode;;$nf Nonpower2Mode$end;CB;;
+$x_mem,$vid_mem;VideoMemorySize;;$w_reg_def_VID;CBE;;
+'';;;$w_reg_manual1;LBL;;
+$user_reg;user_reg;;$w_reg_manual2;TXT;;"
+
+		misc_sets="'';;;;LBL;;
+'';;;$w_reg_2_title;LBL;;
+'';;;$w_reg_2_tip0;LBL;;
+'';;;$w_reg_2_warn0;LBL;;
+'';;;$w_reg_2_set_tip1;LBL;;
+'';;;$w_reg_2_set_tip0;LBL;;
+'';;;$w_reg_2_setted;LBL;;
+unset;Selected_Files;;$w_reg_2_set_1;MFL;;
+unset,$res_mime_preset;mime_preset;;$w_reg_2_set_2;CB;;
+'';;;;LBL;;
+'';;;$w_reg_manual3;LBL;;
+'';;;$w_reg_3_tip0;LBL;;
+'';;;$w_reg_3_warn0;LBL;;
+'';;;;LBL;;
+'';;;$w_reg_3_titl0;LBL;;
+${dlls_var_list[@]}
+unset,register,unregister;dll_reg_type;;$w_reg_3_cmd0;CB;;
+unset,wine32,wine64,both;dll_elf_type;;$w_reg_3_cmd1;CB;;
+$user_prefix/$bottle_prefix/drive_c/windows;dll_file_list;;$w_reg_3_cmd2;MFL;;"
+#		'';;;;LBL;;
+#		'';;;$w_reg_3_title;LBL;;
+#		unset,user,system;misc_reg_type;;$w_reg_3_cmd3;CB;;
+#		;misc_reg_val;;$w_reg_3_cmd4;TXT;;"
 #		${previous_reg_edit[@]}
-#		) 
-#		"$[ $dn+8 ];$edit_button;user_reg;;$w_reg_manual1;FBTN;;;"
-#		)
+#		$edit_button;user_reg;;$w_reg_manual1;FBTN;;"
+
 		if [ $_extended = 1 ]; then
-			basic_sets=(
-			"${basic_sets[@]}"
-			"${misc_sets[@]}"
-			)
+			basic_sets="${basic_sets[@]}
+${misc_sets[@]}"
 		fi
-		item_sep="#"
+		echo -e "$g_notif\n>>>> end fn_regedit_config ####\n$e_notif"
+		item_sep=","
 		# start form display
 		win_type=1
-		ignore_loop=0
-#		extended_opts="--height=450 --scroll"
-		extended_opts='--height=400 --scroll'
+		## focused field
+		focus=''
 		default_win_design
 		# create main window variables
 	}
-	fn_winetricks(){
-		unset basic_sets field_list chk_list track_list track_sets conf_dat
-		# change wintricks button color for first edition or missing, then confiug presets
-		w_tricks_bin=$(find /usr/{bin,local/bin} -name winetricks)
-		if [ -x "$w_tricks_bin" ]; then
-#		if [[ -x "/usr/bin/winetricks" || -x "/usr/local/bin/winetricks" ]]; then
-			if [[ -d $bottle_prefix || $from_config = 1 ]]; then
-				st=$vb
-				trk_action="bash $bash_opt \"$w_tricks_bin --gui &>/dev/null\""
-				## set default arch
-				if [ $wine_elf = 1 ]; then winearch='win64'; else winearch='win32'; fi
-				## set default env
-				export WINEARCH=$winearch
-				export WINEPREFIX="$bottle_prefix"
-				## now look for already setted and put them in a tmp file
-				trk_file=$(mktemp --tmpdir trk.XXXXXXXX)
-				$w_tricks_bin dlls list| grep "downloadable" >$trk_file
-				dlls_list=$(cat $trk_file| awk '{print $1}'| tr '\n' ',')
-			fi
-		else
-			w_tricks_trk_launch="$rb Winetricks not found, install it first.$end"
-			st=$gb
-			trk_action=''
-		fi
+	fn_make_tricks_menu(){
+		echo -e "$g_notif\n>>>> start fn_make_tricks_menu$e_notif"
+		prim_file=$(mktemp --tmpdir trk1.XXXXXXXX)
+		sec_file=$(mktemp --tmpdir trk2.XXXXXXXX)
+		menu_file=$(mktemp --tmpdir trk3.XXXXXXXX)
+		menu_conf=$(mktemp --tmpdir trk4.XXXXXXXX)
+		
+		unset prim_keywords sec_keywords
+		
+		## interpret temp file and create auto field for yad
+#		wtricks_list=$HOME/.winestarter/resources/wtricks_dlls.list
+#		wtricks_conf=$HOME/.winestarter/resources/wtricks_dlls.conf
 
-		# check already setted variables
-		track_list="d3dx9,d3dx10,d3dx11_42,d3dx11_43,xact_jun2010,vcrun6,vcrun2010,vcrun2012,vcrun2013,\
-		mfc40,mfc42,physx,corefonts,ie8,dotnet35,dotnet40"
-		track_list=$(printf "$track_list"|tr ',' '\ ')
+#		if ! [ -e $wtricks_list ]; then touch $wtricks_list; fi
+		## get a full regex of the winetricks dlls list output; then recompose later for good usage. 
+		regex='(.*[0-9a-z])(\s*[\ ]{3,})(\w*[[:alnum:]].*)\ \((\w+.*), ([0-9]{4}|[0-9]{4}-[0-9]{4})\) \[((.*),(.*)|(.*))\]'
+		prim_keywords=(
+			"Microsoft,Most common Microsoft dlls packages (often mandatory):,1"
+			"Nvidia,PHYSX Nvidia package: can be very useful to improve performances,0"
+			"Adobe,Adobe softwares and plugins packages,0"
+			"Apple,Apple softwares and plugins packages,0"
+			"other,Other useful packages,0")
+		sec_keywords=(
+			"d3dx;Direct3D packages\$rb ( DX11 only available for Win7 and above)\$end"
+			"xact;Xact is mostly needed for Direct3D 9 packages"
+			"gdi;GDI+, core Graphic Device Interface rendering"
+			"msxml;Microsoft XML Core Services"
+			"dotnet;NET packages for Wine Mono replacement"
+			"mfc;MS Foundation Class (mfc), often called by Visual C++ apps"
+			"vcrun;Visual C++ runtime libraries (vcrun)"
+			"vb[0-9]run;Visual Basic runtime libraries (vbrun)"
+			"ie[0-9];IE packs in case GECKO mozilla package failed to load HTML pages"
+			"rich;RichEdit Control"
+			"other;Other Microsoft dlls")
+		ifs=$IFS
+		IFS=$(echo -en "\n\b")
+		echo "basic_sets=\"" > $menu_conf 
+		echo "'';;;\$w_tricks_ald_list;LBL;;
+'';;;\$w_tricks_cache;LBL;;
+'';;;;LBL;;" > $menu_file
+#		real_n='3'
+		sed -ni "s/;/:/i;p" $w_tricks_dlls
+		if [ $(cat $w_tricks_dlls| grep -wc "(.*,.*,.*,.*,.*).*(.*)") -gt 0 ]; then
+			trk_recompose=$(cat $w_tricks_dlls| grep -w "(.*,.*,.*,.*,.*).*(.*)"| awk '{print $1}')
+			for _recompose in ${trk_recompose}; do
+				sed -ni "s/\($_recompose[ ]\+\) \(.*\) \((.*)\)\(.*\)\((.*)\)\(.*\)/\1 \2\4\5\6/i;p" \
+				$w_tricks_dlls
+			done
+		fi
+		## first isolate each part by keyword	
+		for _all in ${prim_keywords[@]}; do
+			_prim_key=$(printf "$_all"| cut -d',' -f1)
+			_prim_tip=$(printf "$_all"| cut -d',' -f2)
+			_sec_key=$(printf "$_all"| cut -d',' -f3)
+			printf "'';;;#$_prim_tip;LBL;;\n" >>$menu_file
+			## if keyword has secondary keywords
+			if [ $_sec_key -gt 0 ]; then
+				## decompose primary list to get secondary keywords
+				for _sec in ${sec_keywords[@]}; do
+					cat $w_tricks_dlls| grep -F "$_prim_key" > $prim_file
+					_sec_key=$(printf "$_sec"| cut -d';' -f1)
+					_sec_desc=$(printf "$_sec"| cut -d';' -f2)
+					printf "'';;;#$_sec_desc;LBL;;\n" >>$menu_file
+					if [[ $rev_key != '' ]]; then _sec_rev='|'$_sec_key; else _sec_rev=$_sec_key; fi
+					rev_key="$rev_key$_sec_rev"
+					if [[ $_sec_key == other ]]; then
+						cat $prim_file | egrep -v "\s*($rev_key)" > $sec_file
+					else
+						cat $prim_file | egrep "\s*^$_sec_key" > $sec_file
+					fi
+					compo_file=$sec_file
+					cat $compo_file| sed -E -n "s/$regex/\$\1;\1;; \3 (\1, \5)\8;CHK;;/p" \
+					>> $menu_file
+				done
+			else
+				if [[ $_prim_key == other ]]; then
+					cat $w_tricks_dlls | egrep -v "\s*($rev_prim)" > $prim_file
+					_prim_key=''
+				else
+					cat $w_tricks_dlls | egrep "\s*$_prim_key" > $prim_file
+				fi
+				compo_file=$prim_file
+				cat $compo_file| sed -E -n "s/$regex/\$\1;\1;; \3 (\1, \5)\8;CHK;;\1/p" \
+				>> $menu_file
+			fi
+			if [[ $rev_prim != '' ]]; then _prim_rev='|'$_prim_key; else _prim_rev=$_prim_key; fi
+			rev_prim="$rev_prim$_prim_rev"
+		done
+		
+		echo "'';;;;LBL;;
+'';;;\$w_tricks_winetricks;LBL;;
+\$trk_action;;;\$w_tricks_trk_launch,\$img_tricks_bt;FBTN;;" >> $menu_file
+		cat $menu_file >> $menu_conf
+		## Insert span values in description fields
+		sed -E -ni "s/^(.*;;;)#(\w*[A-Z].*)(;LBL)(.*)$/\1\$vb\\\\\\\\\\2\$end\3\4/i;p" \
+		$menu_conf
+		if [ $(cat $menu_conf| grep -Fc "cached") -gt 0 ]; then
+			sed -E -ni "s/cached/*/gi;p" $menu_conf
+		fi
+		echo "\"" >> $menu_conf
+		
+		IFS=$ifs
+		echo -e "$g_notif\n>>>> end fn_make_tricks_menu $e_notif"
+	}
+	fn_winetricks(){
+		echo -e "$g_notif\n>>>> start fn_winetricks $e_notif"
+		unset basic_sets track_list track_sets conf_dat
+		unset prim_keywords sec_keywords
+		w_tricks_dlls=$HOME/.winestarter/resources/tricks_dlls.txt
+		
+		track_list=$(cat "$w_tricks_dlls"| awk '{print $1}')
+		winetricks_log=$user_prefix/$bottle_prefix/winetricks.log
 		if [ $from_config = 1 ]; then
-			track_sets=$(printf "$w_tricks_list"|sed -n "s/^.*=\"//;s/\"$//g;p"|tr ',' '\ ')
+			if [ -s $winetricks_log ]; then
+				tricks_log=$(mktemp --tmpdir tricks.XXXXXXXX)
+				w_tricks_reserve=$scpt_dir/resources/tricks_workaround.txt
+				w_filters=$(cat $w_tricks_reserve| tr '\n' '|')'w_workaround'
+				cat $winetricks_log| egrep -v "$w_filters" >$tricks_log
+				track_sets=$(cat $tricks_log| tr '\n' ' ')
+#				track_sets=$(cat $tricks_log| tr '\n' ' ')
+			else
+				track_sets=$(printf "$w_tricks_list"|sed -n "s/^.*=\"//;s/\"$//g;p"|tr ',' '\ ')
+			fi
 		fi
 		for trk_set in ${track_list[@]}; do
 			if [ $from_config = 1 ]; then
-				conf_set=$(printf "${track_sets[@]}"| grep -o "$trk_set")
-				if [[ $conf_set != '' ]]; then
-					trk_box=1
-				else
-					trk_box=0
-				fi
+#				conf_set=$(printf "${track_sets[@]}"| egrep -oc "$trk_set[ ]?")
+				trk_box=$(printf "${track_sets[@]}"| egrep -wc "\s*$trk_set")
+#				if [ $conf_set -gt 0 ]; then
+#					trk_box=1
+#				else
+#					trk_box=0
+#				fi
 			else
 				trk_box=0
 			fi
 			conf_dat+=("$trk_set=$trk_box")
 		done
+#		exit 0
 		# create a list including extra install dlls from winetricks list
 		if [ $from_config = 1 ]; then
 			for trk_var in ${track_sets[@]}; do
-#				if [ $(printf "${track_list}"| grep -c "$trk_var") -eq 0 ];then
 				if [ $(printf "${track_list}"| grep -c "$trk_var") -eq 0 ];then
 				extra_sets+=("$trk_var")
 				fi
@@ -2031,88 +2198,95 @@ $vb\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		local "${conf_dat[@]}"
 		# display already installed packages
 		if [ $(printf "$w_tricks_list"| grep -c .) -gt 0 ]; then
-			already_there=$(printf "$w_tricks_list"| sed -n "s/,/, /g;p")
+			if [ -s $tricks_log && $(cat $tricks_log| grep -c .) -gt 0 ]; then
+#			if [ -s $tricks_log ]; then
+#				already_there=$(echo "${track_sets[*]}"| sed -n "s/ /, /g;s/, $//p")
+				already_there=$(cat $tricks_log| tr '\n' '*'| sed -n "s/[*]\{1,2\}$//;s/*/, /g;p")
+			else
+				already_there=$(echo "$w_tricks_list"| sed -n "s/,/, /g;p")
+			fi
 		else
 			already_there='none'
 		fi
 		# window messages
 		w_text="$bf Winetricks common apps and DLLs$end\\n$vb\\Set the most common Windows packages available in Winetricks needed by your app.$end"
-		w_tricks_cm_packs="$vb\\Most common packages (usualy mandatory):$end"
-		w_tricks_cm_d3d="$nf Direct3D packages$end$rb ( DX11 only available for Win7 and above)$end"
-		w_tricks_cm_3d9="Direct3D version 9"
-		w_tricks_cm_3d10="Direct3D version 10"
-		w_tricks_cm_3d11_1="Direct3D version 11 (42)"
-		w_tricks_cm_3d11_2="Direct3D version 11 (43)"
-		w_tricks_cm_xact="$vb\\Xact is mostly needed for Direct3D 9 packages$end"
-		w_tricks_cm_vcruntime="$vb\\Visual C++ runtime libraries (vcrun)$end"
-		w_tricks_cm_vcr6="Visual C++ runtime v.6 (vcrun6)"
-		w_tricks_cm_vcr10="Visual C++ runtime 2010"
-		w_tricks_cm_vcr12="Visual C++ runtime 2012"
-		w_tricks_cm_vcr13="Visual C++ runtime 2013"
-		w_tricks_cm_vc_found="$vb\\MS Foundation Class (mfc), often called by Visual C++ apps$end"
-		w_tricks_cm_m40="mfc40 library"
-		w_tricks_cm_m42="mfc42 library"
-		w_tricks_cm_phy="$vb\\PHYSX Nvidia package: can be very useful to improve  performance$end"
-		w_tricks_cm_font="$vb\\Windows full corefonts package: improve Wine fonts display (very useful)$end"
-		w_tricks_alt_packs="$vb\\Alternative packages (needed in particular cases):$end"
-		w_tricks_alt_ie8="IE8 pack in case GECKO mozilla package failed to load HTML pages"
-		w_tricks_alt_dot3="Dot NET version 3.5"
-		w_tricks_alt_dot4="Dot NET version 4.0"
 		w_tricks_alt_dot4_tip="$nf\\Note$end: .NET 4.x need an extra additional packges for clean install. Follow Winetrciks instruction during install without stopping the process."
 		w_tricks_winetricks="$bf More from Winetricks$end"
 		w_tricks_trk_launch="$vb Click to launch Winetricks separatly$end"
 		w_tricks_trk_dll="$vb\\or launch Winetricks$end $nf(one or more packages)$end"
 		w_tricks_trk_dlls="$vb Add an additional DLL component$end"
 		w_tricks_ald_list="$vb\\Already installed:$end $already_there"
-#		exit 0
+		w_tricks_cache="$nf\\Note:$end All packeges marked with a \* are already cached."
+		fn_make_tricks_menu
+		ifs=$IFS
+		IFS=$(echo -en "\n\b")
 		# var list sets
-		basic_sets=(
-		"1;;;;$w_tricks_ald_list;LBL;;"
-		"2;;;;;LBL;;;"
-		"6;;;;$w_tricks_cm_packs;LBL;;;"
-		"4;;;;$w_tricks_cm_d3d;LBL;;;"
-		"5;$d3dx9;d3dx9;;$w_tricks_cm_3d9;CHK;;d3dx9;"
-		"6;$d3dx10;d3dx10;;$w_tricks_cm_3d10;CHK;;d3dx10;"
-		"7;$d3dx11_42;d3dx11_42;;$w_tricks_cm_3d11_1;CHK;;d3dx11_42;"
-		"8;$d3dx11_43;d3dx11_43;;$w_tricks_cm_3d11_2;CHK;;d3dx11_43;"
-		"9;;;;$w_tricks_cm_xact;LBL;;;"
-		"10;$xact_jun2010;xact_jun2010;;xact_jun2010;CHK;;xact_jun2010;"
-		"11;;;;$w_tricks_cm_vcruntime;LBL;;;"
-		"12;$vcrun6;vcrun6;;$w_tricks_cm_vcr6;CHK;;vcrun6;"
-		"13;$vcrun2010;vcrun2010;;$w_tricks_cm_vcr10;CHK;;vcrun2010;"
-		"14;$vcrun2012;vcrun2012;;$w_tricks_cm_vcr12;CHK;;vcrun2012;"
-		"15;$vcrun2013;vcrun2013;;$w_tricks_cm_vcr13;CHK;;vcrun2013;"
-		"16;;;;$w_tricks_cm_vc_found;LBL;;;"
-		"17;$mfc40;mfc40;;$w_tricks_cm_m40;CHK;;mfc40;"
-		"18;$mfc42;mfc42;;$w_tricks_cm_m42;CHK;;mfc42;"
-		"19;;;;$w_tricks_cm_phy;LBL;;;"
-		"20;$physx;physx;;Nvidia PhysX;CHK;physx;;"
-		"21;;;;$w_tricks_cm_font;LBL;;;"
-		"22;$corefonts;corefonts;;Windows core fonts;CHK;;corefonts;"
-		"23;;;;$w_tricks_alt_packs;LBL;;;"
-		"24;;;;;LBL;;;"
-		"25;$ie8;ie8;;$w_tricks_alt_ie8;CHK;;;"
-		"26;$dotnet35;dotnet35;;$w_tricks_alt_dot3;CHK;;;"
-		"27;$dotnet40;dotnet40;;$w_tricks_alt_dot4;CHK;;;"
-		"28;;;;$w_tricks_alt_dot4_tip;LBL;;;"
-		"29;;;;;LBL;;;"
-		"30;;;;$w_tricks_winetricks;LBL;;;"
-		"31;^unset;plus_dll;;$w_tricks_trk_dlls;CB;$dlls_list;;"
-		"32;;;;$w_tricks_trk_dll;LBL;;;"
-		"33;$trk_action;;;$w_tricks_trk_launch,$img_tricks_bt;FBTN;;;"
-		)
+		trk_action="bash $bash_opt \"$w_tricks_bin --gui &>/dev/null\""
+		. $menu_conf
+		echo -e "$g_notif\n>>>> end fn_winetricks ####\n$e_notif"
+		IFS=$ifs
 		item_sep=","
 		# start form display
 		win_type=1
-		ignore_loop=0
-#		extended_opts='--scroll --columns=2 --output-by-row'
-#		main_opts='--height=500 --vscroll-policy=allways'
-		extended_opts='--height=400 --scroll'
+		## focused field
+		focus=''
+#		exit 0
 		default_win_design
 		# window style and function
 	}
 	fn_install_soft(){
-		unset basic_sets misc_sets chk_list field_list
+		echo -e "$g_notif\n>>>> start fn_install_soft ####\n$e_notif"
+		unset  basic_sets misc_sets track_list
+		
+		pkgs_log=$user_prefix/$bottle_prefix/packages.log
+		extra_log=$user_prefix/$bottle_prefix/extra_pcks.log
+		track_list=('w_install_exe' 'w_exe_path' 'w_tricks_opts' 'w_more_pkgs' 'w_install_zip' 'w_install_dir' 'w_download_dir' 'w_extra_script')
+
+		for _var in ${track_list[@]}; do
+			eval _listed='$'$_var
+			case $_var in
+				'w_install_exe') w_install_exe=0 ;;
+				'w_tricks_opts') if [[ $_listed != '' ]]; then local $_var=1; else local $_var=0; fi ;;
+				'w_exe_path') if [ -s $pkgs_log ]; then
+						exe_log=$(cat $pkgs_log| tr '\n' ','| sed -n "s/,$//p")
+						if [ $(cat $pkgs_log| grep -c "$_listed") -gt 0 ]; then _listed="$HOME/"; fi
+					else
+						exe_log='none'
+						if ! [[ $_listed ]]; then _listed="$HOME/"; fi
+					fi
+					local $_var="$_listed" ;;
+				'w_more_pkgs')
+					if [[ $_listed ]]; then
+						if [ $(cat $config_file| sed -n "/^w_more_pkgs/,/'$/p"| grep -c . ) -gt 1 ]; then
+							_listed=$(cat $config_file| sed -n "/^w_more_pkgs/,/'$/p"| tr '\n' ','| \
+							sed -En "s/^.*='(.*)',/\1/p")
+#							_listed=$(echo -e "$_multiline"| tr)
+#							local "$_listed"
+						fi
+					fi
+					if [ -s $extra_log ]; then
+						more_log=$(cat $extra_log| tr '\n' ',')
+						if [[ $_listed ]]; then
+							more_list=( $(echo -e "$_listed"| tr ',' '\n') )
+							for _more in ${more_list[*]}; do
+								if [ $(cat $extra_log| grep -c "$_more") -eq 0 ]; then
+									_mod_list+=("$_more,")
+								fi
+							done
+							_listed=$(echo "${_mod_list[@]}"| sed -n "s/,$//g;p")
+						else
+							_listed="$HOME/"
+						fi
+					else
+						more_log='none'
+						if ! [[ $_listed ]]; then _listed="$HOME/"; fi
+					fi
+					local $_var="$_listed" ;;
+				'w_download_dir') local $_var=$XDG_DOWNLOAD_DIR/ ;;
+				*) local $_var="$HOME/" ;;
+			esac
+		done
+		
 		# window messages
 		w_text="$bf\\Software install$end\\n\
 $vb\\This feature allow you to install a software at WineStarter launch$end\\n\
@@ -2124,6 +2298,8 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		w_tricks_trk_opt0="option (--no-isolate): force Winetricks to not create its own prefix"
 		w_tricks_trk_tip0="$vb\\User prefix and wine bottle have to be already set in Wine tab.$end"
 		w_tricks_trk_tip1="$nf\\Note:$end Steam Winetricks package is usualy broken, download it by your own if needed."
+		w_tricks_info0="$nf\\Already installed:$end $exe_log."
+		w_tricks_info1="$nf\\Already installed:$end $more_log."
 		w_more_pkgs0="$bf\\More packages$end"
 		w_more_pkgs1="$vb\\If you have to install associated package or other dlls from separate source and not available in Winetricks, select them here$end"
 		w_more_pkgs2="$nf Select one or more$end"
@@ -2133,118 +2309,65 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		w_more_zip3="$nf Select the compressed file to install$end"
 		w_more_zip4="$nf Select or create the target directory$end"
 		w_more_dl0="$bf\\Download directory option$end"
-		w_more_dl1="$vb\\By default, download will be stocked in user default dowload directory. You can set a different one here.$end"
+		w_more_dl1="$vb\\By default, download will be stored in user default dowload directory. You can set a different one here.$end"
 		w_more_dl2="$nf Select dowload directory$end"
 		w_more_scpt0="$bf\\User script$end"
 		w_more_scpt1="$vb\\In very rare case, some users wish to add script to their app directory (updator,log collector, etc), this is the place to do so.$end"
 		w_more_scpt2="$rb\\WARNING$end:$nf Choose wisely, this is at your own risk.$end"
 		w_more_scpt3="$nf Select a script (bash, python, etc) $end"
-		
-		if [ $from_config = 0 ]||[[ $w_install_exe == '' ]]; then w_install_exe=0; fi
-		if [[ $w_tricks_opts != '' ]]; then w_tricks_opts=1; else w_tricks_opts=0; fi
-		if [ "$w_exe_path" == '' ]; then w_exe_path="$HOME/"; fi
-		
-		conf_old=$(mktemp --tmpdir pkg0.XXXXXXXX)
-		conf_edit=$(mktemp --tmpdir pkg1.XXXXXXXX)
-		conf_temp=$(mktemp --tmpdir pkg2.XXXXXXXX)
-		
-		if [ "$w_more_pkgs" == '' ]; then
-			w_more_pkgs="$HOME/"
-			old_val=0
-		else
-#			if [ $(cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| grep -c .) -gt 0 ]; then
-			if [ $(cat $config_file|sed -n "/^w_more_pkgs='.*'/p"| grep -c .) -lt 1 ]; then
-				cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' ','| \
-				sed -n "s/w_more_pkgs=//;s/'//g;s/,$//p" > $conf_old
-				local w_more_pkgs=$(cat $conf_old)
-#				cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' ','| \
-#				sed -n "s/'//g;s/,$//p" > $conf_old
-				old_val=2
-			else
-				printf "$w_more_pkgs" > $conf_old
-				local w_more_pkgs=$(cat $conf_old)
-				old_val=1
-			fi
-#			old_val_multi=$(cat $config_file|sed -n "/w_more_pkgs='/,/'/p"| grep -c .)
-#			old_val=$(cat $config_file|sed -n "/w_more_pkgs='.*'/p"| grep -c .)
-#			if [ $(cat $config_file| grep -c "$w_more_pkgs") -gt 1 ]; then
-#			if [ $(cat $conf_old| grep -c .) -eq 1 ]; then
-#				local w_more_pkgs=$(cat $conf_old)
-#				old_val=1
-#			if [ $(cat $config_file|sed -n "/w_more_pkgs='.*'/p"| grep -c .) -le 1 ]; then
-#				local $(cat $config_file|sed -n "/^w_more_pkgs='.*'/p"| sed -n "s/'//g;p")
-#				old_val=0
-#			else
-#				local $(cat $conf_old| tr '\n' '#')
-#				cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' '#'| \
-#				sed -n "s/'//g;s/#$//p" > $conf_old
-#				local $(cat $config_file|sed -n "/^w_more_pkgs='/,/'/p"| tr '\n' '#'| \
-#				sed -n "s/'//g;s/#$//p")
-#				old_val=2
-#			fi
-#			exit 0
-#			old_val="$w_more_pkgs"
-#			w_more_pkgs=$(printf "$w_more_pkgs"|tr '\n' '#')
-		fi
-		if [ "$w_install_zip" == '' ]; then w_install_zip="$HOME/";	fi
-		if [ "$w_install_dir" == '' ]; then w_install_dir="$HOME/";	fi
-		if [ "$w_extra_script" == '' ]; then w_extra_script="$HOME/"; fi
-		if [ "$w_download_dir" == '' ]; then w_download_dir="$HOME/"; fi
-		
+			
 		pre_list=0
 		# var list sets
-		basic_sets=(
-		"1;;;;;LBL;;;"
-		"2;;;;$w_tricks_trk_tip1;LBL;;;"
-		"3;;;;$w_tricks_trk_tip0;LBL;;;"
-		"4;;;;;LBL;;;"
-		"5;$w_install_exe;w_install_exe;;$w_tricks_trk_exe;CHK;;;"
-		"6;;;;;LBL;;;"
-		"7;$w_exe_path;w_exe_path;;$w_tricks_ins_exe;MFL;;_w_soft;"
-		"8;;;;;LBL;;;"
-		"9;;;;$w_tricks_trk_opt;LBL;;;"
-		"10;$w_tricks_opts;w_tricks_opts;;$w_tricks_trk_opt0;CHK;;;"
-		"11;;;;;LBL;;;"
-		"12;;;;$w_more_pkgs0;LBL;;;"
-		"13;;;;$w_more_pkgs1;LBL;;;"
-		"14;$w_more_pkgs;w_more_pkgs;;$w_more_pkgs2;MFL;;;"
-		"15;;;;;LBL;;;"
-		"16;;;;$w_more_zip0;LBL;;;"
-		"17;;;;$w_more_zip1;LBL;;;"
-		"18;;;;$w_more_zip2;LBL;;;"
-		"19;$w_install_zip;w_install_zip;;$w_more_zip3;MFL;;;"
-		"20;$w_install_dir;w_install_dir;;$w_more_zip4;CDIR;;;"
-		"21;;;;;LBL;;;"
-		"22;;;;$w_more_dl0;LBL;;;"
-		"23;;;;$w_more_dl1;LBL;;;"
-		"24;$w_download_dir;w_download_dir;;$w_more_dl2;CDIR;;;"
-		)
-		misc_sets=(
-		"25;;;;;LBL;;;"
-		"26;;;;$w_more_scpt0;LBL;;;"
-		"27;;;;$w_more_scpt1;LBL;;;"
-		"28;;;;$w_more_scpt2;LBL;;;"
-		"29;$w_extra_script;w_extra_script;;$w_more_scpt3;FL;;;"
-		)
+		basic_sets="'';;;;LBL;;
+'';;;$w_tricks_trk_tip1;LBL;;
+'';;;$w_tricks_trk_tip0;LBL;;
+'';;;;LBL;;
+$w_install_exe;w_install_exe;;$w_tricks_trk_exe;CHK;;
+'';;;;LBL;;
+'';;;$w_tricks_info0;LBL;;
+$w_exe_path;w_exe_path;;$w_tricks_ins_exe;MFL;;_w_soft
+'';;;;LBL;;
+'';;;$w_tricks_trk_opt;LBL;;
+$w_tricks_opts;w_tricks_opts;;$w_tricks_trk_opt0;CHK;;
+'';;;;LBL;;
+'';;;$w_more_pkgs0;LBL;;
+'';;;$w_more_pkgs1;LBL;;
+'';;;$w_tricks_info1;LBL;;
+$w_more_pkgs;w_more_pkgs;;$w_more_pkgs2;MFL;;
+'';;;;LBL;;
+'';;;$w_more_zip0;LBL;;
+'';;;$w_more_zip1;LBL;;
+'';;;$w_more_zip2;LBL;;
+$w_install_zip;w_install_zip;;$w_more_zip3;MFL;;
+$w_install_dir;w_install_dir;;$w_more_zip4;CDIR;;
+'';;;;LBL;;
+'';;;$w_more_dl0;LBL;;
+'';;;$w_more_dl1;LBL;;
+$w_download_dir;w_download_dir;;$w_more_dl2;CDIR;;"
+
+		misc_sets="'';;;;LBL;;
+'';;;$w_more_scpt0;LBL;;
+'';;;$w_more_scpt1;LBL;;
+'';;;$w_more_scpt2;LBL;;
+$w_extra_script;w_extra_script;;$w_more_scpt3;FL;;"
 		if [ $_extended = 1 ]; then
-		basic_sets=(
-		"${basic_sets[@]}"
-		"${misc_sets[@]}"
-		)
+		basic_sets="${basic_sets[@]}
+${misc_sets[@]}"
 		fi
+		echo -e "$g_notif\n>>>> end fn_install_soft ####\n$e_notif"
 		item_sep=","
-#		echo "${basic_sets[@]}"
-#		exit 0
 		# start form display
 		win_type=1
+		## focused field
+		focus=''
 		default_win_design
 		# window style and function
 	}
 	fn_nvidia_config_1(){
-		unset basic_sets field_list chk_list conf_dat track_list #track_sets
+		echo -e "$g_notif\n>>>> start fn_nvidia_config_1 ####\n$e_notif"
+		unset basic_sets track_list #
 		# window messages
 		w_nv_tip0="$vb All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
-#		w_nv_fsaamod0="$vb Full Scene Anti Aliasing, from 0 (off) to 5 (16x) : (1) 2x (2xMS)[1], (2) 4x (4xMS)[5], (3) 8x (4xSS/2xMS)[9], (4) 8x (8xMS)[10], (5) 16x (4xSS/4xMS)[11]$end"
 		w_nv_fsaamod0="$vb Full Scene Anti Aliasing, from 0 (off) to 5 (16x) : (1) 2x (2xMS), (2) 4x (4xMS), (3) 8x (4xSS/2xMS), (4) 8x (8xMS), (5) 16x (4xSS/4xMS)$end"
 		w_nv_fsaactrl0="$vb If set, FSAA comes with 2 others arguments:$end"
 		w_nv_fsaactrl1="$nf Full controlled, enhanced if using multisample or ignored (manage by nvidia-setting)$end"
@@ -2257,21 +2380,17 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		# check already setted variables
 		if [ $from_config = 1 ]; then
 			if [ $__GL_FSAA_MODE -gt 0 ]; then
-				if [ $__GL_FSAA_MODE = 5 ]; then __GL_FSAA_MODE=2
-				elif [ $__GL_FSAA_MODE = 9 ]; then __GL_FSAA_MODE=3
-				elif [ $__GL_FSAA_MODE = 10 ]; then __GL_FSAA_MODE=4
-				elif [ $__GL_FSAA_MODE = 11 ]; then __GL_FSAA_MODE=5
-				fi
-			fi
-			if [ $__GL_FSAA_MODE -gt 0 ]; then
+				case $__GL_FSAA_MODE in
+					'5') __GL_FSAA_MODE=2;;
+					'9') __GL_FSAA_MODE=3;;
+					'10') __GL_FSAA_MODE=4;;
+					'11') __GL_FSAA_MODE=5;;
+				esac
 				if [ $__GL_FSAAAppControlled = 0 ]&&[ $__GL_FSAAAppEnhanced = 0 ]; then
-#					__GL_FSAA_CTRL=1
 					__GL_FSAA_CTRL='full control'
 				elif [ $__GL_FSAAAppControlled = 0 ]&&[ $__GL_FSAAAppEnhanced = 1 ]; then
-#					__GL_FSAA_CTRL=2
 					__GL_FSAA_CTRL='enhanced'
 				elif [ $__GL_FSAAAppControlled = 1 ]&&[ $__GL_FSAAAppEnhanced = 1 ]; then
-#					__GL_FSAA_CTRL=3
 					__GL_FSAA_CTRL='ignored'
 				else
 					__GL_FSAA_CTRL='unset'
@@ -2279,11 +2398,10 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 			else
 				__GL_FSAA_CTRL='unset'
 			fi
-			
 		else
 			__GL_FSAA_CTRL='unset'
 		fi
-		#export __GL_OpenGLImageSettings=2
+		
 		track_list=(
 		"__GL_FSAA_MODE"
 		"__GL_ALLOW_FXAA_USAGE"
@@ -2292,48 +2410,44 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		"__GL_THREADED_OPTIMIZATIONS"
 		"__GL_OpenGLImageSettings")
 		for trk_set in ${track_list[@]}; do
-			unset conf_dat
-			if [ $from_config = 1 ]; then
-				trk_box=$(cat $config_file| grep "$trk_set"| sed -n "s/^\(.*=\)\(.*\)$/\2/p")
-			fi
-			if [ $from_config = 0 ]||[[ $trk_box == '' ]]; then
-				trk_box='unset'
-				conf_dat+=("$trk_set=$trk_box")
-				local $conf_dat	
+			eval trk_field='$'$trk_set
+			if [[ $trk_field == '' ]]; then
+				local $trk_set='unset'
 			fi
 		done
 		# var list sets
 		w_title="Wine Start Config"
 		w_text="$bf Configure Nvidia OpenGL options$end"
-		basic_sets=(
-		"1;;;;$w_nv_tip0;LBL;;;"
-		"2;;;;;LBL;;;"
-		"3;;;;$w_nv_fsaamod0;LBL;;;"
-		"4;$__GL_FSAA_MODE;__GL_FSAA_MODE;;$nf Full scene antialiasing$end;NUM;0..5;FSAA_mod;"
-		"5;;;;$w_nv_fsaactrl0;LBL;;;"
-		"6;;;;$w_nv_fsaactrl1;LBL;;;"
-		"7;$__GL_FSAA_CTRL;__GL_FSAAA_CTRL;;$nf FSAA control type$end;CB;full control,enhanced,ignored;FSAA_ctrl;"
-		"8;;;;$w_nv_fxaa0;LBL;;;"
-		"9;$__GL_ALLOW_FXAA_USAGE;__GL_ALLOW_FXAA_USAGE;;$nf Fast approximate antialiasing (FXAA)\t$end;CB;0,1;FXAA_use;"
-		"10;;;;$w_nv_aniso;LBL;;;"
-		"11;$__GL_LOG_MAX_ANISO;__GL_LOG_MAX_ANISO;;$nf Anisotropic texture filtering$end;NUM;0..4;ANISO;"
-		"12;;;;$w_nv_vblank;LBL;;;"
-		"13;$__GL_SYNC_TO_VBLANK;__GL_SYNC_TO_VBLANK;;$nf Sync to VBLANK$end;CB;0,1;_VBLK;"
-		"14;;;;$w_nv_thread;LBL;;;"
-		"15;$__GL_THREADED_OPTIMIZATIONS;__GL_THREADED_OPTIMIZATIONS;;$nf Preload libpthread$end;CB;1;PTHREAD;"
-		"16;;;;$w_nv_perf;LBL;;;"
-		"17;$__GL_OpenGLImageSettings;__GL_OpenGLImageSettings;;$nf Nvidia graphic Performance set$end;CB;1,2,3;PERF;"
-		)
+		basic_sets="'';;;$w_nv_tip0;LBL;;
+'';;;;LBL;;
+'';;;$w_nv_fsaamod0;LBL;;
+$__GL_FSAA_MODE,0..5;__GL_FSAA_MODE;;$nf Full scene antialiasing$end;NUM;;
+'';;;$w_nv_fsaactrl0;LBL;;
+'';;;$w_nv_fsaactrl1;LBL;;
+$__GL_FSAA_CTRL,full control,enhanced,ignored;__GL_FSAAA_CTRL;;$nf FSAA control type$end;CB;;
+'';;;$w_nv_fxaa0;LBL;;
+$__GL_ALLOW_FXAA_USAGE,0,1;__GL_ALLOW_FXAA_USAGE;;$nf Fast approximate antialiasing (FXAA)\t$end;CB;;
+'';;;$w_nv_aniso;LBL;;
+$__GL_LOG_MAX_ANISO,0..4;__GL_LOG_MAX_ANISO;;$nf Anisotropic texture filtering$end;NUM;;
+'';;;$w_nv_vblank;LBL;;
+$__GL_SYNC_TO_VBLANK,0,1;__GL_SYNC_TO_VBLANK;;$nf Sync to VBLANK$end;CB;;
+'';;;$w_nv_thread;LBL;;
+$__GL_THREADED_OPTIMIZATIONS,0,1;__GL_THREADED_OPTIMIZATIONS;;$nf Preload libpthread$end;CB;;
+'';;;$w_nv_perf;LBL;;
+$__GL_OpenGLImageSettings,1,2,3;__GL_OpenGLImageSettings;;$nf Nvidia graphic Performance set$end;CB;;"
+		echo -e "$g_notif\n>>>> end fn_nvidia_config_1 ####\n$e_notif"
+		
 		item_sep=","
 		# start form display
 		win_type=1
-		ignore_loop=0
-		extended_opts='--height=400 --scroll'
+		## focused field
+		focus=''
 		default_win_design
 		# window style and function
 	}
 	fn_nvidia_config_2(){
-		unset basic_sets field_list chk_list track_list conf_dat #track_sets
+		echo -e "$g_notif\n>>>> start fn_nvidia_config_2 ####\n$e_notif"
+		unset basic_sets track_list  #
 		# window messages
 		w_nv_tip0="$vb All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
 		w_nv_display="$vb VBLANK can't bet set separatly when using multi screen, choose one here if needed:$end"
@@ -2354,46 +2468,42 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		"__GL_GSYNC_ALLOWED"
 		"__GL_IGNORE_GLSL_EXT_REQS")
 		for trk_set in ${track_list[@]}; do
-			unset conf_dat
-			if [ $from_config = 1 ]; then
-				trk_box=$(cat $config_file| grep "$trk_set"| sed -n "s/^\(.*=\)\(.*\)$/\2/p")
-			fi
-			if [ $from_config = 0 ]||[[ $trk_box == '' ]]; then
-				trk_box='unset'
-				conf_dat+=("$trk_set=$trk_box")
-				local $conf_dat	
-			fi
+			eval trk_field='$'$trk_set
+			if [[ $trk_field == '' ]]; then
+				local $trk_set='unset'
+			fi	
 		done
 		# var list sets
 		w_title="Wine Start Config"
 		w_text="$bf Configure extended Nvidia display options$end"
-		basic_sets=(
-		"1;;;;$w_nv_tip0;LBL;;;"
-		"2;;;;;LBL;;;"
-		"3;;;;$w_nv_display;LBL;;;"
-		"4;$__GL_SYNC_DISPLAY_DEVICE;__GL_SYNC_DISPLAY_DEVICE;;$nf VSync display$end;CB;$monitors_list;_SYNC;"
-		"5;;;;$w_nv_fbconfig;LBL;;;"
-		"6;$__GL_SORT_FBCONFIGS;__GL_SORT_FBCONFIGS;;$nf Xorg FBconfig$end;CB;0,1;FBconf;"
-		"7;;;;$w_nv_yield0;LBL;;;"
-		"8;;;;$w_nv_yield1;LBL;;;"
-		"9;$__GL_YIELD;__GL_YIELD;;$nf Window yield:$end;CB;normal,NOTHING,USLEEP;yield;"
-		"10;;;;$w_nv_unofficial0;LBL;;;"
-		"11;$__GL_ALLOW_UNOFFICIAL_PROTOCOL;__GL_ALLOW_UNOFFICIAL_PROTOCOL;;$nf Unofficial GL implementation$end\t\t\t;CB;0,1;UNOF_proto;"
-		"12;;;;$w_nv_gsync;LBL;;;"
-		"13;$__GL_GSYNC_ALLOWED;__GL_GSYNC_ALLOWED;;$nf G-Sync$end;CB;0,1;GSYNC;"
-		"14;;;;$w_nv_glsl0;LBL;;;"
-		"15;$__GL_IGNORE_GLSL_EXT_REQS;__GL_IGNORE_GLSL_EXT_REQS;;$nf Ignore GLGS extension check$end;CB;0,1;GLSL_rec;"
-		)
+		basic_sets="'';;;$w_nv_tip0;LBL;;
+'';;;;LBL;;
+'';;;$w_nv_display;LBL;;
+$__GL_SYNC_DISPLAY_DEVICE,$monitors_list;__GL_SYNC_DISPLAY_DEVICE;;$nf VSync display$end;CB;;
+'';;;$w_nv_fbconfig;LBL;;
+$__GL_SORT_FBCONFIGS,0,1;__GL_SORT_FBCONFIGS;;$nf Xorg FBconfig$end;CB;;
+'';;;$w_nv_yield0;LBL;;
+'';;;$w_nv_yield1;LBL;;
+$__GL_YIELD,normal,NOTHING,USLEEP;__GL_YIELD;;$nf Window yield:$end;CB;;
+'';;;$w_nv_unofficial0;LBL;;
+$__GL_ALLOW_UNOFFICIAL_PROTOCOL,0,1;__GL_ALLOW_UNOFFICIAL_PROTOCOL;;$nf Unofficial OpenGL implementation$end\t\t\t;CB;;
+'';;;$w_nv_gsync;LBL;;
+$__GL_GSYNC_ALLOWED,0,1;__GL_GSYNC_ALLOWED;;$nf G-Sync$end;CB;;
+'';;;$w_nv_glsl0;LBL;;
+$__GL_IGNORE_GLSL_EXT_REQS,0,1;__GL_IGNORE_GLSL_EXT_REQS;;$nf Ignore GLGS extension check$end;CB;;"
+		echo -e "$g_notif\n>>>> end fn_nvidia_config_2 ####\n$e_notif"
+		
 		item_sep=","
 		# start form display
 		win_type=1
-		ignore_loop=0
-		extended_opts='--height=400 --scroll'
+		## focused field
+		focus=''
 		default_win_design
 		# window style and function
 	}
 	# base display auto-detection scripts
 	get_xrandr_list(){
+			echo -e "$g_notif >>>> get_xrandr_list$e_notif"
 			unset display_ connect_ dsp_vars dsp_res_ dsp_res_list
 			ifs=$IFS
 			IFS=$(echo -en "\n\b")
@@ -2434,17 +2544,20 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 			done
 			}
 	fn_xrandr_config(){
-		unset basic_sets field_list chk_list track_list conf_dat input_list field_line
-		# create the basic_sets data to display in the yad tab
+		echo -e "$g_notif >>>> start fn_xrandr_config ####\n$e_notif"
+		unset basic_sets track_list
+		# create the  data to display in the yad tab
 		display_field_set(){
-			X=0; x=1; l=6
+			echo -e "$g_notif >>>> display_field_set $e_notif"
+#			X=0; x=1; l=6
 			monitor_filter=1
 			for x_var in ${dsp_vars[@]}; do
 				m_name=$(printf "$x_var"| cut -d';' -f1)
 				m_res_list=$(printf "$x_var"| cut -d';' -f2)
 				m_prim=$(printf "$x_var"| cut -d';' -f3)
 				m_c_res=$(printf "$x_var"| cut -d';' -f4)
-				reso_list=${dsp_res_list[$X]}
+#				reso_list=${dsp_res_list[$X]}
+				reso_list=${dsp_res_list[@]}
 				monitor=$m_name
 				if [ $m_prim -gt 0 ]; then
 					field_msg0="$nf $m_name (primary)$end"
@@ -2454,51 +2567,18 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 				# this function can detect all attached displays, but the actual script can't manage
 				# multidisplay at this state. Then, the below conditional filter is added to only
 				# manage one display, the primary.
-#				if [ $m_prim -gt 0 ]; then
 				field_msg1="$nf Choose app resolution$end"
-				field_line+=("$[ $l+$x ];$bck_mode;bck_mode;;$field_msg0;CB;$reso_list;$monitor;")
-				field_line+=("$[ $l+(($x+1)) ];$set_mode;set_mode;;$field_msg1;CB;$reso_list;$monitor;")
-				x=$[ $x+2 ]; X=$[ $X+1 ]
-#				fi
-			done
-			export l=$[ $x+$l ]
-			
+				field_line="$bck_mode,$reso_list;bck_mode;;$field_msg0;CB;;$monitor
+$set_mode,$reso_list;set_mode;;$field_msg1;CB;;$monitor"
+			done			
 		}
 		get_pointer_list(){
+			echo -e "$g_notif >>>> get_pointer_list$e_notif"
 			xinput_list=$(xinput list | grep "pointer"|grep -v "master\|XTEST"| \
 			perl -pe "s|^.* ([A-Z].*[a-z]) (\w*[A-Z]+.*id=[0-9]*)+.*$|\1 \2|;s|([ ]*)\t|;|p")
 			
 			mouse_list=$(printf "${xinput_list[@]}"|cut -d';' -f1|tr '\n' ','|sed -n "s/,$//p")
 		}
-		get_xrd_config(){
-			if [[ $trk_set == auto_set ]]; then
-				if [ $trk_box = 1 ]; then
-				set_output=$(printf "$set_xrandr"| cut -d' ' -f3)
-				set_mode=$(printf "$set_xrandr"| cut -d' ' -f5)
-#				bck_ouput=$(printf "$bck_xrandr"| cut -d' ' -f3)
-				bck_mode=$(printf "$bck_xrandr"| cut -d' ' -f5)	
-				else
-				set_output='unset'
-				set_mode='unset'
-				bck_mode='unset'
-				fi
-			fi
-			if [[ $trk_set == set_desktop_env ]]; then
-				if [ $trk_box = 0 ]; then
-				default_desktop='unset'
-				secondary_desktop='unset'
-				fi
-			fi
-			if [[ $trk_set == mouse_set ]]; then
-				if [ $trk_box = 1 ]; then
-				set_dev_id=$(printf "$mouse_btn"| cut -d' ' -f3)
-				set_buttons=$(printf "$mouse_btn"| sed -n "s|^.*$set_dev_id \([0-9].*\)$|\1|p")
-				else
-				mouse_dev='unset'
-				set_buttons='unset'
-				fi
-			fi
-		}		
 		# define the most as possible desktop enviroment name, then check if they are in bin three.
 		unset dsk_unite
 		desktop_prelist="cinnamon,cinnamon2d,compiz,gnome-shell,kde,lxde,marco,mate,openbox,xfce"
@@ -2512,36 +2592,48 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		desktop_list=$(echo "${dsk_unite[*]}"| tr ' ' ',' )
 
 		# first establish lists for seeked values
+		track_list=('auto_set' 'set_desktop_env' 'mouse_set')
 		input_vars=('set_output' 'set_mode' 'bck_mode' \
 		'default_desktop' 'secondary_desktop' 'mouse_dev' 'set_buttons')
-		track_list=('auto_set' 'set_desktop_env' 'mouse_set')
+		
 		# get previous config if any, but take care of unexistant modules in the file
-		for trk_set in ${track_list[@]}; do
-			unset conf_dat
-			if [ $from_config = 1 ]; then
-				trk_box=$(cat $config_file| grep "$trk_set"| sed -n "s/^\(.*=\)\(.*\)$/\2/p")
-				if [[ $trk_box != '' ]]; then
-					get_xrd_config
-				fi
-			fi
-			if [ $from_config = 0 ]||[[ $trk_box == '' ]]; then
-				conf_dat=("$trk_set=0")
-				input_list+=("$conf_dat")
-				local $conf_dat
-				for def in ${input_vars[@]}; do
-					conf_dat=("$def=unset")
-					local $conf_dat
-				done
+		_inputs=( "${track_list[@]}" "${input_vars[@]}" )
+		for _vars in ${_inputs[@]}; do
+			eval _listed='$'$_vars
+			if [[ $_listed != '' && ! $_listed =~ ^\w*unset|^0 ]]; then
+				case $_vars in
+					'auto_set')
+						echo -e "$g_notif >>>> get xrd conf$e_notif"
+						set_output=$(printf "$set_xrandr"| cut -d' ' -f3)
+						set_mode=$(printf "$set_xrandr"| cut -d' ' -f5)
+						bck_mode=$(printf "$bck_xrandr"| cut -d' ' -f5)
+					;;
+					'mouse_set')
+						echo -e "$g_notif >>>> get mouse conf$e_notif"
+						set_dev_id=$(printf "$mouse_btn"| cut -d' ' -f3)
+						set_buttons=$(printf "$mouse_btn"| sed -n "s|^.*$set_dev_id \([0-9].*\)$|\1|p")
+					;;
+					'bck_mode') dsp_res_list+=(',unset') ;;
+					'default_desktop') desktop_list="$desktop_list,unset";;
+					'mouse_dev'|'set_buttons') v_unset=',unset' ;;
+					*) local $_vars=$_listed ;;
+				esac
+			else
+				case $_vars in
+					'auto_set'|'set_desktop_env'|'mouse_set') local $_vars=0 ;;
+					*) local $_vars='unset' ;;
+				esac
+				echo 'beeep'
 			fi
 		done
-		if [[ $(printf "${input_list[0]}"| grep -c .) -gt 0 ]]; then export ${input_list[@]}; fi
+
+#		if [[ $(printf "${input_list[0]}"| grep -c .) -gt 0 ]]; then export ${input_list[@]}; fi
 
 		# add xrandr field to basic_sets list
 		display_field_set
 		# get mouse list form xinput
 		get_pointer_list
 		# window messages
-#		w_text="$bf Configure XRandr Wine app resolution$end\\n$vb\\If you occur issues when going to fullscreen. This feature will change the default desktop resolution before the app start and then back to default when it stop. (Mostly useful for Optimus display behaviour).$end"
 		w_text="$bf Configure XRandr Wine app resolution$end\\n$vb\\Special fullscreen mode issue: Change the default desktop resolution.$end"
 		w_xrandr_tip="$vb\\In some cases, older game could occur issues when set in fullscreen, the options below allow to set the resolution before the start and then back to default when stop. (also useful for Optimus display behaviour).$end"
 #		w_text="$bf Configure XRandr Wine app resolution$end"
@@ -2561,40 +2653,37 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		w_xrandr_mouse="$nf Select the mouse device$end"
 		w_xrandr_buttons="$nf Select the button preset$end"
 		
-		basic_sets=(
-		"1;;;;;LBL;;;"
-		"2;;;;$w_xrandr_tip;LBL;;;"
-		"3;;;;;LBL;;;"
-		"4;;;;$w_xrandr_tip0;LBL;;;"
-		"5;;;;$w_xrandr_def_dsp;LBL;;;"
-		"6;;;;$w_xrandr_tip1;LBL;;;"
-		"${field_line[@]}"
-		"$l;;;;;LBL;;;"
-		"$[ $l+1 ];;;;$w_xrandr_tip3;LBL;;;"
-		"$[ $l+2 ];;;;$w_xrandr_tip6;LBL;;;"
-		"$[ $l+3 ];$default_desktop;default_desktop;;$w_xrandr_compo1;CBE;$desktop_list;default_desktop;"
-		"$[ $l+4 ];$secondary_desktop;secondary_desktop;;$w_xrandr_compo2;CBE;$desktop_list;secondary_desktop;"
-		"$[ $l+5 ];;;;;LBL;;;"
-		"$[ $l+6 ];;;;$w_xrandr_tip4;LBL;;;"
-		"$[ $l+7 ];;;;$w_xrandr_tip5;LBL;;;"
-		"$[ $l+8 ];$mouse_dev;mouse_dev;;$w_xrandr_mouse;CB;$mouse_list;;"
-		"$[ $l+9 ];$set_buttons;set_buttons;;$w_xrandr_buttons;CB;1 2 3,3 2 1;;"
-		)
+		basic_sets="'';;;;LBL;;
+'';;;$w_xrandr_tip;LBL;;
+'';;;;LBL;;
+'';;;$w_xrandr_tip0;LBL;;
+'';;;$w_xrandr_def_dsp;LBL;;
+'';;;$w_xrandr_tip1;LBL;;
+${field_line[@]}
+'';;;;LBL;;
+'';;;$w_xrandr_tip3;LBL;;
+'';;;$w_xrandr_tip6;LBL;;
+$default_desktop,$desktop_list;default_desktop;;$w_xrandr_compo1;CBE;;
+$secondary_desktop,$desktop_list;secondary_desktop;;$w_xrandr_compo2;CBE;;
+'';;;;LBL;;
+'';;;$w_xrandr_tip4;LBL;;
+'';;;$w_xrandr_tip5;LBL;;
+$mouse_dev,$mouse_list$v_unset;mouse_dev;;$w_xrandr_mouse;CB;;
+$set_buttons,1 2 3,3 2 1$v_unset;set_buttons;;$w_xrandr_buttons;CB;;"
+		echo -e "$g_notif\n>>>> end fn_xrandr_config ####\n$e_notif"
 		
 		item_sep=","
 		# start form display
 		win_type=1
-		ignore_loop=0
-#		main_opts='--height=420 --vscroll-policy=allways'
-		extended_opts='--height=400 --scroll'
-#		extended_opts='--scroll'
+		## focused field
+		focus=''
 		default_win_design
 		# window style and function
 		
 	}
 	fn_optimus_config(){
-#		unset basic_sets field_list chk_list track_list conf_dat input_list field_line
-		unset basic_sets field_list chk_list track_list #conf_dat 
+		echo -e "$g_notif\n>>>> start fn_optimus_config ####\n$e_notif"
+		unset basic_sets track_list
 		# window messages
 		w_text="$bf Optimus special options and sets$end\\n$vb\\If you own a Optimus Laptop, you can set here the dedicated commands and options.$end"
 		w_text_tip="$vb\\If you own a Optimus Laptop, you can set here the dedicated commands and options usualy use by Linux Optimus manager.$end"
@@ -2610,47 +2699,42 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		w_opti_vblank="Set Vertical Sync (optional)"
 		
 		track_list=('opti_starter' 'opti_accel' 'opti_SYNC' 'opti_VBLK')
-		if [[ "$opti_accel" != '' ]]; then opti_accel=$(echo "$opti_accel"|cut -d' ' -f2); fi
 		for trk_set in ${track_list[@]}; do
-			unset conf_dat
-			if [ $from_config = 1 ]; then
-				if [ $(cat $config_file| grep -c "$trk_set") -gt 0 ]; then
-					trk_box=$(cat $config_file| grep "$trk_set"| sed -n "s/^\(.*=\)\(.*\)$/\2/p")
+			eval trk_field='$'$trk_set
+			if [[ $trk_set =~ opti_starter|opti_accel ]]; then
+				if [[ $trk_field == '' ]]; then
+					local $trk_set='unset'
+					local d_set_$trk_set=''
 				else
-					trk_box=0
+					local d_set_$trk_set=',unset'
 				fi
 			fi
-			if [[ $from_config = 0 || $trk_box = 0 ]]; then
-				trk_box='unset'
-				conf_dat+=("$trk_set=$trk_box")
-				local $conf_dat	
-			fi
 		done
-		
 		# var list sets
-		basic_sets=(
-		"1;;;;;LBL;;;"
-		"2;$opti_starter;opti_starter;;$w_opti_starter;CB;optirun,primusrun;;"
-		"3;;;;$w_opti_tip0;LBL;;;"
-		"4;;;;$w_opti_tip1;LBL;;;"
-		"5;$opti_accel;opti_accel;;$w_opti_accel;CB;virtualgl,primus;;"
-		"6;;;;$w_opti_tip2;LBL;;;"
-		"7;$opti_SYNC;opti_SYNC;;$w_opti_sync;CHK;;;"
-		"8;;;;$w_opti_tip3;LBL;;;"
-		"9;$opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;;"
-		"10;;;;;LBL;;;"
-		"11;;;;$w_opti_warn;LBL;;;")
+		basic_sets="'';;;;LBL;;
+$opti_starter,optirun,primusrun$d_set_opti_starter;opti_starter;;$w_opti_starter;CB;;
+'';;;$w_opti_tip0;LBL;;
+'';;;$w_opti_tip1;LBL;;
+$opti_accel,virtualgl,primus$d_set_opti_accel;opti_accel;;$w_opti_accel;CB;;
+'';;;$w_opti_tip2;LBL;;
+$opti_SYNC;opti_SYNC;;$w_opti_sync;CHK;;
+'';;;$w_opti_tip3;LBL;;
+$opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
+'';;;;LBL;;
+'';;;$w_opti_warn;LBL;;"
+		echo -e "$g_notif\n>>>> end fn_optimus_config $e_notif"
+		
 		item_sep=","
 		# start form display
 		win_type=1
-		ignore_loop=0
-#		main_opts='--height=400 --vscroll-policy=allways'
-		extended_opts='--height=400 --scroll'
+		## focused field
+		focus=''
 		default_win_design
 		# window style and function
 		
 	}
 	control_line(){
+		#  | gzip -cd| sed -E -n "s/^.*(wine-staging[0-9]+-([0-9].*)\.x86_64.*)\".*$/\1 \2/p"
 		## connection test and PoL la bianry version per arch
 		unset pol_list
 		line=$(nc -z 8.8.8.8 53)
@@ -2674,15 +2758,21 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 			fi
 			export $pol_x
 		done
-		sys_version=$(/usr/bin/wine --version)
 	}
 	key=$RANDOM
 	sleep 1
 	kill $YAD_PID
-#	YAD_01=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
 	messages
 	control_line
 	unset active_values active_export inactive_values inactive_export cl
+	## create 2 temp file for all conf section edit.
+	TEMP_conf=$(mktemp --tmpdir tmp1.XXXXXXXX)
+	TEMP_edit=$(mktemp --tmpdir tmp2.XXXXXXXX)
+	## create a winetricks dlls list temp file.
+#	TEMP_trks=$(mktemp --tmpdir trk0.XXXXXXXX)
+	if [ -s $HOME/.config/user-dirs.dirs ]; then
+		. $HOME/.config/user-dirs.dirs
+	fi
 	if [ $from_config = 1 ]; then
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
@@ -2693,12 +2783,17 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		# 'export'ed values extraction
 		active_export+=( $(
 		_export=$(cat $config_file | sed -n "s|^\(\w*[a-z].*\)=\(.*\).*$|\1=\2|;s|^export ||p")
-		if [[ $(printf "$_export"| grep -c "__GL_THREADED_OPTIMIZATIONS") -gt 0 ]]; then
-			printf "$_export"| \
-			sed -n "s/\(LD_PRELOAD\).*\(__GL_THREADED_OPTIMIZATIONS=[0-9]\)/\2/i;p"
-		else
-			printf "$_export"
-		fi ) )
+			for _rewrite in '__GL_THREADED_OPTIMIZATIONS' '__GL_YIELD'; do
+				case $_rewrite in
+					'__GL_THREADED_OPTIMIZATIONS') _export=$(echo "$_export"| \
+					sed -En "s/^(LD_PRELOAD=.*)(__GL_THREADED_OPTIMIZATIONS=[0-9])/\2/i;p")
+					;;
+					'__GL_YIELD') _export=$(echo "$_export"| \
+					sed -En "s/^(__GL_YIELD)=([\"]?)(\w*)([\"]?)$/\1=\3/i;p")
+					;;
+				esac 
+			done
+			echo "$_export") )
 		# inactives values extraction
 		inactive_values+=(
 		$(cat $config_file | sed -n "s|^#\(\w*[a-z].*\)=\(.*\).*$|\1=unset|p"| grep -v "export")
@@ -2711,26 +2806,34 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		if [ ${#active_export} -gt 0 ]; then local "${active_export[@]}"; fi
 		if [ ${#inactive_values} -gt 0 ]; then local "${inactive_values[@]}"; fi
 		if [ ${#inactive_export} -gt 0 ]; then local "${inactive_export[@]}"; fi
-		IFS=$ifs	
+		IFS=$ifs
+		fn_wine_elf_query
+		cat $config_file > $TEMP_conf
 	fi
-	check_list=("$_wine,_wine" "$_wbin,_wbin" "$_nvidia_1,_nvidia_1" "$_nvidia_2,_nvidia_2"
-			"$w_install_exe,_install" "$_reged,_reged" "$_tricks,_tricks"
-			"$_xrandr,_xrandr" "$_optimus,_optimus" "$_extended,_extended")
-	for c in ${check_list[@]}; do
-		c_conf=$(printf "$c"|cut -d',' -f1)
-		c_none=$(printf "$c"|cut -d',' -f2)
-				
-		if [[ ! $c_conf =~ [0-9] ]]; then
-			if [[ $c_none != _wine ]]; then cl+=($c_none=0); else cl+=($c_none=1); fi
+	
+	section_list=('_wine' '_wbin' '_install' '_tricks' '_reged' '_nvidia_1' '_nvidia_2' '_xrandr' '_optimus' '_extended')
+	for s_var in ${section_list[@]}; do
+		eval f_var='$'$s_var
+		if [[ $f_var == '' ]]; then
+			local $s_var=0
 		fi
 	done
+	
 	if [ $(printf "${cl[*]}"| grep -c .) -gt 0 ]; then local "${cl[@]}"; fi
 	get_xrandr_list
-#	if [ $code = 0 ]; then fn_create_prefix; else fn_nvidia_config; fi
-#	if [ $code = 0 ]; then if [$b_set = 1 ]; then fn_basics_config; else fn_create_prefix; fi; else fn_nvidia_config; fi
 	if [ $code = 0 ]; then
-		if [ $b_set = 1 ]; then fn_basics_config; else fn_create_prefix; fi
-#		fn_create_prefix
+		if ! [ -s $HOME/.winestarter/default-wine ]; then touch $HOME/.winestarter/default-wine; fi
+		if [[ $wine_bin != '' ]]; then
+#		if [[ $wine_bin == '' ]]; then
+			sys_version=$($wine_bin --version)
+			if [ $b_set = 1 ]; then
+				fn_basics_config
+			else
+				fn_create_prefix			
+			fi
+		else
+			fn_binary_env
+		fi
 	else
 		fn_nvidia_config
 	fi
@@ -2738,14 +2841,16 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 }
 ########### MAIN ###########
 export wine_bin=$(find /usr/{bin,local/bin} -name wine)
+export w_tricks_bin=$(find /usr/{bin,local/bin} -name winetricks)
 export yad_bin=$(find /usr/{bin,local/bin} -name yad)
 export zen_bin=$(find /usr/{bin,local/bin} -name zenity)
 export conv_bin=$(find /usr/{bin,local/bin} -name convert)
 export icot_bin=$(find /usr/{bin,local/bin} -name icotool)
 export wres_bin=$(find /usr/{bin,local/bin} -name wrestool)
 export lpci_bin=$(find /{bin,sbin} /usr/{bin,sbin} -name lspci)
+export rpm_bin=$(find /usr/{bin,local/bin} -name rpm2cpio)
 # PlayOnLinux packages download window
-#select_win_bin(){ colors ; icons_set ; select_wine_bin; }
+# select_win_bin(){ colors ; icons_set ; select_wine_bin; }
 edit_reg_bin(){ colors ; icons_set ; edit_regfile; }
 edit_regfile(){
 #	reg_move=$(mktemp --tmpdir reg2.XXXXXXXX)
@@ -2759,7 +2864,7 @@ $nf\\All custom maunal changes in the text area will be merge with others preset
 	w_com1="$rb\\Warning:$end$vb Remove all custom (set by yourself) or empty lines$end"
 
 	reg_popup=$(
-	$yad_bin --width=400 --title "$w_title" --image="$img_wine_desk_ui" \
+	$yad_bin --width=400 --title "$w_title" --image="$img_wine_desk_ui" --borders=15 \
 	--window-icon="$img_wine_desk_ui" --form --text="$w_text" --separator=" " --item-separator="#" \
 	--field="$w_com1":LBL '' --field="$w_com0":TXT "$reg_display")
 	
@@ -2801,7 +2906,7 @@ edit_wine_options(){
 	## set tip and help texts
 	conf_txt="$bf\\Add options to default list$end\\n$vb\\Choose manually added options to default options menu list. They will be kept for all future bottles.$end\\n$rb\\WARNING:$end Added options can be only remove from the original bottle or by manual edit into default options list file."
 	## create the yad window with the properly setted variables 
-	change_opts=$($yad_bin --width=500 --height=400 --title= --image="$img_wine_opts" \
+	change_opts=$($yad_bin --width=500 --height=400 --title= --image="$img_wine_opts" --borders=15 \
 	--window-icon="$img_desktop" --list --checklist --text="$conf_txt" --editable --separator=";" \
 	--print-all --column="Active" --column="Option" --column="Descriptions" \
 	"${col[@]}")
@@ -2850,50 +2955,81 @@ select_wine_dis(){
 	colors ; icons_set
 	bin_class=1
 	if [ $wine_elf = 1 ]; then http_elf='x86_64'; else http_elf='i686'; fi
-	dl_address="https://dl.winehq.org/wine-builds/fedora/25/$http_elf/"
+#	dl_address="https://dl.winehq.org/wine-builds/fedora/25/$http_elf/"
+	dl_address="https://dl.winehq.org/wine-builds/fedora/"
 	site='WineHQ'
 	window_ico="$img_desktop"
 	window_img="$img_dl_whq"
 	select_wine_binary
 }
+download_list(){
+	wget -O $file_temp $dl_address
+	## WineHQ give multiple repos for fedora project. To get all availables, we take in all fedora
+	## version and put them in a single var.
+	os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
+	sed -En "s/^.*([0-9]{2}).*$/\1/p")
+	for os_v in ${os_version[@]}; do
+		wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
+		dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-staging$elf-[0-9]+"| \
+		sed -En "s/^.*$elf-([0-9]\.[0-9]*)-([0-9]).$http_elf.*$/\1-\2-staging,$os_v/p")
+	## merge only if Wine version is different.
+		if [ $os_v_p ]; then
+			if [ $os_v -ne $os_v_p ]; then
+				new_output=$(echo "${dl_bin_list[$os_v]}"|cut -d',' -f1)
+				prev_output=$(echo "${dl_bin_list[$os_v_p]}"|cut -d',' -f1)
+				_diff=$(echo "$new_output"| grep -vc "$prev_output")
+				if [ $_diff -gt 0 ]; then
+					_added=$(echo "${dl_bin_list[$os_v]}"| grep -v "$prev_output")
+					dl_bin_list[$os_v]=$(echo -e "${dl_bin_list[$os_v_p]}\n$_added")
+					dl_bin_list=${dl_bin_list[$os_v]}
+#						echo "${dl_bin_list[$os_v]}" > $list_temp
+				fi
+				os_v_p=$os_v
+			fi
+		else
+			os_v_p=$os_v
+		fi
+	done
+	if [ ${#local_bin_list[@]} -gt 0 ]; then
+		for existing in ${local_bin_list[@]}; do
+			if [ $(printf "$dl_bin_list"| grep -c "$existing") -gt 0 ]; then
+				dl_bin_list=$(echo "$dl_bin_list"| sed -En "s/^($existing)(.*$)/\1*\2/g;p")
+			fi
+		done
+	fi
+	echo "$dl_bin_list" > $file_temp.[list]
+}
 select_wine_binary(){
 	unset dl_bin_list local_bin_list wine_bin_list
+	wine_bin_temp=$(mktemp --tmpdir w_binary.XXXXXXXX+)
 	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; elf='64'; else ftp_elf='x86'; elf=''; fi
 	# ls already insbtalled packages if any
+#	if [ $default_bin_dir ]; then 
 	if [ -d $wine_path ]&&[ "$wine_path" != "$HOME" ]; then	
 			local_bin_list=( $(ls -1x $wine_path/$ftp_elf) )
 	fi
 	if [ -s /usr/bin/wget ]; then
 		# First, download wine packages list. Because Fedora repository is more simple than debian one,
 		# list dosnload is done from there (i686 repo)
-		file_temp=$(mktemp --tmpdir ftp1.XXXXXXXX)
-		list_temp=$(mktemp --tmpdir ftp3.XXXXXXXX)
+		file_temp=$(mktemp --tmpdir ftp.XXXXXXXX)
 		p_text="$vb\Retrieving $site server information$end"
-		wget -O $file_temp $dl_address
-		if [ $bin_class -eq 0 ]; then
-			dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2)" )
-		else
-			dl_bin_list=( "$(tac $file_temp| egrep "wine-staging$elf-[0-9]+"| sed -n "s/^.*$elf-\([0-9]\.[0-9]*\)-\([0-9]\).$http_elf.*$/\1-\2-staging/p")" )
-		fi
-		for r_bins in ${dl_bin_list[@]}; do
-			out=''
-			for bins in ${local_bin_list[@]}; do
-				if [ $bin_class -eq 0 ]; then
-					if [ $bins == $r_bins ]; then out=' *'; fi
-				else
-					if [ $(printf "$r_bins"| grep -c "$bins") -gt 0 ]; then out=' *'; fi
-				fi
-			done
-			printf "$r_bins$out," >> $list_temp
-		done
-		wine_bin_list=$(cat $list_temp)
-		wine_bin=$($yad_bin --width=300 --title "$w_title" --image="$window_img" \
+		download_list | $yad_bin --width=200 --title "Please wait..." --text-align=center \
+		--no-buttons --on-top --window-icon=$img_wine_ui --progress --pulsate --auto-close \
+		--text="$p_text" --progress-text=""
+		
+#		wine_bin_list=$(cat $list_temp)
+#		wine_bin_list=( $(echo "$dl_bin_list"| tr '\n' ','|sed -n "s/,$//p") )
+		wine_bin_list=( $(cat $file_temp.[list]| cut -d',' -f1| tr '\n' ','|sed -n "s/,$//p") )
+		wine_bin=$($yad_bin --width=300 --title "$w_title" --image="$window_img" --borders=15 \
 		--window-icon="$window_ico" --form --text="$w_text" --separator=" " --item-separator="," \
 		--field="$vb Select $ftp_elf package from $site$end":CB "$wine_bin_list")
 		
 		if [ $? = 0	 ]; then
 			if [ $wine_bin != '' ]; then
-				printf "$wine_bin;$bin_class" > /tmp/w_bin_tmp
+				wine_bin=$(printf	"$wine_bin"| sed -En "s/[*]? $//g;p")
+				dist_dl_ver=$(cat $file_temp.[list]| sed -En "s/^$wine_bin,(.*)$/\1/p")
+#				printf "$wine_bin;$bin_class"| sed -n "s/ //g;p" > /tmp/w_bin_tmp
+				printf "$wine_bin;$bin_class;$dist_dl_ver" > $wine_bin_temp
 			fi
 		else
 			rm -f $file_temp $list_temp
@@ -2915,7 +3051,7 @@ Change UI fonts colors and kind at will, but keep in mind the sens of each of th
 	w_tip="$rb\\WARNING$end$vn: Don't select fonts with more than 2 words if it's not a \"regular\" or \"italic\", it won't be displayed correctly.\nYou can also extend window width up to 100px if the horizontal scrollbar still appears in some tabs.$end"
 	font_color=$($yad_bin --width=480 --height=300 --title "$w_title" --image="$img_wine_desktop" \
 			--window-icon=$img_wine_desk_ui --text "$w_text" --form --separator="|" --item-separator="," \
-			--field="":LBL '' \
+			--borders=15 --field="":LBL '' \
 			--field="$vb Main messages color\t\t$end":CLR "$main" \
 			--field="$vb Warning messages color$end":CLR "$warn" \
 			--field="$vb Unavialable messages color$end":CLR "$freeze" \
@@ -2925,7 +3061,6 @@ Change UI fonts colors and kind at will, but keep in mind the sens of each of th
 			--field="$w_tip":LBL '')
 	if [ $? = 1 ]; then bash $bash_opt $base_script; exit 0; fi
 	if [ $? = 0 ]; then
-#		prev_colors=$(printf "$font_color"| sed -n "s/^,//;s/\(^.*\),,/\1/p" ) #
 		prev_colors=$(printf "$font_color"| sed -n "s/^|//;s/\(^.*\)||/\1/p" ) #
 		
 		ifs=$IFS
@@ -2989,6 +3124,8 @@ edit_desktop(){
 	sleep 1
 	## kill previous yad window
 	kill $YAD_PID
+	## load the config file
+	. $config_file
 	## define th default winestarter path
 	_path_set=$HOME/.winestarter
 	_img_set=$_path_set/png
@@ -2996,7 +3133,7 @@ edit_desktop(){
 	## define the basic vars to create a desktop file
 	desk_var_list=('user_prefix' 'bottle_prefix' 'game_dir' 'game_exe' 'wine_elf')
 	for d_var in ${desk_var_list[@]}; do
-		_conf_set=$(cat $config_file| grep -w "$d_var"| sed -n "s/^.*=//p"|sed -n "s/[']\|[\"]//g;p")
+		eval _conf_set='$'$d_var
 		appli_dir_set+=("$d_var=$_conf_set")
 	done
 	## apply them as vars to be sued by the script
@@ -3005,81 +3142,113 @@ edit_desktop(){
 	ifs=$IFS
 	IFS=$(echo -en "\n\b")
 	# set the exe path and bin
-	if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then
-		exe_path="$user_prefix/$bottle_prefix/drive_c/$game_dir/$game_exe"
+	if [[ $game_exe =~ ^.*\.(exe|EXE)$ ]]; then
+		if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then
+			exe_path="$user_prefix/$bottle_prefix/drive_c/$game_dir/$game_exe"
+		else
+			if [ $wine_elf = 1 ]; then elf_ext=' (x86)'; else elf_ext=''; fi
+			exe_path="$user_prefix/$bottle_prefix/drive_c/Program Files$elf_ext/$game_dir/$game_exe"
+		fi
+		# set the icon type to extract
+		ico_type=14
+		# extract the icon
+		$wres_bin -x -t $ico_type -o $_path_set/icons $exe_path
+		exe_name=$(printf "$exe_path"| sed -n "s|^.*/||g;p")
+		default_name=$(printf "$exe_name"| sed -n "s/.exe$//p")
 	else
-		if [ $wine_elf = 1 ]; then elf_ext=' (x86)'; else elf_ext=''; fi
-		exe_path="$user_prefix/$bottle_prefix/drive_c/Program Files$elf_ext/$game_dir/$game_exe"
+		exe_path='unknown'
+		exe_name='unknown'
+		default_name='unknown'
 	fi
-	# set the icon type to extract
-	ico_type=14
-	# extract the icon
-	$wres_bin -x -t $ico_type -o $_path_set/icons $exe_path
-	exe_name=$(printf "$exe_path"| sed -n "s|^.*/||g;p")
-	default_name=$(printf "$exe_name"| sed -n "s/.exe$//p")
+	
 	config_name=$(printf "$config_file"|sed -n "s|^.*/||p")
 	IFS=$ifs
-	# predefine category set default value. Will be overwrited if dektop file entry exist
+	# predefine category set default value. Will be overwrited if desktop file entry exist
 	cat_set='unset'
 	## control if there is an existing desktop file
-	# define the main Desktop directoy
-	DESK_DIR=$(cat $HOME/.config/user-dirs.dirs| grep "XDG_DESKTOP_DIR"| sed -n "s|\"||g;s|\$HOME|$HOME|p")
-	DESK_DIR+=("$DESK_DIR")
-	local $DESK_DIR
-	# set the variables to extract from desktop file entry. Will be used for file creation aswell.
+	# define the main Desktop directory
+	. $HOME/.config/user-dirs.dirs
 	desktop_vars=(
-		"1,Name,5,default_name"
-		"1,Comment,6,default_desc"
-		"0,Exec,winestarter $config_name,default_cmd"
-		"2,Icon,2,png_file"
-		"0,StartupWMClass,$exe_name,exe_name"
-		"1,dsk_menu,10,"
-		"1,Categories,7,cat_set"
-		"1,emblem,12,")
+		"1,Name,5"
+		"1,Comment,6"
+		"0,Exec,winestarter $config_name"
+		"2,Icon,2"
+		"0,StartupWMClass,$exe_name"
+		"1,dsk_menu,10"
+		"1,Categories,7"
+		"1,emblem,12")
 	# extract the png from the icon in multi definition format
 	def_list=('256' '128' '64' '48')
-	for _def in ${def_list[@]}; do
-		# look for index for the asked definition
-		idx=$($icot_bin -l $_path_set/icons/$exe_name\_$ico_type\_*.ico| \
-		grep "\(width=$_def\).*\(bit-depth=32\)"| sed -n "s/^.*--index=\([0-9]\).*$/\1/g;p")
-		if [[ $idx > 0 ]]; then
-			$icot_bin -x -i $idx -o $_path_set/png $_path_set/icons/$exe_name\_$ico_type\_*.ico
-			png_file=$(ls -1 $_path_set/png/$exe_name\_$ico_type*\_$_def\x$_def*.png)
-			thb_file=$_path_set/png/thumb/$(printf "$png_file"| sed -n "s/^.*\///g;p")
-			# create thumbnail for yad UI
-			$conv_bin $png_file -scale 48x48 $thb_file
-			# make def field readable
-			png_def="$_def"x"$_def"
-			icon_id+=("$thb_file")
-			icon_id+=("$png_file")
-			icon_id+=("$png_def")
-			icon_def+=("$png_file,$png_def")
-		fi
-	done
-	# extract the desktop file entry variables if any and make usable by the script
-	if [ -e $XDG_DESKTOP_DIR/$exe_name.desktop ]; then
-		for p_dsk in "${desktop_vars[@]}"; do
-			ex_desktop=$(printf "$p_dsk"| cut -d',' -f2)
-			ex_script=$(printf "$p_dsk"| cut -d',' -f4)
-			desk_entry=$(cat $XDG_DESKTOP_DIR/$exe_name.desktop| grep "$ex_desktop"| \
-			sed -n "s/^\(.*\w*[a-z]=\)\(.*\)$/\2/p")
-			if [[ $ex_script != '' ]]; then
-				def_entry+=($ex_script="$desk_entry")
+	if [[ $exe_name != unknown ]]; then
+		for _def in ${def_list[@]}; do
+			# look for index for the asked definition
+			idx=$($icot_bin -l $_path_set/icons/$exe_name\_$ico_type\_*.ico| \
+			grep "\(width=$_def\).*\(bit-depth=32\)"| sed -n "s/^.*--index=\([0-9]\).*$/\1/g;p")
+			if [[ $idx > 0 ]]; then
+				$icot_bin -x -i $idx -o $_path_set/png $_path_set/icons/$exe_name\_$ico_type\_*.ico
+				png_file=$(ls -1 $_path_set/png/$exe_name\_$ico_type*\_$_def\x$_def*.png)
+				if [[ -s $png_file ]]; then
+				thb_file=$_path_set/png/thumb/$(printf "$png_file"| sed -n "s/^.*\///g;p")
+				# create thumbnail for yad UI
+				$conv_bin $png_file -scale 48x48 $thb_file
+				else
+					png_file=$_path_set/png/defaults/warning.png
+					thb_file=$_path_set/png/defaults/warning.png
+				fi
+				# make def field readable
+				png_def="$_def"x"$_def"
+				icon_id+=("$thb_file")
+				icon_id+=("$png_file")
+				icon_id+=("$png_def")
+				icon_def+=("$png_file,$png_def")
 			fi
 		done
-		local "${def_entry[@]}"
-		## add the desktop icon to the icon list if extracted from the desktop file entry
-		# make a thumbnail for yad UI
-		thb_file=$_path_set/png/thumb/$(printf "$png_file"| sed -n "s/^.*\///g;p")
-		$conv_bin $png_file -scale 48x48 $thb_file
-		# get image dimensions
-		png_def=$(file $png_file | perl -pe "s| ||g;s|^.*,([0-9]*.*)x([0-9]*.*),[0-9].*$|\1x\2|p")
-		# add it to the list
-		icon_id+=("$thb_file")
-		icon_id+=("$png_file")
-		icon_id+=("existing desktop file entry")
-		icon_def+=("$png_file,$png_def")
-	fi 
+	
+		# extract the desktop file entry variables, if any, and make them usable by the script
+		if [ -e $XDG_DESKTOP_DIR/$exe_name.desktop ]; then
+			echo -e ">>>>>>>>>>>>>>>>>\n"
+			ifs=$IFS
+			IFS=$(echo -en "\n\b")
+			desktop_data=( $(cat $XDG_DESKTOP_DIR/$exe_name.desktop| egrep -v "^\[.*\]$") )
+			for _vars in ${desktop_data[*]}; do
+				_var=$(printf "$_vars"| cut -d'=' -f1)
+				_val=$(printf "$_vars"| cut -d'=' -f2)
+				case $_var in
+	#				'Type');;
+					'Exec') if [ $_val ]; then default_cmd=$_val; fi;;
+					'StartupWMClass') if [ $_val ]; then exe_name=$_val; fi;;
+					'Name') if [ $_val ]; then default_name=$_val; fi;;
+					'Comment') default_desc=$_val;;
+					'Categories') if [ $_val ]; then cat_set=$_val; else cat_set='unset'; fi;;
+					'Icon') png_file=$_val;;
+				esac
+			done
+			IFS=$ifs
+			## add the desktop icon to the icon list if extracted from the desktop file entry
+			# make a thumbnail for yad UI
+			# test first if theere is already a corresponding image in path.
+			if ! [ -s $_path_set/png/thumb/$exe_name.png ]; then
+				thb_file=$_path_set/png/thumb/$(printf "$png_file"| sed -n "s/^.*\///g;p")
+				$conv_bin $png_file -scale 48x48 $thb_file
+			else
+				png_file=$_path_set/png/$exe_name.png
+				thb_file=$_path_set/png/thumb/$exe_name.png
+			fi
+			if ! [[ $png_file ]]; then
+				png_file=$_path_set/png/defaults/warning.png
+				thb_file=$_path_set/png/defaults/warning.png
+			fi
+			# get image dimensions
+			png_def=$(file $png_file | sed -En "s| ||g;s|^.*,([0-9]*.*)x([0-9]*.*),[0-9].*$|\1x\2|p")
+			# add it to the list
+			icon_id+=("$thb_file")
+			icon_id+=("$png_file")
+			icon_id+=("existing desktop file entry,$png_def")
+			icon_def+=("$png_file,$png_def")
+		fi
+	else
+		icon_id=("$_path_set/png/defaults/unknown.png" "$_path_set/png/defaults/unknown.png" "no default pg found,48x48")
+	fi
 	## window messages and tips
 	w_text="$bf Create a dedicated desktop file$end \\n \
 $vb You can create or modify every main fields of a desktop file$end"
@@ -3087,6 +3256,7 @@ $vb You can create or modify every main fields of a desktop file$end"
 	w_tip1="$vb\Choose or edit a display name, a description and a menu category for the desktop file$end"
 	w_tip2="$vb\By default, desktop entry is add to the deskop only $end"
 	w_tip3="$vb\Winestarter automatical add a Wine emblem to easely detach its managed softwares. You can remove it by unsetting the check box here.$end"
+	w_custom_icon="$vb\\Select a custum icon instead of listed$end"
 	## create paned window and send result to associated temp files
 	key=$RANDOM
 	temp1=$(mktemp --tmpdir tab1.XXXXXXXX)
@@ -3094,28 +3264,33 @@ $vb You can create or modify every main fields of a desktop file$end"
 	# editable categories list for Category entry combo box
 	categories='Games;#Office;#Applications;#Games;#Multimedia;#Video;#Graphics;'
 	# select_pan part
-	$yad_bin --width=370 --height=300 --plug=$key --tabnum=1 --form --image=$img_wine_desktop \
-			 --item-separator="#" --field="":LBL '' \
+#	$yad_bin --width=440 --height=300 --plug=$key --tabnum=1 --form --image=$img_wine_desktop \
+	$yad_bin --width=440 --height=300 --plug=$key --tabnum=1 --form \
+			--item-separator="#" --borders=5 --field="":LBL '' \
 			--field="$w_tip0":LBL '' \
 			--field="":LBL '' \
 			--field="$w_tip1":LBL '' \
-			--field="$vb Name$end":CBE "$default_name" \
-			--field="$vb Comment$end":CBE "$default_desc" \
+			--field="$vb Name$end": "$default_name" \
+			--field="$vb Comment$end": "$default_desc" \
 			--field="$vb Category$end":CBE "$cat_set#$categories" \
 			--field="":LBL '' \
 			--field="$w_tip2":LBL '' \
 			--field="Add the dessktop entry to the dedicated type menu":CHK TRUE \
 			--field="$w_tip3":LBL '' \
 			--field="Add a Wine sticky emblem in top right corner":CHK TRUE \
+			--field="$w_custom_icon":LBL '' \
+			--field="$vb Custom icon$end":FL "$HOME/" \
 			--separator=',' &> $temp1 &
 	# icon_pan part
-	$yad_bin --width=60 --height=300 --plug=$key --tabnum=2 --list \
+	$yad_bin --width=60 --height=300 --plug=$key --tabnum=2 --borders=5 --list \
 			--tooltip-column=3 --hide-column=3 --no-rules-hint --separator=',' \
 			--column='icon list':IMG --column='path':HD --column='tip':TIP \
 			"${icon_id[@]}" &> $temp2 &
 	# main paned window
-	$yad_bin --width=480 --height=300 --title "$w_title" --window-icon=$img_wine_desk_ui \
-	--text "$w_text" --paned --key=$key --orient=hor --splitter=380
+	w_width=$((520+$scale))
+	w_splitter=$((380+$scale))
+	$yad_bin --width=$w_width --height=300 --title "$w_title" --window-icon=$img_wine_desk_ui \
+	--borders=15 --text "$w_text" --paned --key=$key --orient=hor --splitter=$w_splitter
 	if [ $? = 1 ]; then exit 0; fi
 	## extract setted variable from temp files
 	# create a new temp file if creating a new desktop file
@@ -3128,7 +3303,7 @@ $vb You can create or modify every main fields of a desktop file$end"
 		tp_fl=$(printf "$tmp"| cut -d',' -f2)
 		if [ $rk -eq $tp_rk ]; then
 			#make sure data come from temp file or not
-			if [ $tp_fl	!= '' ]&&[ -e $tp_fl ]; then
+			if [[ $tp_fl != '' ]]&&[ -e $tp_fl ]; then
 				tmp_data=$(cat $tp_fl)
 			fi
 			for t_vars in "${desktop_vars[@]}"; do
@@ -3178,7 +3353,8 @@ $vb You can create or modify every main fields of a desktop file$end"
 		fi
 		# control if this is an edit from existing file and then apply correct filter
 		if [ -a $XDG_DESKTOP_DIR/$exe_name.desktop ]; then
-			perl -ni -pe "s|^($fld_var=)(.*)$|\1$fld_entry|i" $XDG_DESKTOP_DIR/$exe_name.desktop
+			perl -ni -pe "s|^($fld_var=)(.*)$|\1$fld_entry|i" \
+			$XDG_DESKTOP_DIR/$exe_name.desktop
 			if [ $menu_entry = 1 ]&&[ $HOME/.local/share/applications/$exe_name.desktop ]; then
 				perl -ni -pe "s|^($fld_var=)(.*)$|\1$fld_entry|i" \
 				$HOME/.local/share/applications/$exe_name.desktop
@@ -3211,7 +3387,7 @@ edit_bottle(){
 		w_text="$bf Restart function system$end$vb\\n \
 You can here restart Winecfg or Winetricks at next Winestarter launch. This feature could be really useful after a Wine update or just to control Winecfg state$end"
 		win_icon=$img_wine_restart
-		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$img_wine_reload \
+		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$img_wine_reload --borders=15 \
 			--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
 			--align=left --text "$w_text" --field="":LBL '' \
 			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
@@ -3221,7 +3397,7 @@ You can here restart Winecfg or Winetricks at next Winestarter launch. This feat
 		w_text="$bf Wine bottle desktop file edition$end$vb\\n \
 Select the bottle you would like for a desktop file$end"
 		win_icon=$img_wine_desk_ui
-		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon \
+		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon --borders=15 \
 			--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
 			--align=left --text "$w_text" --field="":LBL '' \
 			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
@@ -3249,7 +3425,7 @@ Select the Wne bottle to edit$end"
 			nv_field+=("--field=$vb Select edit option$end:CB")
 			nv_list+=('Edit the whole bottle#Edit config file directly')
 		fi
-		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon \
+		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon --borders=15 \
 		--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
 		--align=left --text "$w_text" "${nv_field[@]}" "${nv_list[@]}")
 	fi
@@ -3257,16 +3433,10 @@ Select the Wne bottle to edit$end"
 	_edit_bottle=$(printf "${edit_win[@]}"| cut -d';' -f2)
 	config_file=$HOME/.winestarter/configs/$_edit_bottle.conf
 	if [ $desktop_file = 0 ]; then
-#		_all_wine=$(printf "${edit_win[@]}"| cut -d';' -f3)
-#		_nv_only=$(printf "${edit_win[@]}"| cut -d';' -f4)
-#		[[ $_all_wine == TRUE ]]&& code=0
-#		[[ $_nv_only == TRUE ]]&& code=1
 		if [ $(printf "${edit_win[@]}"| grep -c "Nvidia") -gt 0 ];then
 			code=1; else code=0
 		fi
-		
 	fi
-	
 	if [ $rstart = 1 ]; then
 		_winecfg=$(printf "${edit_win[@]}"| cut -d';' -f3)
 		_winetrk=$(printf "${edit_win[@]}"| cut -d';' -f4)
@@ -3278,10 +3448,7 @@ Select the Wne bottle to edit$end"
 		## if previous option is config file direct edit, launch zenity text edit and exit.
 		if [ $(printf "${edit_win[@]}"| grep -c "directly") -gt 0 ];then
 			e_text="$bf\\Fast Config Edit$end\n This editor is for quick config edits. All '##' comments are removable if you're confortable without them, but we don't recommand it."
-#			$zen_bin --width=800 --height=600 --title="$w_title" --window-icon=$img_wine_desk_ui \
-#			--text-info  --text="$e_text" --checkbox="Confirm overwrite" \
-#			--editable --filename=$config_file
-			edit_config=$($yad_bin --width=800 --height=600 --title="$w_title" \
+			edit_config=$($yad_bin --width=800 --height=600 --title="$w_title" --borders=15 \
 			--window-icon=$img_wine_desk_ui --text-info  --text="$vb$e_text$end" \
 			--editable --filename=$config_file)
 			if [ $? = 1 ]; then
@@ -3294,18 +3461,21 @@ Select the Wne bottle to edit$end"
 		fi
 		from_config=1
 		export from_config=$from_config config_file=$config_file
+		## Cause of a too much long loading time, better to place winetricks basic_sets here
+		## and then, export it as appropriate.
+		fn_make_tricks_menu
 		## check if selection is desktop file entry or not
 		if [ $desktop_file = 1 ]; then
 			bash $bash_opt "colors; icons_set; edit_desktop"
 		else
-			bash $bash_opt "colors; icons_set; code=$code; main_code"
+			bash $bash_opt "colors; icons_set; b_set=0; code=$code; main_code"
 		fi
 	else
 		exit 0
 	fi
 	exit 0
 }
-
+. $HOME/.config/user-dirs.dirs
 ## Script debug options
 #bash_opt='-x -c'
 bash_opt='-c'
@@ -3323,14 +3493,15 @@ main_text4="$vb\\Modify$end"
 
 list_bottles
 #messages; main_code
-main_text0="$bf\\Stay simple with yours Wine bottles$end $vb\\\"Don't be a clic machine !\"$end\\n\\n\
+main_text0="$bf\\Stay simple with yours Wine bottles$end$vb\\n\
+\"Don't be a clic machine !\"$end\\n\\n\
 $vb\\What do you want to do?$end\\n$vn(Hover buttons show tooltips)$end"
 
 export -f colors icons_set
-export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_wine_dis select_wine_binary edit_reg_bin edit_regfile edit_wine_options
+export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_wine_dis select_wine_binary download_list edit_reg_bin edit_regfile edit_wine_options
 export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt"
-$yad_bin --width=482 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons \
---form --text="$main_text0" --image=$the_big_button \
+$yad_bin --width=520 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons \
+--form --text="$main_text0" --image=$the_big_button  --borders=15 \
 --field="":LBL '' \
 --field="$main_text3":LBL '' \
 --field="$vb New Wine prefix $end"!$img_wine_add!"Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \

@@ -1,55 +1,43 @@
 # winestarter
-A not very simple script to start and install wine emulated applications
+A not very simple, but very cool script to start and install wine emulated applications
 
 ![winestarter logo](/png/defaults/winestarter_128.png)
 
 -------
 
-**WARNING**: winetrciks part seams to be broken for an unknown reason (yet), and because I'm working on complete rewrite to speed up the processes in winestarter_conf, this bug wont be fix on the currnet release. Nevertheless, if you  want this bug to be fix right now, feel free to ask. 
+**NEWS**: code rewrite ended. Please send report for any bug.
 
 -------
 
-Consider this like a mix between PlayOnLinux and Wine usual command line. It use winetricks for DLLs and everything winetrciks can do.
+Consider this like a Wine graphical extension more than a new Wine environment like PoL or CodeWeavers's CrossOver. The goal for end user is to simplify Wine usual command line with a graphical user interface with the most explantions as possible, and for advanced user, a Wine execution script with extended config file that could be modified as the way he want.
 
-Config file and configuration UI are completly independent and script can work without the UI, but it can do a lot of thing to help you during your journey to install your apps under Wine layer.  
+The project use winetricks for DLLs and everything winetrciks can do, and take standalone Wine independant packages (optional or standalone) from WineHQ or PlayOnLinux repositories.
 
-# Changelog and issues
+Config file and configuration UI are completly independent and script can work without the UI, but UI can do a lot of thing to help you during your journey to install your apps under Wine layer.
+
+Note to MAC users: The basic script will probably works for you with the proper environment variables, but yad wont because developper didn't make a package for Mac. So, if you want it to work for you, give a hand, and help us to add Mac environment variables and invite Yad developper to make a package for you. 
+
+## Changelog and issues
 Have a look to [CHANGELOG](./CHANGELOG.md) to follow progress, issues and fixes. You will find also some experience reports about apps install test.
 
 # WARNINGS
 I'm still leaning and I often discover issues and bugs. If you can't install, see weird things or everything else, feel free to contact me and we will fix this together.
 
 -------
-# Basics
+## Basics
 The project comes with 2 scripts:
  - `winestarter`: the command line base.
  - `winestarter_conf`: the Yad graphical interface
 
-Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards.
+Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards and will only appear if a Nvidia Card is detected.
 
-## History
-For everyboby using Wine know that launching a application under this layer could by real nightmare.
-
-When you surf over **WineHQ**, there is often many tricks, "env" variables, register edits not very fun for both newbies or old Wine user guys.
-
-So, newbies goes to PlayOnllinux to feel more confortable with less options and old guy never stop to write mini bash launcher script or commandlines that easely cross over the Channel.
-Well, anoying...
-
-
-At the beginning, I wish to get a script to launch some games over **Wine** and **Bumblebee**. If **Wine** command lines could be a bit long, I wont tell you with **Bumblebee** !
-
-I turn around the right solution since a while, but finally got this one and because I'm very happy with it, I decided to share it with the communauty.
-
-
-Note to MAC users: The script will probably works for you (don't know for Yad), but it need somme desktop and system environnent variables I don't have or know. So, if you want it, give a hand !
-
-# OS Depencies
+## OS Depencies
  - Yad (zenity fork, usualy by default in distros, for Debian look **[here](https://packages.debian.org/sid/amd64/yad/download)**)
- - wget (for PoL packages download, usualy by default in all distros)
+ - wget (for PoL and WineHQ packages download, usualy by default in all distros)
  - ImageMagick (for image convertion, usualy by default in all distros)
  - strings (for Wine/Ms lnk file reading, usualy by default in all distros)
  - icoutils (for MS Icons png extraction, name can vary by distro like icotools)
- - Winetricks (for dlls downlaod and install, usualy in non-free distros repos)
+ - Winetricks (send with the git clone and updated)
  - rpm (for rpm2cpio helping extracting rpm package, usualy available in all distros repos)
  
  and obviously, Wine :)
@@ -62,7 +50,7 @@ Note to MAC users: The script will probably works for you (don't know for Yad), 
  - Create and configure a Wine registry
  - Install a software from a file or downloaded.
  - Create or modify a desktop file entry
- - Configure Nvidia apps environment options
+ - Configure Nvidia apps environment options (if detected)
  - Configure Xrandr behaviour
  - Set Optimus Bumblebee/Primusrun variables
  - and more ...
@@ -100,7 +88,7 @@ The `makefile` will install launcher and configarator in `/usr/local/bin` and th
 ## Usage
 
 ```sh
-	winestart game.conf
+	winestarter game.conf
 ```
 or 
 ```sh
@@ -108,14 +96,17 @@ or
 ```
 or simply from the menu : Wine > winestarter configurator
 
-## Config file edit
+--------
+## EXAMPLE
+
+### Config file edit
 Note that winestarter_conf doesn't need any template to start, because it create it from scratch.
 The `winestarter` conf file template is only a model for those wanting to use the script only
 
 
 If don't use `winestarter_conf`, you can edit the config file as you wish. It is a per game/app file, so you can create many conf files as you want. I will add a few other example in the repository ( You could contribute by adding yours, if you like)
 
-This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example with full parts added for user learning purpose and it will be updated when changes will be made: (update 0.98.4)
+This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example with full parts added for user learning purpose and it will be updated when changes will be made: This one goes with 0.98.4 update.
 
 ```sh
 #! /bin/bash
@@ -301,7 +292,7 @@ _nvidia_2=1
 As you can see there is many variable options, in fact you can write as many as you need. It's very useful to test all the tricks send in WinHQ or else where.
 You finally keep the ones really needed.
 
-## Xrandr
+### Xrandr
 There is also an **xrandr** option.
 
 For a classic app, this is unuseful, but for games it really could be particulary with Optimus laptop.
@@ -315,7 +306,7 @@ This option use the game *PID* to know when the game start and stop. This way it
 
 Hope it would be for you too.
 
-### Xrandr special
+#### Xrandr special
 Note: `winestarter_conf` UI auto detect this.
 
 To get your default screen res, type in a terminal :
@@ -332,14 +323,6 @@ it returns something like this :
 The one with a res is your default(s). You just have now to set it in the conf file to the default reset point.
 
 ----------
-
-## Configurator UI
-Configurator can do more than the default config file, but doesn't change it except for dedicated configurator needed lines.
-
-There is short user help displayed 
-
-`winestarter_conf` could produce many codes lines in the terminal if the code line ```#bash_opt='-x -c'``` is uncomment. This is intentional for my debug purpose and I can forgot to comment it when pushing on git. Just comment it and uncomment the next.
-
 ## Special thanks and Dedicates
 To the all community and contributors of **WineHQ** that make the world goes round and made this work possible.
 
