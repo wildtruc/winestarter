@@ -420,42 +420,44 @@ fn_install_tricks(){
 		## now, let's do winetricks job
 		## Check that tricks install process is set to 'on' and take w_install_tricks is not empty.
 		## else, send error and exit.
-		if [[ $w_install_tricks -gt 0 && ${#w_tricks_loop[@]} -gt 0 ]]; then
-#			if [ "$w_tricks_list" ]; then
-			e_text="$vb\\Winetricks is working$end"		
-			(for w_list in "${w_tricks_loop[@]}"; do
-				echo "# Installing $w_list"
-				$w_tricks $w_tricks_opts $w_list
-			done
-#				)| $yad_bin --width=250 --title "$w_title" --text-align=center --text="$e_text" \
-#				--window-icon=filesave --progress --pulsate --auto-close --no-buttons
-			)| $zen_bin --width=250 --title="$w_title" --text="$e_text" \
-			--window-icon=filesave --progress --pulsate --auto-close --no-cancel
-#				perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
-			if [ -s $w_list_file ]; then
-				## analyse winetricks log again to get newly installed dlls.
-				cat $w_list_file| egrep -v "$w_filters"| sort -bd > $tmp_log
-				## ensure all dlls are installed, else, display error/info message.
-				diff_logs=$(echo "$_w_tricks_list"| grep -vFf "$tmp_log")
-				if [[ $diff_logs != '' ]]; then
-					warn_msg=$(echo "$diff_logs"| tr '\n' ','| sed -n "s/,$//g;p")
-					echo -e "»»»» DLLs install error. $warn_msg are missing or won't install.\n»»»» See config file w_tricks_list field or try to launch winestarter again."
-					if [ $zen_bin ]; then
-						text="$bf\\DLLs install error$end$vb.\n$warn_msg are missing or won't install.\nLook at $config_file or try to launch Winestarter again$end"
-						dialog_list="gtk-close;$warning;4"; zen_warning
+		if [ $w_install_tricks -gt 0 ]; then
+			if [ ${#w_tricks_loop[@]} -gt 0 ]; then
+	#			if [ "$w_tricks_list" ]; then
+				e_text="$vb\\Winetricks is working$end"		
+				(for w_list in "${w_tricks_loop[@]}"; do
+					echo "# Installing $w_list"
+					$w_tricks $w_tricks_opts $w_list
+				done
+	#				)| $yad_bin --width=250 --title "$w_title" --text-align=center --text="$e_text" \
+	#				--window-icon=filesave --progress --pulsate --auto-close --no-buttons
+				)| $zen_bin --width=250 --title="$w_title" --text="$e_text" \
+				--window-icon=filesave --progress --pulsate --auto-close --no-cancel
+	#				perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
+				if [ -s $w_list_file ]; then
+					## analyse winetricks log again to get newly installed dlls.
+					cat $w_list_file| egrep -v "$w_filters"| sort -bd > $tmp_log
+					## ensure all dlls are installed, else, display error/info message.
+					diff_logs=$(echo "$_w_tricks_list"| grep -vFf "$tmp_log")
+					if [[ $diff_logs != '' ]]; then
+						warn_msg=$(echo "$diff_logs"| tr '\n' ','| sed -n "s/,$//g;p")
+						echo -e "»»»» DLLs install error. $warn_msg are missing or won't install.\n»»»» See config file w_tricks_list field or try to launch winestarter again."
+						if [ $zen_bin ]; then
+							text="$bf\\DLLs install error$end$vb.\n$warn_msg are missing or won't install.\nLook at $config_file or try to launch Winestarter again$end"
+							dialog_list="gtk-close;$warning;4"; zen_warning
+						fi
 					fi
+					## finaly, replace old w_tricks_list by tne new one in config.
+					_new_tricks=$(cat $tmp_log| tr '\n' ','| sed -n "s/,$//p")
+					sed -ni "s|^w_tricks_list=\"\(.*\)\"$|w_tricks_list=\"\1,$_new_tricks\"|i;p" $config_file
 				fi
-				## finaly, replace old w_tricks_list by tne new one in config.
-				_new_tricks=$(cat $tmp_log| tr '\n' ','| sed -n "s/,$//p")
-				sed -ni "s|^w_tricks_list=\"\(.*\)\"$|w_tricks_list=\"\1,$_new_tricks\"|i;p" $config_file
+			else
+				echo -e "»»»» Winetricks install list is empty.\n»»»» Don't to set up Winetricks dlls install when DLLs list is empty."
+				if [ $zen_bin ]; then
+					text="$bf\\Winetricks install list is empty$end$vb.Don't to set up Winetricks dlls install when DLLs list is empty\n$end"
+					dialog_list="gtk-close;$warning;4"; zen_warning
+				fi
+				exit 0
 			fi
-		else
-			echo -e "»»»» Winetricks install list is empty.\n»»»» Don't to set up Winetricks dlls install when DLLs list is empty."
-			if [ $zen_bin ]; then
-				text="$bf\\Winetricks install list is empty$end$vb.Don't to set up Winetricks dlls install when DLLs list is empty\n$end"
-				dialog_list="gtk-close;$warning;4"; zen_warning
-			fi
-			exit 0
 		fi
 	else
 		echo -e "»»»» Winetricks was not found, install it first."
