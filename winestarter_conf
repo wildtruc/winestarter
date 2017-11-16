@@ -804,6 +804,8 @@ _tricks=$_tricks"
 					else
 						_reged_var+=("\"$_var\"=\"$_val\"")
 					fi
+#				else
+#					_reged_unset+=($_var)
 				fi
 			else
 				if [ $_extended = 1 ]; then
@@ -898,11 +900,15 @@ _tricks=$_tricks"
 				regex='([\"]?)(\w*)([\"]?)=([\"]?)(\w*)([:[0-9]*]?)([\"]?)$'
 				_var=$(echo "$_new_reg"| sed -E -n "s/$regex/\2/p")
 				_val=$(echo "$_new_reg"| sed -E -n "s/$regex/\5\6/p")
-				if [ $(echo "${_reged_var[*]}"| grep -c "$_var" ) -eq 0 ]; then
-					if [[ $_val =~ dword: ]]; then
-						_reged_var+=("\"$_var\"=$_val")
-					else
-						_reged_var+=("\"$_var\"=\"$_val\"")
+				## check first if editable values are not previously unset before adding anything to reg.
+				eval _pre_var='$'$_var
+				if [[ $_pre_var != unset ]]; then
+					if [ $(echo "${_reged_var[*]}"| grep -c "$_var" ) -eq 0 ]; then
+						if [[ $_val =~ dword: ]]; then
+							_reged_var+=("\"$_var\"=$_val")
+						else
+							_reged_var+=("\"$_var\"=\"$_val\"")
+						fi
 					fi
 				fi
 			done
