@@ -1921,8 +1921,10 @@ $w_config;w_config;;Start Winecfg at app launch;CHK;;"
 							reg_val=('disabled'); else reg_val="enabled"
 						fi
 					fi
+					local $reg_var\_unset=',unset'
 				else
 					reg_val='unset'
+					local $reg_var\_unset=''
 				fi
 			else
 				reg_val='unset'
@@ -1997,15 +1999,15 @@ $vb\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 
 		basic_sets="'';;;;LBL;;
 '';;;$w_reg_manual0;LBL;;
-$StrictDrawOrdering,enabled,disabled;StrictDrawOrdering;;$w_reg_def_SDO;CB;;
-$csmt,enabled,disabled;csmt;;$w_reg_def_CSMT;CB;;
-$DirectDrawRenderer,opengl,gdi;DirectDrawRenderer;;$nf DirectDrawRenderer$end;CB;;
-$OffscreenRenderingMode,backbuffer,fbo;OffscreenRenderingMode;;$nf OffscreenRenderingMode$end;CB;;
-$RenderTargetLockMode,auto,disabled,readdraw,readtex,texdraw,textex;RenderTargetLockMode;;$nf RenderTargetLockMode$end;CB;;
-$UseGLSL,enabled,disabled;UseGLSL;;$nf UseGLSL$end;CB;;
-$CheckFloatConstants,enabled,disabled;CheckFloatConstants;;$nf CheckFloatConstants$end;CB;;
-$Nonpower2Mode,repack;Nonpower2Mode;;$nf Nonpower2Mode$end;CB;;
-$x_mem,$vid_mem;VideoMemorySize;;$w_reg_def_VID;CBE;;
+$StrictDrawOrdering,enabled,disabled$StrictDrawOrdering_unset;StrictDrawOrdering;;$w_reg_def_SDO;CB;;
+$csmt,enabled,disabled$csmt_unset;csmt;;$w_reg_def_CSMT;CB;;
+$DirectDrawRenderer,opengl,gdi$DirectDrawRenderer_unset;DirectDrawRenderer;;$nf DirectDrawRenderer$end;CB;;
+$OffscreenRenderingMode,backbuffer,fbo$OffscreenRenderingMode_unset;OffscreenRenderingMode;;$nf OffscreenRenderingMode$end;CB;;
+$RenderTargetLockMode,auto,disabled,readdraw,readtex,texdraw,textex$RenderTargetLockMode_unset;RenderTargetLockMode;;$nf RenderTargetLockMode$end;CB;;
+$UseGLSL,enabled,disabled$UseGLSL_unset;UseGLSL;;$nf UseGLSL$end;CB;;
+$CheckFloatConstants,enabled,disabled$CheckFloatConstants_unset;CheckFloatConstants;;$nf CheckFloatConstants$end;CB;;
+$Nonpower2Mode,repack;Nonpower2Mode$Nonpower2Mode_unset;;$nf Nonpower2Mode$end;CB;;
+$x_mem,$vid_mem$VideoMemorySize_unset;VideoMemorySize;;$w_reg_def_VID;CBE;;
 '';;;$w_reg_manual1;LBL;;
 $user_reg;user_reg;;$w_reg_manual2;TXT;;"
 
