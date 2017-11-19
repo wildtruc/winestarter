@@ -23,6 +23,9 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 19/11/17 ) v0.99.1*
+ - 3 errors found since major update. Fixed.
+ 
 *( 15/11/17 ) v0.99*
  - beta release before upgrade v1.0 after complete rewrite. There realy too much things to tell to be wroten in Changelog.
  - all parts have been rewrite to be faster.

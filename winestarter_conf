@@ -238,10 +238,10 @@ main_code(){
 			
 		done
 		if [ $win_type = 1 ]; then
-		## give more time to winetricks
-		while [[ $(pgrep 'winetricks') ]]; do
-			sleep 1
-		done
+#		## give more time to winetricks
+#		while [[ $(pgrep 'winetricks') ]]; do
+#			sleep 1
+#		done
 		kill $WAIT_UI_1
 			w_width=$((800+$scale))
 			$yad_bin --width=$w_width --title "$w_title" --window-icon=$img_wine_desk_ui --borders=15 \
@@ -763,8 +763,14 @@ _install=$_install"
 				fi
 			done
 			_tricks_list_new=$(echo -e "${_tricks_var_new[@]}"|tr ' ' ',')
-			w_tricks_list=$(printf "$w_tricks_list_prev"| sed -E -n "s/^(.*)/\1,$_tricks_list_new/p")
-			if [ ${#_tricks_var_new[*]} -gt 0 ]; then w_install_tricks=1; fi
+#			w_tricks_list=$(printf "$w_tricks_list_prev"| sed -E -n "s/^(.*)/\1,$_tricks_list_new/p")
+			if [ ${#_tricks_var_new[*]} -gt 0 ]; then
+				w_tricks_list=$(printf "$w_tricks_list_prev"| sed -E -n "s/^(.*)/\1,$_tricks_list_new/p")
+				w_install_tricks=1
+			else
+				w_tricks_list=$w_tricks_list_prev
+				w_install_tricks=0
+			fi
 		fi
 		
 		if [ $(printf "$w_tricks_list"| grep -c .) -gt 0 ]; then _tricks=1; else _tricks=0; fi
