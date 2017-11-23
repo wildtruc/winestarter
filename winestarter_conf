@@ -724,6 +724,7 @@ w_more_pkgs='$w_more_pkgs'
 ## In some cases, install is provided by extractible or auto-extractible package
 ## This option will install them in the provided directory to the Program Files path
 w_install_zip=\"$w_install_zip\"
+## otherwise, you can specify the install dir from the root C: drive.
 w_install_dir=\"$w_install_dir\"
 ## Download dir is the user default one, you can change it here.
 w_download_dir=\"$w_download_dir\"

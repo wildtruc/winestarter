@@ -23,6 +23,10 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 23/11/17 ) v0.99.2*
+	- error found in winestarter zip install feature.
+	- add security in case zip file is a setup install directory
+
 *( 19/11/17 ) v0.99.1*
  - 3 errors found since major update. Fixed.
  
