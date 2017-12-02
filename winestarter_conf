@@ -425,21 +425,21 @@ $res_action;;;$res_launch;FBTN;;
 					if [[ $game_key != '' ]]; then
 						if [ $(printf "$game_dir"| grep -c "$game_key") -gt 0 ]; then
 							game_dir=$(printf "$game_dir"| \
-							sed -E -n "s|^.*(\w*$game_key)(.*$)|$game_key\2|p")
+							sed -n "s|^.*\w*$game_key\(.*$\)|$game_key\1|p")
 						fi
 					else
 						if [ $(printf "$game_dir"| grep -c "Program\ Files") -gt 0 ]; then
 							game_dir=$(printf "$game_dir"| \
-							sed -E -n "s|^.*(Program\ Files$elf_ext/)(.*)$|\2|p")
+							sed -n "s|^.*Files$elf_ext/\(.*\)$|\1|p")
 						else
-							game_dir=$(printf "$game_dir"| sed -E -n "s|^.*(drive_c/)(.*)$|\2|g;p")
+							game_dir=$(printf "$game_dir"| sed -n "s|^.*drive_c/\(.*\)$|\1|g;p")
 						fi
 					fi
 				;;
 				'game_exe')
 					if [[ $game_exe =~ ^.*\.(exe|EXE)$ ]]; then
 						game_exe=$(printf "$game_exe"| \
-						sed -E -n "s|^.*($game_dir)/(.*)([exe|EXE]?)$|\2\3|p")
+						sed -En "s|^.*($game_dir)/(.*)([exe|EXE]?)$|\2\3|p")
 					else
 						game_exe=''
 					fi
@@ -1218,7 +1218,7 @@ _optimus=$_optimus"
 		unset tab_set tab_temp cfg_set t_display nv_field
 		main_tab_text="$bf Select settings by theme$end \\n \
  $nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
- $nf\\Last dowloadable Wine:$end$vb wine32 $pol32, wine64 $pol64$end $nf\\System :$end $vb$sys_version$end"
+ $nf\\Last dowloadable:$end$vb PlayOnLinux > wine32 $pol32, wine64 $pol64$end, WineHQ > wine32 $hq32, wien64 $hq64, $nf\\System >$end $vb$sys_version$end"
 		w_text="$bf Wine prefix$end\\n \
 $vb Set wine prefix name, appli/game directories, etc.$end\\n \
 $nf Check here the sections you would like to configure.$end"
@@ -1701,8 +1701,13 @@ $wine_elf;wine_elf;;App type is 64 bits;CHK;;"
 				fi
 				game_exe="$game_dir/$game_exe"
 			else
-				game_dir=$HOME
-				game_exe=$HOME
+				if [ -d $user_prefix/$bottle_prefix/drive_c/'Program Files'$elf_ext ]; then
+					game_dir=$user_prefix/$bottle_prefix/drive_c/'Program Files'$elf_ext
+					game_exe=$game_dir
+				else
+					game_dir=$HOME
+					game_exe=$game_dir
+				fi
 			fi
 			if [[ $game_path == '' ]]; then game_path="$HOME/"; fi
 			if [ $_extended = 1 ]; then chk_arg_opts; fi
@@ -2753,8 +2758,9 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 		## connection test and PoL la bianry version per arch
 		unset pol_list
 		line=$(nc -z 8.8.8.8 53)
-		pol_list=('32,x86' '64,amd64')
 		line=$?
+		
+		pol_list=('32,x86' '64,amd64')
 		if [ $line = 0 ]; then
 			ct_msg='On'
 		else
@@ -2773,6 +2779,45 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 			fi
 			export $pol_x
 		done
+		sys_version=$(/usr/bin/wine --version)
+		
+#		arch_list=('32,x86,i686' '64,amd64,x86_64')
+#		if [ $wine_elf = 1 ]; then ftp_elf='amd64'; http_elf='x86_64'; else ftp_elf='x86'; http_elf='i686'; fi
+#		file_temp=$(mktemp --tmpdir last.XXXXXXXX)
+#		
+#		dl_address[0]="http://wine.playonlinux.com/binaries/linux-$ftp_elf.lst"
+#		dl_address[1]="https://dl.winehq.org/wine-builds/fedora/"
+#		loc=0
+#		until [ $loc -eq 1 ]; do
+#			bin_class=$loc
+#			dl_address=$dl_address[$loc]
+#			download_list
+#		done
+#		
+#		
+#		
+#		
+#		if [ $line = 0 ]; then
+#			ct_msg='On'
+#		else
+#			ct_msg='Off'
+#		fi
+#		for src in 
+#		for c in ${arch_list[@]}; do
+#			arch=$(printf "$c"| cut -d',' -f1)
+#			adir=$(printf "$c"| cut -d',' -f2)
+#			if [ "$ct_msg" == 'On' ]; then
+#				pol=$(mktemp --tmpdir pol.XXXXXXXX)
+#				wget -O $pol http://wine.playonlinux.com/binaries/linux-$adir.lst
+#				pol_x=( pol$arch=$(tac "$pol"| cut -d';' -f2| sed -n '1p' ) )
+#				rm -f $pol
+#			else
+#				pol_x=( pol$arch='no data available' )
+#			fi
+#			export $pol_x
+#		done
+		
+		
 	}
 	key=$RANDOM
 	sleep 1
@@ -2979,32 +3024,37 @@ select_wine_dis(){
 }
 download_list(){
 	wget -O $file_temp $dl_address
+	if [ $bin_class -gt 0 ]; then
 	## WineHQ give multiple repos for fedora project. To get all availables, we take in all fedora
 	## version and put them in a single var.
-	os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
-	sed -En "s/^.*([0-9]{2}).*$/\1/p")
-	for os_v in ${os_version[@]}; do
-		wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
-		dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-staging$elf-[0-9]+"| \
-		sed -En "s/^.*$elf-([0-9]\.[0-9]*)-([0-9]).$http_elf.*$/\1-\2-staging,$os_v/p")
-	## merge only if Wine version is different.
-		if [ $os_v_p ]; then
-			if [ $os_v -ne $os_v_p ]; then
-				new_output=$(echo "${dl_bin_list[$os_v]}"|cut -d',' -f1)
-				prev_output=$(echo "${dl_bin_list[$os_v_p]}"|cut -d',' -f1)
-				_diff=$(echo "$new_output"| grep -vc "$prev_output")
-				if [ $_diff -gt 0 ]; then
-					_added=$(echo "${dl_bin_list[$os_v]}"| grep -v "$prev_output")
-					dl_bin_list[$os_v]=$(echo -e "${dl_bin_list[$os_v_p]}\n$_added")
-					dl_bin_list=${dl_bin_list[$os_v]}
-#						echo "${dl_bin_list[$os_v]}" > $list_temp
+		os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
+		sed -En "s/^.*([0-9]{2}).*$/\1/p")
+		for os_v in ${os_version[@]}; do
+			wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
+			dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-staging$elf-[0-9]+"| \
+			sed -En "s/^.*$elf-([0-9]\.[0-9]*)-([0-9]).$http_elf.*$/\1-\2-staging,$os_v/p")
+		## merge only if Wine version is different.
+			if [ $os_v_p ]; then
+				if [ $os_v -ne $os_v_p ]; then
+					new_output=$(echo "${dl_bin_list[$os_v]}"|cut -d',' -f1)
+					prev_output=$(echo "${dl_bin_list[$os_v_p]}"|cut -d',' -f1)
+					_diff=$(echo "$new_output"| grep -vc "$prev_output")
+					if [ $_diff -gt 0 ]; then
+						_added=$(echo "${dl_bin_list[$os_v]}"| grep -v "$prev_output")
+						dl_bin_list[$os_v]=$(echo -e "${dl_bin_list[$os_v_p]}\n$_added")
+						dl_bin_list=${dl_bin_list[$os_v]}
+	#						echo "${dl_bin_list[$os_v]}" > $list_temp
+					fi
+					os_v_p=$os_v
 				fi
+			else
 				os_v_p=$os_v
 			fi
-		else
-			os_v_p=$os_v
-		fi
-	done
+		done
+	else
+		wget -O $file_temp $dl_address
+		dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2)" )
+	fi
 	if [ ${#local_bin_list[@]} -gt 0 ]; then
 		for existing in ${local_bin_list[@]}; do
 			if [ $(printf "$dl_bin_list"| grep -c "$existing") -gt 0 ]; then
@@ -3016,7 +3066,7 @@ download_list(){
 }
 select_wine_binary(){
 	unset dl_bin_list local_bin_list wine_bin_list
-	wine_bin_temp=$(mktemp --tmpdir w_binary.XXXXXXXX+)
+	wine_bin_temp=$(mktemp --tmpdir w_binary.XXXXXXXX)
 	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; elf='64'; else ftp_elf='x86'; elf=''; fi
 	# ls already insbtalled packages if any
 #	if [ $default_bin_dir ]; then 
@@ -3042,7 +3092,11 @@ select_wine_binary(){
 		if [ $? = 0	 ]; then
 			if [ $wine_bin != '' ]; then
 				wine_bin=$(printf	"$wine_bin"| sed -En "s/[*]? $//g;p")
-				dist_dl_ver=$(cat $file_temp.[list]| sed -En "s/^$wine_bin,(.*)$/\1/p")
+				if [ $bin_class -gt 0 ]; then
+					dist_dl_ver=$(cat $file_temp.[list]| sed -En "s/^$wine_bin,(.*)$/\1/p")
+				else
+					dist_dl_ver=0
+				fi
 #				printf "$wine_bin;$bin_class"| sed -n "s/ //g;p" > /tmp/w_bin_tmp
 				printf "$wine_bin;$bin_class;$dist_dl_ver" > $wine_bin_temp
 			fi

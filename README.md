@@ -65,25 +65,35 @@ The config file is a per game/app file, with all "env" tricks, reg edit you need
 I add, between others, a **xrandr** option that can be very useful in some case.
 
 ## Install
-Download the GIT repo wherever you want :
+Download the GIT repo wherever you want. Open a terminal inside the GIT repo and as root user or as sudo (su -c), type:
+
+(Note Debian or RedHat like support su and sudo command; if you like to use sudo in Redhat like, you have to add your current user in adminitrators list)
 ```sh
 	git clone https://github.com/wildtruc/winestart.git
 	cd winestart/
-	# as sudo or su -c in a terminal
+	# as sudo or su -c in a user terminal
 	sudo make install
+```
+
+To update (will update GIT and install):
+```sh
+	# as sudo or su -c in a user terminal
+	sudo make update
 ```
 
 To uninstall:
 ```sh
-	make uninstall
+	# as sudo or su -c in a user terminal
+	sudo make uninstall
 ```
 
 To uninstall without remove precious conf files :
 ```sh
-	make safeuninstall
+	# as sudo or su -c in a user terminal
+	sudo make safeuninstall
 ```
 
-The `makefile` will install launcher and configarator in `/usr/local/bin` and the per game/app config file template in `~/.winestarter/configs` user hidden dir.
+The `makefile` will install launcher and configarator in `/usr/local/bin` and the per game/app config file template in `~/.winestarter/configs` user's hidden dir.
 
 ## Usage
 

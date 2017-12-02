@@ -23,6 +23,11 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 2/12/17 ) v0.99.3*
+	- remove PlayOnLinux package download by mistake. Fixed.
+	- Fixed regex error that do not display used app dir when select direct app path.
+	- Fixed default app directory in wine config tab. It displayed user's home instead of Program Files.
+	 
 *( 23/11/17 ) v0.99.2*
 	- error found in winestarter zip install feature.
 	- add security in case zip file is a setup install directory
