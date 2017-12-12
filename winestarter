@@ -490,7 +490,6 @@ fn_install_tricks(){
 		fi
 		exit 0
 	fi
-	exit 0
 }
 fn_extract_lnk(){
 #	local $DESK_DIR
