@@ -38,6 +38,7 @@ Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards
  - strings (for Wine/Ms lnk file reading, usualy by default in all distros)
  - icoutils (for MS Icons png extraction, name can vary by distro like icotools)
  - Winetricks (send with the git clone and updated)
+ - cabextract ( for MS cabinet extraction, usualy by default in all distros)
  - rpm (for rpm2cpio helping extracting rpm package, usualy available in all distros repos)
  
  and obviously, Wine :)

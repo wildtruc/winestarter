@@ -23,19 +23,23 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
-*( 2/12/17 ) v0.99.3*
-	- remove PlayOnLinux package download by mistake. Fixed.
-	- Fixed regex error that do not display used app dir when select direct app path.
-	- Fixed default app directory in wine config tab. It displayed user's home instead of Program Files.
+*( 12/12/17 ) v0.9.4*
+	Error in fn_install_tricks winestarter function. I should treat new prefix creation, but only take care of already existiing during rewrite (stupid?). Fixed. -
+	Added cabextract existance in system tree because not install by default during dist Wine install. -
+	
+*( 2/12/17 ) v0.9.3*
+	Remove PlayOnLinux package download by mistake. Fixed. -
+	Fixed regex error that do not display used app dir when select direct app path. -
+	Fixed default app directory in wine config tab. It displayed user's home instead of Program Files. 
 	 
-*( 23/11/17 ) v0.99.2*
-	- error found in winestarter zip install feature.
-	- add security in case zip file is a setup install directory
+*( 23/11/17 ) v0.9.2*
+	Error found in winestarter zip install feature. -
+	Add security in case zip file is a setup install directory. -
 
-*( 19/11/17 ) v0.99.1*
+*( 19/11/17 ) v0.9.1*
  - 3 errors found since major update. Fixed.
  
-*( 15/11/17 ) v0.99*
+*( 15/11/17 ) v0.9*
  - beta release before upgrade v1.0 after complete rewrite. There realy too much things to tell to be wroten in Changelog.
  - all parts have been rewrite to be faster.
  - winetricks binary take place now fully in the git repo (daily updated) 
