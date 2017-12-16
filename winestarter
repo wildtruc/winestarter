@@ -228,12 +228,13 @@ fn_download_ui(){
 		dl_cmd(){ wget $pkgs $dl_dir/ 2>&1; }
 	fi
 	## This perl regex Analyse and parse wget stdout field, then display it in a yad window
-	track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $pack_name [\1] time left: \3\t\2\/s/"; }
+	track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $pck_dsp [\1] time left: \3\t\2\/s/"; }
 #	site=$(printf "$pkgs"| sed -n "s/\(^.*\/\/\)\(.*\.\w*[a-z]\)\/*.*$/\2/p")
 	pkg_ext=$(printf "$pkgs"| sed -n "s/^.*\.//p")
 #	site=$(printf "$pkgs"| sed -n -E "s/(^.*\/\/)(.*\.\w*[a-z])\/*.*\.(w*$pkg_ext)$/\2/p")
 	site=$(printf "$pkgs"| sed -E -n "s/(^.*:\/\/)(\w+)\.(\w+)\.(\w+)\/.*$/\2.\3.\4/p")
 	pack=$(printf "$pkgs"| sed -n "s/^.*\///p")
+	pck_dsp=$(printf "$pack"| sed -En "s/.\w*[0-9].rpm//p")
 #	w_text="$vb\\Downloading $pack from $site server.$end"
 	w_text="Downloading from $site server."
 	## yad progress bar
@@ -257,8 +258,9 @@ fn_use_winepath(){
 	
 		for os_v in ${os_version[@]}; do
 			wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
-			dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-staging$b_elf-[0-9]+"| \
-			sed -En "s/^.*$b_elf-([0-9]\.[0-9]*)-([0-9]).$http_elf.*$/\1-\2-staging,$os_v/p")
+			dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-$hq_stage$b_elf-[0-9]+"| \
+			sed -En "s/^.*$b_elf-([0-9]\.[0-9]*)-([0-9](.rc[0-9])?).$http_elf.*$/\1-\2-$hq_stage,$os_v/p")
+#			sed -En "s/^.*$b_elf-([0-9]\.[0-9]*)-([0-9]).$http_elf.*$/\1-\2-$hq_stage,$os_v/p")
 			if [ $os_v_p ]; then
 				if [ $os_v -ne $os_v_p ]; then
 					new_output=$(echo "${dl_bin_list[$os_v]}"| cut -d',' -f1)
@@ -295,7 +297,16 @@ fn_use_winepath(){
 			unpack_list=( $dl_pkg )
 		else
 			if [ $wine_elf = 1 ]; then http_elf='x86_64'; b_elf='64'; else http_elf='i686'; b_elf=''; fi
-			
+			if [[ $wine_ver =~ ^.*staging.*$ ]]; then
+				hq_stage='staging'; hq_short='staging'
+			else
+				hq_stage='development'; hq_short='devel'
+			fi
+#			if [[ $wine_ver =~ ^.*.rc[0-9].*$ ]]; then
+#				rc_stage=$(echo "$wine_ver"| sed -En "s/^.*(rc[0-9]).*$/\1/p")
+#			else
+#				rc_stage=''
+#			fi
 			file_temp=$(mktemp --tmpdir ftp.XXXXXXXX)
 			dl_address="https://dl.winehq.org/wine-builds/fedora"
 			dl_text="$vb\\Building WineHQ packages repository list.$end"
@@ -317,12 +328,12 @@ fn_use_winepath(){
 #			dl_address_0="https://dl.winehq.org/wine-builds/fedora/25/$http_elf"
 #			dl_address_1="https://dl.winehq.org/wine-builds/fedora/25/i686"
 			dl_list=(
-				"$dl_address_0/wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
-				"$dl_address_1/wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
+				"$dl_address_0/wine-$hq_stage$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
+				"$dl_address_1/wine-$hq_stage-common-$pkg_ver-$pkg_rel.i686.rpm"
 			)
 			unpack_list=(
-				"wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
-				"wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
+				"wine-$hq_stage$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
+				"wine-$hq_stage-common-$pkg_ver-$pkg_rel.i686.rpm"
 			)
 		fi
 		kill $WAIT_UI
@@ -365,7 +376,7 @@ fn_use_winepath(){
 			cp -Rf wineversion/$wine_ver/ $wine_path/$ftp_elf
 		else
 			mkdir -p $wine_path/$ftp_elf/$wine_ver/
-			cp -Rf opt/wine-staging/* $wine_path/$ftp_elf/$wine_ver/
+			cp -Rf opt/wine-$hq_short/* $wine_path/$ftp_elf/$wine_ver/
 #			if [ $b_elf = 64 ]; then ln -sf $wine_path/$ftp_elf/$wine_ver $wine_path/x86/; fi
 			if [ $b_elf = 64 ]; then cd $wine_path/x86; ln -sf ../$ftp_elf/$wine_ver ; fi
 		fi
@@ -1018,10 +1029,12 @@ fn_wine_binary(){
 #		export LD_LIBRARY_PATH
 #		export PATH
 #		echo "$LD_LIBRARY_PATH"
-		wine_bin=$WINELOADER
+#		wine_bin=$WINELOADER
 		wine_bin_path=$wine_elf_path/bin/
 	#	wineboot -u
 	#	wine --version
+	## sandoxing wine by exec in WINELOADER directory
+	cd $WINEVERPATH/bin
 	fi
 }
 fn_wineconf(){
@@ -1107,6 +1120,7 @@ else
 #	game_dir=$(printf "$game_dir"|sed -n "s/\//\\\/g;p")
 #	game_exe=$(printf "$game_exe"|sed -n "s/\//\\\/g;p")
 #	$opti_run $wine_bin C:\\$win_prog$game_dir\\$game_exe $wine_opts &
+	$wine_bin --version
 	SOFT_PATH=$($wine_bin winepath -w "$user_prefix/$bottle_prefix/drive_c/"$win_prog"$game_dir/$game_exe")
 	$opti_run $wine_bin $SOFT_PATH $wine_opts &
 fi

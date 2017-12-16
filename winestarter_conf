@@ -1804,6 +1804,7 @@ ${misc_sets[@]}"
 		wineset_list=$track_list
 		wine_bin_cmd="bash $bash_opt \"select_wine_bin\""
 		wine_dis_cmd="bash $bash_opt \"select_wine_dis\""
+		wine_dis_cmd_dev="bash $bash_opt \"select_wine_dis_dev\""
 		if [ $wine_elf = 1 ]; then dir_elf='amd64'; else dir_elf='x86'; fi
 		if [ $from_config = 1 ]; then
 			ifs=$IFS
@@ -1866,6 +1867,7 @@ $wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;
 '';;;;LBL;;
 '';;;$w_wine_dl_info;LBL;;
 $wine_dis_cmd;cmd;;$vb click here to download from WineHQ staging$end,$img_winedis_bt;FBTN;;
+$wine_dis_cmd_dev;cmd;;$vb click here to download from WineHQ development$end,$img_winedis_bt;FBTN;;
 $wine_bin_cmd;cmd;;$vb click here to download a PoL Wine package$end,$img_winepol_bt;FBTN;;
 '';;;;LBL;;
 '';;;$w_wine_wconfig;LBL;;
@@ -2909,6 +2911,7 @@ export icot_bin=$(find /usr/{bin,local/bin} -name icotool)
 export wres_bin=$(find /usr/{bin,local/bin} -name wrestool)
 export lpci_bin=$(find /{bin,sbin} /usr/{bin,sbin} -name lspci)
 export rpm_bin=$(find /usr/{bin,local/bin} -name rpm2cpio)
+export cab_bin=$(find /usr/{bin,local/bin} -name cabextract)
 # PlayOnLinux packages download window
 # select_win_bin(){ colors ; icons_set ; select_wine_bin; }
 edit_reg_bin(){ colors ; icons_set ; edit_regfile; }
@@ -3011,12 +3014,14 @@ select_wine_bin(){
 	window_img="$img_dl_pol"
 	select_wine_binary
 }
-select_wine_dis(){
+select_wine_dis(){ hq_stage='staging'; select_wine_hq; }
+select_wine_dis_dev(){ hq_stage='development'; select_wine_hq; }
+select_wine_hq(){
 	colors ; icons_set
 	bin_class=1
 	if [ $wine_elf = 1 ]; then http_elf='x86_64'; else http_elf='i686'; fi
 #	dl_address="https://dl.winehq.org/wine-builds/fedora/25/$http_elf/"
-	dl_address="https://dl.winehq.org/wine-builds/fedora/"
+	dl_address="https://dl.winehq.org/wine-builds/fedora"
 	site='WineHQ'
 	window_ico="$img_desktop"
 	window_img="$img_dl_whq"
@@ -3031,8 +3036,9 @@ download_list(){
 		sed -En "s/^.*([0-9]{2}).*$/\1/p")
 		for os_v in ${os_version[@]}; do
 			wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
-			dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-staging$elf-[0-9]+"| \
-			sed -En "s/^.*$elf-([0-9]\.[0-9]*)-([0-9]).$http_elf.*$/\1-\2-staging,$os_v/p")
+			dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-$hq_stage$elf-[0-9]+"| \
+			sed -En "s/^.*$elf-([0-9]\.[0-9]*)-([0-9](.rc[0-9])?).$http_elf.*$/\1-\2-$hq_stage,$os_v/p")
+#			sed -En "s/^.*$elf-([0-9]\.[0-9]*)-([0-9]).$http_elf.*$/\1-\2-$hq_stage,$os_v/p")
 		## merge only if Wine version is different.
 			if [ $os_v_p ]; then
 				if [ $os_v -ne $os_v_p ]; then
@@ -3057,8 +3063,8 @@ download_list(){
 	fi
 	if [ ${#local_bin_list[@]} -gt 0 ]; then
 		for existing in ${local_bin_list[@]}; do
-			if [ $(printf "$dl_bin_list"| grep -c "$existing") -gt 0 ]; then
-				dl_bin_list=$(echo "$dl_bin_list"| sed -En "s/^($existing)(.*$)/\1*\2/g;p")
+			if [ $(printf "$dl_bin_list"| egrep -wc "$existing,.*$") -gt 0 ]; then
+				dl_bin_list=$(echo "$dl_bin_list"| sed -En "s/^($existing),(.*$)/\1*,\2/g;p")
 			fi
 		done
 	fi
@@ -3567,7 +3573,7 @@ main_text0="$bf\\Stay simple with yours Wine bottles$end$vb\\n\
 $vb\\What do you want to do?$end\\n$vn(Hover buttons show tooltips)$end"
 
 export -f colors icons_set
-export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_wine_dis select_wine_binary download_list edit_reg_bin edit_regfile edit_wine_options
+export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_wine_dis select_wine_dis_dev select_wine_hq select_wine_binary download_list edit_reg_bin edit_regfile edit_wine_options
 export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt"
 $yad_bin --width=520 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons \
 --form --text="$main_text0" --image=$the_big_button  --borders=15 \
