@@ -2645,7 +2645,7 @@ w_conflicts()
 {
     for x in $2
     do
-        if grep -qw "$x" "$WINEPREFIX/winetricks.log"; then
+        if grep -qw "$x" "$WINEPREFIX/winetricks.log" 2>/dev/null; then
             w_die "error: $1 conflicts with $x, which is already installed."
         fi
     done
@@ -2804,6 +2804,12 @@ w_register_font()
     case $(echo "$W_file" | tr "[:upper:]" "[:lower:]") in
         *.ttf|*.ttc) W_font="$W_font (TrueType)";;
     esac
+
+    # See https://github.com/Winetricks/winetricks/issues/896
+    if [ ! -f "$W_file" ] && [ -f "${W_FONTSDIR_UNIX}/${W_file}" ]; then
+       W_file_unescaped="${W_FONTSDIR_WIN}\\${W_file}"
+       W_file="$(echo "$W_file_unescaped" | sed -e 's!\\!\\\\!g')"
+    fi
 
     # Kludge: use _r to avoid \r expansion in w_try
     cat > "$W_TMP"/_register-font.reg <<_EOF_
@@ -3958,7 +3964,7 @@ winetricks_is_installed()
     fi
 
     # Test if the verb has been executed before
-    if ! grep -qw "$1" "$WINEPREFIX/winetricks.log"; then
+    if ! grep -qw "$1" "$WINEPREFIX/winetricks.log" 2>/dev/null; then
         unset _W_file
         return 1  # not installed
     fi
@@ -10184,10 +10190,10 @@ load_consolas()
     w_try_cabextract -d "$W_TMP" -F "ppviewer.cab" "$W_CACHE/PowerPointViewer/$file1"
     w_try_cabextract -d "$W_TMP" -F "CONSOLA*.TTF" "$W_TMP/ppviewer.cab"
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "CONSOLA*.TTF"
-    w_register_font consola.ttf "Consoleas"
-    w_register_font consolab.ttf "Consoleas Bold"
-    w_register_font consolai.ttf "Consoleas Italic"
-    w_register_font consolaz.ttf "Consoleas Bold Italic"
+    w_register_font consola.ttf "Consolas"
+    w_register_font consolab.ttf "Consolas Bold"
+    w_register_font consolai.ttf "Consolas Italic"
+    w_register_font consolaz.ttf "Consolas Bold Italic"
 }
 
 #----------------------------------------------------------------
@@ -10220,10 +10226,10 @@ load_corefonts()
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE"/corefonts/arial32.exe
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "Arial*.TTF"
-    w_register_font arial.ttf "Arial"
     w_register_font arialbd.ttf "Arial Bold"
     w_register_font arialbi.ttf "Arial Bold Italic"
     w_register_font ariali.ttf "Arial Italic"
+    w_register_font arial.ttf "Arial"
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE"/corefonts/arialb32.exe
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "AriBlk.TTF"
@@ -10231,22 +10237,22 @@ load_corefonts()
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE"/corefonts/comic32.exe
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "Comic*.TTF"
-    w_register_font comic.ttf "Comic Sans MS"
     w_register_font comicbd.ttf "Comic Sans MS Bold"
+    w_register_font comic.ttf "Comic Sans MS"
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE"/corefonts/courie32.exe
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "cour*.ttf"
-    w_register_font cour.ttf "Courier New"
     w_register_font courbd.ttf "Courier New Bold"
     w_register_font courbi.ttf "Courier New Bold Italic"
     w_register_font couri.ttf "Courier New Italic"
+    w_register_font cour.ttf "Courier New"
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE"/corefonts/georgi32.exe
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "Georgia*.TTF"
-    w_register_font georgia.ttf "Georgia"
     w_register_font georgiab.ttf "Georgia Bold"
-    w_register_font georgiaz.ttf "Georgia Bold Italic"
     w_register_font georgiai.ttf "Georgia Italic"
+    w_register_font georgia.ttf "Georgia"
+    w_register_font georgiaz.ttf "Georgia Bold Italic"
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE"/corefonts/impact32.exe
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "Impact.TTF"
@@ -10254,24 +10260,24 @@ load_corefonts()
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE"/corefonts/times32.exe
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "Times*.TTF"
-    w_register_font times.ttf "Times New Roman"
     w_register_font timesbd.ttf "Times New Roman Bold"
     w_register_font timesbi.ttf "Times New Roman Bold Italic"
     w_register_font timesi.ttf "Times New Roman Italic"
+    w_register_font times.ttf "Times New Roman"
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE"/corefonts/trebuc32.exe
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "[tT]rebuc*.ttf"
-    w_register_font trebuc.ttf "Trebucet MS"
-    w_register_font trebucbd.ttf "Trebucet MS Bold"
-    w_register_font trebucbi.ttf "Trebucet MS Bold Italic"
-    w_register_font trebucit.ttf "Trebucet MS Italic"
+    w_register_font trebucbd.ttf "Trebuchet MS Bold"
+    w_register_font trebucbi.ttf "Trebuchet MS Bold Italic"
+    w_register_font trebucit.ttf "Trebuchet MS Italic"
+    w_register_font trebuc.ttf "Trebuchet MS"
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE"/corefonts/verdan32.exe
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "Verdana*.TTF"
-    w_register_font verdana.ttf "Verdana"
     w_register_font verdanab.ttf "Verdana Bold"
-    w_register_font verdanaz.ttf "Verdana Bold Italic"
     w_register_font verdanai.ttf "Verdana Italic"
+    w_register_font verdana.ttf "Verdana"
+    w_register_font verdanaz.ttf "Verdana Bold Italic"
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE"/corefonts/webdin32.exe
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "Webdings.TTF"
@@ -10340,10 +10346,10 @@ load_eufonts()
     w_register_font timesbi.ttf "Times New Roman Bold Italic"
     w_register_font timesi.ttf "Times New Roman Italic"
     w_register_font times.ttf "Times New Roman"
-    w_register_font trebucbd.ttf "Trebuchet Bold"
-    w_register_font trebucbi.ttf "Trebuchet Bold Italic"
-    w_register_font trebucit.ttf "Trebuchet Italic"
-    w_register_font trebuc.ttf "Trebuchet"
+    w_register_font trebucbd.ttf "Trebuchet MS Bold"
+    w_register_font trebucbi.ttf "Trebuchet MS Bold Italic"
+    w_register_font trebucit.ttf "Trebuchet MS Italic"
+    w_register_font trebuc.ttf "Trebuchet MS"
     w_register_font verdanab.ttf "Verdana Bold"
     w_register_font verdanai.ttf "Verdana Italian"
     w_register_font verdana.ttf "Verdana"
@@ -10536,7 +10542,7 @@ load_ipamona()
 #----------------------------------------------------------------
 
 w_metadata liberation fonts \
-    title="Red Hat Liberation fonts (Sans, Serif, Mono)" \
+    title="Red Hat Liberation fonts (Mono, Sans, SansNarrow, Serif)" \
     publisher="Red Hat" \
     year="2008" \
     media="download" \
@@ -10559,6 +10565,10 @@ load_liberation()
     w_register_font liberationsans-bolditalic.ttf "LiberationSans-BoldItalic"
     w_register_font liberationsans-bold.ttf "LiberationSans-Bold"
     w_register_font liberationsans-italic.ttf "LiberationSans-Italic"
+    w_register_font liberationsansnarrow-bolditalic.ttf "LiberationSansNarrow-BoldItalic"
+    w_register_font liberationsansnarrow-bold.ttf "LiberationSansNarrow-Bold"
+    w_register_font liberationsansnarrow-italic.ttf "LiberationSansNarrow-Italic"
+    w_register_font liberationsansnarrow-regular.ttf "LiberationSansNarrow-Regular"
     w_register_font liberationsans-regular.ttf "LiberationSans-Regular"
     w_register_font liberationserif-bolditalic.ttf "LiberationSerif-BoldItalic"
     w_register_font liberationserif-bold.ttf "LiberationSerif-Bold"
@@ -10665,20 +10675,32 @@ w_metadata uff fonts \
     publisher="Ubuntu" \
     year="2010" \
     media="download" \
-    file1="ubuntu-font-family-0.70.1.zip" \
+    file1="ubuntu-font-family-0.83.zip" \
     installed_file1="$W_FONTSDIR_WIN/ubuntu-r.ttf" \
     homepage="https://launchpad.net/ubuntu-font-family"
 
 load_uff()
 {
-    w_download "http://font.ubuntu.com/download/ubuntu-font-family-0.70.1.zip" c3737665b85e48664feabb8448957bdf17eab26cc320270f1641d9f98b7ea22e
-    w_try_unzip "$W_TMP" "$W_CACHE"/uff/ubuntu-font-family-0.70.1.zip
-    w_try_cp_font_files "$W_TMP/ubuntu-font-family-0.70.1" "$W_FONTSDIR_UNIX"
+    w_download "https://assets.ubuntu.com/v1/fad7939b-ubuntu-font-family-0.83.zip" 456d7d42797febd0d7d4cf1b782a2e03680bb4a5ee43cc9d06bda172bac05b42 ubuntu-font-family-0.83.zip
+    w_try_unzip "$W_TMP" "$W_CACHE/$W_PACKAGE/$file1"
 
-    w_register_font ubuntu-r.ttf "Ubuntu"
-    w_register_font ubuntu-i.ttf "Ubuntu Italic"
-    w_register_font ubuntu-b.ttf "Ubuntu Bold"
+    w_try_cp_font_files "$W_TMP/$(basename "${file1}" .zip)" "$W_FONTSDIR_UNIX"
+
     w_register_font ubuntu-bi.ttf "Ubuntu Bold Italic"
+    w_register_font ubuntu-b.ttf "Ubuntu Bold"
+    w_register_font ubuntu-c.ttf "Ubuntu Condensed"
+    w_register_font ubuntu-i.ttf "Ubuntu Italic"
+    w_register_font ubuntu-li.ttf "Ubuntu Light Italic"
+    w_register_font ubuntu-l.ttf "Ubuntu Light"
+    w_register_font ubuntu-mi.ttf "Ubuntu Medium Italic"
+    w_register_font ubuntumono-bi.ttf "Ubuntu Mono Bold Italic"
+    w_register_font ubuntumono-b.ttf "Ubuntu Mono Bold"
+    w_register_font ubuntumono-ri.ttf "Ubuntu Mono Italic"
+    w_register_font ubuntumono-r.ttf "Ubuntu Mono"
+    w_register_font ubuntu-m.ttf "Ubuntu Medium"
+    w_register_font ubuntu-ri.ttf "Ubuntu Italic"
+    w_register_font ubuntu-r.ttf "Ubuntu"
+
 }
 
 #----------------------------------------------------------------
