@@ -24,14 +24,19 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 31/12/17 ) v0.99.5* ??
+ - Realize that only 32 bits apps (x86 directory) was managed in 64bit bottles. Fixed.
+ - Accordingly with above statement, x86 apps is now auto detected before launching.
+ - w_config set for winecfg start wasn't managed when checked in wtc fn_binary_config. Fixed.
+ - And many more to come, probably ;°(.
+
 *( 16/12/17 ) v0.99.4*
  - Error in fn_install_tricks winestarter function. I should treat new prefix creation, but only take care of already existiing during rewrite (stupid?). Fixed.
  - Added cabextract existance in system tree because not install by default during dist Wine install.
  - Added WineHQ development packages because I was needed wine3.0-rc1 for test :).
  - Fixed Wine standalone environment. Wine wanted not start when there was no distro Wine package installed. It does now.
- - Will remove PoL package download/install at next update.
+ - Will remove PoL package download/install at next updates (Should I ?).
 	  
-	
 *( 2/12/17 ) v0.99.3*
  - Remove PlayOnLinux package download by mistake. Fixed.
  - Fixed regex error that do not display used app dir when select direct app path.

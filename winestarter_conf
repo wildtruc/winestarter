@@ -537,7 +537,7 @@ user_prefix=$user_prefix
 bottle_prefix=\"$bottle_prefix\"
 ## default system path of the game/appli if not in the chosen Wine prefix
 game_path=\"$game_path\"
-## Full game dir name in Program Files (including Program Files dir name)
+## Full game dir name in Program Files
 game_dir=\"$game_dir\"
 game_exe=\"$game_exe\"
 ## set if the app is portable or to be installed in C: drive root: no (0), yes (1).
@@ -596,6 +596,11 @@ _wine=$_wine"
 			_var=$(printf "$_list"|cut -d'=' -f1)
 			_val=$(printf "$_list"|cut -d'=' -f2)
 			case $_var in
+				'use_winepath')
+					if ! [[ $(find /usr/{bin,local/bin} -name wine) ]]; then
+						use_winepath=1
+					fi
+				;;
 				'wine_path')
 					_def_val=.winebin
 					if [[ $_val != $HOME || $_val != $user_prefix/$_def_val ]]; then
@@ -629,10 +634,17 @@ _wine=$_wine"
 					fi
 					rm -f $wine_bin_temp
 				;;
+				'w_config')
+					if [ $from_config = 1 ]; then
+						if [ $w_config -gt 0 ]; then
+							sed -ni "s/^\(w_config\)=[0-9]$/\1=$w_config/g;p" $TEMP_conf
+						fi
+					fi
+				;;
 			esac
 		done
 		if [ $use_winepath = 1 ]; then _wbin=1; fi
-		newconf_wbin
+		newconf_wbin	
 	}
 	newconf_wbin(){
 		_section="## Use a specific Wine path: yes (1), no (0).
@@ -642,7 +654,7 @@ wine_path=\"$wine_path\"
 ## custom Wine binary name
 wine_ver='$wine_ver'
 ## Which kind of packages do you want to use:
-## PlayOnLinux (0), WineHQ staging (1), leave empty if already in bin directory.
+## PlayOnLinux (0), WineHQ staging/development (1), leave empty if already in bin directory.
 wine_pack=$wine_pack
 ## Do not remove or edit below except if you don't use winestarter configurator.
 _wbin=$_wbin"
@@ -1216,9 +1228,10 @@ _optimus=$_optimus"
 		fn_tricks_list_build &
 		unset form_win def_win default_win
 		unset tab_set tab_temp cfg_set t_display nv_field
-		main_tab_text="$bf Select settings by theme$end \\n \
- $nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
- $nf\\Last dowloadable:$end$vb PlayOnLinux > wine32 $pol32, wine64 $pol64$end, WineHQ > wine32 $hq32, wien64 $hq64, $nf\\System >$end $vb$sys_version$end"
+		main_tab_text="$bf\\Select settings by theme$end \\n \
+$nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
+$nf\\Last dowloadable:$end$vb PlayOnLinux >$end wine32 $pol32, wine64 $pol64\\n \
+$vb\\WineHQ >$end wine(32/64) $hq_stg, $hq_dev,$nf\\System >$end $sys_version"
 		w_text="$bf Wine prefix$end\\n \
 $vb Set wine prefix name, appli/game directories, etc.$end\\n \
 $nf Check here the sections you would like to configure.$end"
@@ -1317,7 +1330,7 @@ $_extended;_extended;;$msg_extended;CHK;;"
 			export LD_LIBRARY_PATH="$wine_elf_path/lib:$LD_LIBRARY_PATH"
 		fi
 		wine_bin=$WINELOADER
-		sys_version=$($wine_bin --version)
+#		sys_version=$($wine_bin --version)
 		use_winepath=1
 		wine_pack=1
 		_wbin=1
@@ -1542,7 +1555,8 @@ $_basics_fields"
 		w_wine_prefix="$vb\\Set the Wine Bottle prefix to use:$end"
 		w_wine_prefix_tip="$vb\\Example:$end$nf wine.my_bottle$end, no space. \"$nf\\wine.$end\" prefix is mandatory."
 		w_wine_game_path="$vb\\Set the full game/appli directory if different from bottle:$end"
-		w_wine_elf_tip="$nf\\Note:$end 32bits apps can be launch from a Wine 64bits install (from Wine 2.0 and above). In my own experience, it enhance globaly app performances. (Don't for XP 32bits apps)"
+		w_wine_elf_tip_0="$rb\\Note$end: 32bits apps can be launch from a Wine 64bits install (from Wine 2.0 and above). In my own experience, it enhance globaly app performances. (Don't for XP bottle 32bits apps)"
+		w_wine_elf_tip_1="$rb\\Warning$end: Winetarter manage "
 		w_text="$bf\\Configure the Wine basic environment$end"
 		
 		track_list="user_prefix bottle_prefix game_path wine_elf"
@@ -1566,7 +1580,8 @@ wine.mybottlename;bottle_prefix;;$nf Bottle prefix$end;;;
 $game_path;game_path;;$nf Existing appli path$end;DIR;;
 '';;;$w_wine_elf;LBL;;
 '';;;$w_wine_elf_tip;LBL;;
-$wine_elf;wine_elf;;App type is 64 bits;CHK;;"
+$wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
+#$wine_app_elf;wine_app_elf;;Application type is full 64 bits;CHK;;"
 		item_sep=","
 		IFS=$ifs
 		from_config=0
@@ -1576,18 +1591,43 @@ $wine_elf;wine_elf;;App type is 64 bits;CHK;;"
 		default_win_design
 	}
 
+#	fn_wine_elf_query(){
+#		## if there is no initial wine install in the the system, try to set env first
+#		## when wine bottle is created at first step, define the wine arch used and add
+#		## the x86 for 32 bits applications.
+#		if [ $wine_elf = 1 ]; then
+#			
+#			elf=64; elf_ext=' (x86)'; w_elf_ext='\ (x86)'
+#		else
+#			elf=32; elf_ext=''; w_elf_ext=''
+#		fi
+#		if ! [ -d $user_prefix/$bottle_prefix/drive_c/Program\ Files"$elf_ext" ]; then
+#			root_key=''
+#		else
+#			root_key="Program Files$elf_ext/"
+#		fi
+#	}
 	fn_wine_elf_query(){
-		## if there is no initial wine install in the the system, try to set env first
-		## when wine bottle is created at first step, define the wine arch used.
+		## Define bottle elf priority ans add necessary change accordingly. 
 		if [ $wine_elf = 1 ]; then
-			elf=64; elf_ext=' (x86)'; w_elf_ext='\ (86)'
+			elf=64
+		## Detected if the app is 32 or real 64, and change the Program Files detection accordingly.
+			bin_target=$(find -L $user_prefix/$bottle_prefix/drive_c/Program\ {Files,Files\ \(x86\)} \
+			-wholename "*$game_exe")
+			_target=$?
+			if [ $_target = 0 ]; then
+				if [[ "$bin_target" =~ ^.*x86.*$ ]]; then
+					root_key='Program Files (x86)/'
+					elf_ext=' (x86)'
+				else
+					root_key="Program Files/"
+					elf_ext=''
+				fi
+			fi
 		else
-			elf=32; elf_ext=''; w_elf_ext=''
-		fi
-		if ! [ -d $user_prefix/$bottle_prefix/drive_c/Program\ Files"$elf_ext" ]; then
-			root_key=''
-		else
-			root_key="Program Files$elf_ext/"
+			elf=32
+			root_key="Program Files/"
+			elf_ext=''
 		fi
 	}
 	## at first launch for a botlle creation, sets the basics variables to access
@@ -1624,7 +1664,7 @@ $wine_elf;wine_elf;;App type is 64 bits;CHK;;"
 		export WINEPREFIX="$user_prefix/$bottle_prefix"
 		${wine_bin_path}wineboot -i
 		fn_wine_elf_query
-		
+#		root_key="Program Files/"
 		
 		if [[ $game_path != '' && $game_path != $HOME ]]; then
 			link=$(printf "$game_path"| sed -n "s/^.*\///g;p")
@@ -1644,7 +1684,8 @@ $wine_elf;wine_elf;;App type is 64 bits;CHK;;"
 		echo -e "$g_notif >>>> start fn_wine_config $e_notif"
 		unset  basic_sets misc_sets def_args
 		# check install elf type
-		fn_wine_elf_query		
+		fn_wine_elf_query
+#		root_key="Program Files/"
 		# check already setted variables, if any.
 		chk_arg_opts(){
 #			ifs=$IFS
@@ -2325,6 +2366,7 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		w_more_pkgs0="$bf\\More packages$end"
 		w_more_pkgs1="$vb\\If you have to install associated package or other dlls from separate source and not available in Winetricks, select them here$end"
 		w_more_pkgs2="$nf Select one or more$end"
+#		w_more_pkgs3="$rb\\WARNING$end:$nf Set if the application is full 64 bits$end"
 		w_more_zip0="$bf\\Alternative install type$end"
 		w_more_zip1="$vb\\In some cases, install is provided by a compressed file (zip, rar, 7z, exe) extracted or to extract directly to the bottle Program File directory. Manage them here.$end"
 		w_more_zip2="$nf\\Note$end: for auto-extractible exe file, create the directory first. Name with a '$nf-$end' after the first word will be auto-detected."
@@ -2781,7 +2823,7 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 			fi
 			export $pol_x
 		done
-		sys_version=$(/usr/bin/wine --version)
+#		sys_version=$(/usr/bin/wine --version)
 		
 #		arch_list=('32,x86,i686' '64,amd64,x86_64')
 #		if [ $wine_elf = 1 ]; then ftp_elf='amd64'; http_elf='x86_64'; else ftp_elf='x86'; http_elf='i686'; fi
@@ -2870,6 +2912,7 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 		if [ ${#inactive_export} -gt 0 ]; then local "${inactive_export[@]}"; fi
 		IFS=$ifs
 		fn_wine_elf_query
+#		root_key="Program Files/"
 		cat $config_file > $TEMP_conf
 	fi
 	
@@ -2887,7 +2930,11 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 		if ! [ -s $HOME/.winestarter/default-wine ]; then touch $HOME/.winestarter/default-wine; fi
 		if [[ $wine_bin != '' ]]; then
 #		if [[ $wine_bin == '' ]]; then
-			sys_version=$($wine_bin --version)
+			if [ -x $wine_bin ]; then
+				sys_version=$($wine_bin --version)
+			else
+				sys_version='not installed'
+			fi
 			if [ $b_set = 1 ]; then
 				fn_basics_config
 			else
@@ -3221,7 +3268,8 @@ edit_desktop(){
 		if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then
 			exe_path="$user_prefix/$bottle_prefix/drive_c/$game_dir/$game_exe"
 		else
-			if [ $wine_elf = 1 ]; then elf_ext=' (x86)'; else elf_ext=''; fi
+		## FIXME
+#			if [ $wine_elf = 1 ]; then elf_ext=' (x86)'; else elf_ext=''; fi
 			exe_path="$user_prefix/$bottle_prefix/drive_c/Program Files$elf_ext/$game_dir/$game_exe"
 		fi
 		# set the icon type to extract

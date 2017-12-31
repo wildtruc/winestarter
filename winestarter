@@ -904,6 +904,25 @@ fn_game_dir_exist(){
 	if [[ $game_dir == '' && $game_exe == '' ]]; then
 		mkdir -p $user_prefix/$bottle_prefix/drive_c/Program\ Files"$elf_ext"
 	fi
+	## Detected if the app is 32 or real 64, and change the Program Files detection accordingly.
+	if [ $wine_elf -gt 0 ]; then
+		if [ -e $(find -L $user_prefix/$bottle_prefix/drive_c/Program\ {Files,Files\ \(x86\)} \
+		-wholename "*$game_exe") ]; then
+			bin_dir_target=$(find -L \
+			$user_prefix/$bottle_prefix/drive_c/Program\ {Files,Files\ \(x86\)} -wholename "*$game_exe")
+#			bin_target=$(echo -e "$bin_dir_target"| sed -n 's/^.*\///g;p')
+			if [[ "$bin_dir_target" =~ ^.*x86.*$ ]]; then
+#				root_key="Program\ Files\ \(x86\)"
+				root_key='Program Files (x86)/'
+				sed_key='Files\ (x86)\/'
+			else
+				root_key="Program Files/"
+				sed_key='Files\/'
+			fi
+			win_prog="$root_key"
+		fi
+	fi
+	
 	## search if there any app path in "Program Files" or root. If none, link the predifine app dir if any.
 	if [[ $game_path != '' ]]; then
 #	if [[ $game_path == '' ]]; then
@@ -978,28 +997,38 @@ fn_game_dir_exist(){
 }
 fn_root_key(){
 	## search where is the "Prgram Files" dir and type.
-	pf_key_yes(){
-		root_key="Program Files$elf_ext/"
-		sed_key="Files$elf_ext\/"
-		win_prog="$root_key"
-#		if [ $special_cmd -gt 0 ]; then
-#			win_prog="Program\ Files$w_elf_ext"
-#		else
-#			win_prog="Program Files$elf_ext\\"
-#		fi
-	}
-	pf_key_no(){
-		root_key=''
-		sed_key=''
-		win_prog=''
-	}
-#	pf_key_maybe(){
+#	pf_key_yes(){
+#		root_key="Program Files$elf_ext/"
+#		sed_key="Files$elf_ext\/"
+#		win_prog="$root_key"
+##		if [ $special_cmd -gt 0 ]; then
+##			win_prog="Program\ Files$w_elf_ext"
+##		else
+##			win_prog="Program Files$elf_ext\\"
+##		fi
+#	}
+#	pf_key_no(){
 #		root_key=''
 #		sed_key=''
 #		win_prog=''
-#		if ! [ $game_dir ]; then game_dir='null'; fi
-#		if ! [ $game_exe ]; then game_exe='null'; fi
 #	}
+##	pf_key_maybe(){
+##		root_key=''
+##		sed_key=''
+##		win_prog=''
+##		if ! [ $game_dir ]; then game_dir='null'; fi
+##		if ! [ $game_exe ]; then game_exe='null'; fi
+##	}
+	pf_key_yes(){
+	root_key='Program Files/'
+	sed_key='Files\/'
+	win_prog="$root_key"
+	}
+	pf_key_no(){
+	root_key=''
+	sed_key=''
+	win_prog=''
+	}
 	if [ "$game_dir" != '' ]; then
 		if [ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]; then pf_key_no; else pf_key_yes; fi
 	else
@@ -1007,6 +1036,10 @@ fn_root_key(){
 		if ! [ $game_dir ]; then game_dir='null'; fi
 	fi
 	if ! [ $game_exe ]; then game_exe='null'; fi
+	## new version
+	
+	
+	
 }
 fn_wine_binary(){
 	if [ $_use_winepath_env -gt 0 ]; then
