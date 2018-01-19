@@ -2,7 +2,7 @@
 wtc => winestarter_conf, wt => winestarter
 
 ### Issues
- - [ ] remove PlayOnLinux wine pakages installation because they're often not exploitable.
+ - [ ] remove PlayOnLinux wine pakages installation because they're often not exploitable (delayed/probably not).
  - [x] winestarter yad popups don't looking very nice and need improvement.
  - [x] *v0.98.2* - wtc
  	- #1 Bad images export in WineHQ, PoL download selectors.
@@ -10,8 +10,7 @@ wtc => winestarter_conf, wt => winestarter
    - #1 PlayOnLinux binbaries packages seems to not be always functionnal. Need an alternative.
    - #2 Since Wine 2.11, there some mouse glitches in some D3D game (FFXIV), need an alternative to fall back to previous version.
  - [x] *v0.98* - winestarter_conf
-   - #1 Error in Display Xrandr mode, desktop ui line are not numbered correctly.
- 	
+   - #1 Error in Display Xrandr mode, desktop ui line are not numbered correctly.	
  - [x] *v0.97.5* - winestarter_conf
    - It seems in some case when willing to set an already existing app path, winestarter fail to auto set the link to C drive root because it dosen't enough data to define the link 'rootkey' var properly and then link it inside Program Files folder.
  - [ ] *v0.97.4* - winestarter_conf
@@ -24,6 +23,16 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 19/01/18 ) v0.99.6*
+ - Changed Wine packages list download behaviour to manage last version check on WineHQ web site. Now, lists are checked at program start and is only updated if website is updated.
+ - ADD > Added WineHQ old staging package repository to binary packages list. Now we can get starting from 1.8 version. Older version can still be downloaded from PoL repository (without any garanty, I didn't test).
+ - ADD > winestarter now launch app windowed by default at full default screen resolution (unless uncheck in config), after test it globaly improve game display and performance and, by btw, allow to launch auxilliary app in prefix. Background desktop is set to black (wine weird blue is too ugly). 
+ - wt: Modify Wine package type to 64bits only for 64bits system because 64 packages already have 32bits Wine version and is automaticaly link to .winebin x86 section.
+ - wt: FIX > wine prefix wasn't update correctly after regedit/winecfg change because wineserver wans't killed after process.
+ - Note: First listing download can be a bit long, there are many repositories to check.
+ - PoL packages donwload wont be removed until someone tell me it is very useless.
+ - Have to check script regex Debian like compatibility.
+ 
 *( 31/12/17 ) v0.99.5* ??
  - Realize that only 32 bits apps (x86 directory) was managed in 64bit bottles. Fixed.
  - Accordingly with above statement, x86 apps is now auto detected before launching.

@@ -540,13 +540,16 @@ game_path=\"$game_path\"
 ## Full game dir name in Program Files
 game_dir=\"$game_dir\"
 game_exe=\"$game_exe\"
+## By default Winestarter set full screen Wine windowed that improve game stability.
+## Set windowed mode: false (0), true (1, default)
+windowed=$windowed
 ## set if the app is portable or to be installed in C: drive root: no (0), yes (1).
 app_portable=$app_portable
 ## if classic wine command fail, execute .exe inside the directory
 special_cmd=$special_cmd
 ## wine can use \"start\" command to launch apps or installer from absolute path
 ## useful on old or recalcitrant buggy app.
-start_cmd=0
+start_cmd=$start_cmd
 ## set a 64 bits bottle: false (0), true (1)
 wine_elf=$wine_elf
 
@@ -585,7 +588,6 @@ _wine=$_wine"
 "
 		echo -e "$conf_headers" > $TEMP_conf
 	}
-
 	reconf_wbin(){
 		echo -e "$g_notif\n##### reconf_wbin $e_notif"
 		## send output datas to local script env.
@@ -611,28 +613,22 @@ _wine=$_wine"
 						wine_path=$user_prefix/$_def_val
 					fi
 				;;
-				'wine_ver')
-					## if taken from download popup window, wine_ver is read in w_bin_tmp file, else from
-					## main dir chooser.
-					wine_bin_temp=/tmp/w_binary.*
-#					if [ -s /tmp/w_bin_tmp ]; then
-					if [ -s $wine_bin_temp ]; then
-#						## remove all empty space from w_bin_tmp file.
-#						_val=$(cat /tmp/w_bin_tmp)
-						_val=$(cat $wine_bin_temp)
-						## w_bin_tmp get two parts, cut to define the pack kind, PoL or WineHQ (wine_pack)
-						## and version (wine_ver).
-						wine_pack=$(printf $_val| cut -d';' -f2)
-						wine_ver=$(printf $_val| cut -d';' -f1)
-					else
-#						if [[ $_val =~ \.winebin$ ]]; then
-						if [[ $_val =~ $_def_val$ ]]; then
-							wine_ver=''
-						else
-							wine_ver=$(printf "$_val"| sed -n "s|^.*/||g;p")
-						fi
+				_hq_stg0|_hq_stg1|_hq_dev0| _pol_pkg )
+					if [[ $_val != 'unset' ]]; then
+						if [[ $_var == _pol_pkg ]]; then wine_ver=$_pol_pkg; wine_pack=0 ;fi
+						if [[ $_var == _hq_dev0 ]]; then wine_ver=$_hq_dev0; wine_pack=1 ;fi
+						if [[ $_var == _hq_stg0 ]]; then wine_ver=$_hq_stg0; wine_pack=1 ;fi
+						if [[ $_var == _hq_stg1 ]]; then wine_ver=$_hq_stg1; wine_pack=2 ;fi
+						wine_ver=$(printf "$wine_ver"| sed -n "s/*$//g;p")
+						w_config=1
 					fi
-					rm -f $wine_bin_temp
+				;;
+				'wine_ver')
+					if [[ $_val =~ $_def_val$ ]]; then
+						wine_ver=''
+					else
+						wine_ver=$(printf "$_val"| sed -n "s|^.*/||g;p")
+					fi
 				;;
 				'w_config')
 					if [ $from_config = 1 ]; then
@@ -653,8 +649,8 @@ use_winepath=$use_winepath
 wine_path=\"$wine_path\"
 ## custom Wine binary name
 wine_ver='$wine_ver'
-## Which kind of packages do you want to use:
-## PlayOnLinux (0), WineHQ staging/development (1), leave empty if already in bin directory.
+## Which kind of packages do you want to use: (leave empty if already in bin directory)
+## PlayOnLinux (0), WineHQ staging/development > 2.4 (1), WineHQ old staging < 2.4 (2).
 wine_pack=$wine_pack
 ## Do not remove or edit below except if you don't use winestarter configurator.
 _wbin=$_wbin"
@@ -1228,13 +1224,18 @@ _optimus=$_optimus"
 		fn_tricks_list_build &
 		unset form_win def_win default_win
 		unset tab_set tab_temp cfg_set t_display nv_field
+		hq_stg0=$(printf "$_hq_stg0"| cut -d',' -f1)
+		hq_dev0=$(printf "$_hq_dev0"| cut -d',' -f1)
+#		main_tab_text="$bf\\Select settings by theme$end \\n \
+#$nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
+#$nf\\Last dowloadable:$end$vb PlayOnLinux >$end wine32 $_pol32, wine64 $_pol64\\n \
+#$vb\\WineHQ (32/64) >$end $hq_stg0, $hq_dev0, $nf\\System >$end $sys_version"
 		main_tab_text="$bf\\Select settings by theme$end \\n \
 $nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
-$nf\\Last dowloadable:$end$vb PlayOnLinux >$end wine32 $pol32, wine64 $pol64\\n \
-$vb\\WineHQ >$end wine(32/64) $hq_stg, $hq_dev,$nf\\System >$end $sys_version"
+$nf\\Last dowloadable:$end$vb\\WineHQ (32/64) >$end $hq_stg0, $hq_dev0, $nf\\System >$end $sys_version"
 		w_text="$bf Wine prefix$end\\n \
-$vb Set wine prefix name, appli/game directories, etc.$end\\n \
-$nf Check here the sections you would like to configure.$end"
+$vb\\Set wine prefix name, appli/game directories, etc.$end\\n \
+$nf\\Check here the sections you would like to configure.$end"
 		w_title="Wine Start Config"
 		w_title1="$vb Nvidia OpenGL options$end"
 		w_title2="$vb Miscellenous options$end"
@@ -1284,8 +1285,6 @@ $_extended;_extended;;$msg_extended;CHK;;"
 		default_tab_design
 		# export main function variables.
 		default_tab_create
-		
-		
 	}
 	fn_nvidia_config(){
 		# launch default start window
@@ -1590,23 +1589,6 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 		win_type=1
 		default_win_design
 	}
-
-#	fn_wine_elf_query(){
-#		## if there is no initial wine install in the the system, try to set env first
-#		## when wine bottle is created at first step, define the wine arch used and add
-#		## the x86 for 32 bits applications.
-#		if [ $wine_elf = 1 ]; then
-#			
-#			elf=64; elf_ext=' (x86)'; w_elf_ext='\ (x86)'
-#		else
-#			elf=32; elf_ext=''; w_elf_ext=''
-#		fi
-#		if ! [ -d $user_prefix/$bottle_prefix/drive_c/Program\ Files"$elf_ext" ]; then
-#			root_key=''
-#		else
-#			root_key="Program Files$elf_ext/"
-#		fi
-#	}
 	fn_wine_elf_query(){
 		## Define bottle elf priority ans add necessary change accordingly. 
 		if [ $wine_elf = 1 ]; then
@@ -1679,7 +1661,6 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 		fn_create_prefix
 
 	}
-
 	fn_wine_config(){
 		echo -e "$g_notif >>>> start fn_wine_config $e_notif"
 		unset  basic_sets misc_sets def_args
@@ -1756,6 +1737,7 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 			app_portable='FALSE'
 			special_cmd='FALSE'
 			start_cmd='FALSE'
+			windowed='TRUE'
 			if ! [ -d $game_path ]; then game_path="$user_prefix"; fi
 			if [ $_extended = 1 ]; then chk_arg_opts; fi
 		fi
@@ -1781,6 +1763,7 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 		w_wine_portable="$vb\\Set if the game/app is portable or you wish to install an already existing path to the C: drive root:$end"
 		w_wine_game_spl="$vb\\Set if the app have to be started from the app directory:$end"
 		w_wine_elf_tip="$nf\\Note:$end The initial install is actually set to Wine $nf"$elf"Bits$end. If you would like a different install type, you need to create a new prefix."
+		w_windowed_tip="$vb\\In practice, winecfg windowed mode at full screen usually give to games better performances. This is Winestarter default.$end"
 		
 		w_wine_cmd="$bf Wine or app command line arguments$end"
 		w_wine_cmd_tip="$vb\\You can set here Wine specific command line options. It can come from Wine by itself or specific from the app.$end"
@@ -1802,11 +1785,15 @@ $game_path;game_path;;$nf Existing appli path$end;DIR;;
 $game_dir;game_dir;;$nf Full Wine appli directory$end;DIR;;
 '';;;$w_wine_game_exe;LBL;;
 $game_exe;game_exe;;$nf EXE file$end;FL;;
+'';;;;LBL;;
 '';;;$w_wine_portable;LBL;;
 $app_portable;app_portable;;Portable app (or to be set at C: drive root);CHK;;
 '';;;$w_wine_game_spl;LBL;;
 $special_cmd;special_cmd;;execute binary file inside the directory;CHK;;
-$start_cmd;start_cmd;;execute binary from absolute path (using Wine \"start\" command);CHK;;"
+$start_cmd;start_cmd;;execute binary from absolute path (using Wine \"start\" command);CHK;;
+'';;;;LBL;;
+'';;;$w_windowed_tip;LBL;;
+$windowed;windowed;;Set Wine to full windowed mode (dark background);CHK;;"
 		## extended menu
 		misc_sets="'';;;;LBL;;
 '';;;$w_wine_cmd;LBL;;
@@ -1833,19 +1820,20 @@ ${misc_sets[@]}"
 		echo -e "$g_notif\n>>>> start fn_wine_binary ####\n$e_notif"
 		unset basic_sets track_list 
 		w_wine_use_winepath="$vb Set if you want to use a custom Wine binary path:$end"
-		w_wine_binary_title="$vb\\You can choose and activate here a custom Wine binary directory. Some apps (particulary old ones) could need old Wine versions. Datas are provided by PlayOnLinux Wine server.$end"
+		w_wine_binary_title="$vb\\You can choose and activate here a custom Wine binary directory. Some apps (particulary old ones) could need old Wine versions. Datas are provided by PlayOnLinux and WineHQ Wine packagesserver.$end"
 		w_wine_wine_path="$vb Set full path of customs Wine binaries repository:$end"
 		w_wine_wine_ver="$vb Set the custom Wine directory name:$end"
-		w_wine_dl_info="$vb\\Here, you can set the download method for the custom Wine binary. You can choose between PlayOnLinux packages (for Wine older than 2.4) or WineHQ-staging packages (above 2.4).$end"
+		w_wine_dl_info="$vb\\Here, you can set the custom Wine binary package to download. You can choose between PlayOnLinux packages (for Wine older than 2.4) or WineHQ-staging packages (above 2.4).$end"
+		w_wine_dl_warn="$rb\\WARNING:$end$vn Set one package only, otherwise, WineHQ Staging will be auto set.$end"
 		w_wine_wine_pol="$vb Download a binary package from PlayOnLinux repo:$end"
 		w_wine_wconfig="$vb\\When set, new Wine binary will setup new environment, this set will allow winecfg to start at boot:$end"
 		w_text="$bf Configure an extra Wine binary path$end"
 		## check already setted variables
-		track_list=('use_winepath' 'wine_path' 'wine_ver')
+		track_list=('use_winepath' 'wine_path' 'wine_ver' 'wine_pack')
 		wineset_list=$track_list
-		wine_bin_cmd="bash $bash_opt \"select_wine_bin\""
-		wine_dis_cmd="bash $bash_opt \"select_wine_dis\""
-		wine_dis_cmd_dev="bash $bash_opt \"select_wine_dis_dev\""
+#		wine_bin_cmd="bash $bash_opt \"select_wine_bin\""
+#		wine_dis_cmd="bash $bash_opt \"select_wine_dis\""
+#		wine_dis_cmd_dev="bash $bash_opt \"select_wine_dis_dev\""
 		if [ $wine_elf = 1 ]; then dir_elf='amd64'; else dir_elf='x86'; fi
 		if [ $from_config = 1 ]; then
 			ifs=$IFS
@@ -1855,25 +1843,19 @@ ${misc_sets[@]}"
 				case $trk_set in
 					'use_winepath') [ $trk_val ]|| local $trk_set=0 ;;
 					'wine_path') [[ $trk_val ]] || local $trk_set="$HOME/.winebin" ;;
-					'wine_ver') if [[ $wine_ver =~ [0-9]{1,2}.[0-9]{1,2}.*$ ]]; then
-						local $trk_set="$wine_path/$dir_elf/$wine_ver"
-					else
-						local $trk_set="$HOME/.winebin"
-					fi ;;
+					'wine_ver')
+						if [[ $wine_ver =~ [0-9]{1,2}.[0-9]{1,2}.*$ ]]; then
+							local $trk_set="$wine_path/$dir_elf/$wine_ver"
+						else
+							local $trk_set="$HOME/.winebin"
+						fi
+					;;
+					'wine_pack') local $trk_set=$wine_pack ;;
 					*) local $trk_set="$HOME/";;
 				esac
-			done 
-#			if [[ $wine_ver != '' ]]; then wine_ver="$wine_path/$dir_elf/$wine_ver"; else wine_ver="$HOME/"; fi
-#			if [[ $wine_path == '' ]]; then wine_path="$HOME/.winebin"; fi
-#			if [[ $use_winepath == '' ]]; then use_winepath=0; fi
+			done
 			IFS=$ifs
 		else
-#			if [ -s $HOME/.winestarter/default-wine ]; then
-#				wine_path=$(cat $HOME/.winestarter/default_wine| cut -d';' f2)					
-#				wine_elf=$(cat $HOME/.winestarter/default_wine| cut -d';' f3)
-#				wine_ver=$wine_path/$wine_elf/$(cat $HOME/.winestarter/default_wine| cut -d';' f1)
-#				use_winepath=1
-#			else
 			if ! [ -s $HOME/.winestarter/default-wine ]; then
 				for trk_set in ${track_list[@]}; do
 	#				unset local_set
@@ -1884,16 +1866,10 @@ ${misc_sets[@]}"
 						fi ;;
 						*) local $trk_set="$HOME/" ;;
 					esac
-		
-	#					if [[ $trk_set == use_winepath ]]; then trk_box=0; else trk_box="$HOME/"; fi
-	#					if [[ $trk_set == wine_path ]]||[[ $trk_set == wine_ver ]]; then 
-	#						if [ -d $HOME/.winebin ]; then trk_box="$HOME/.winebin"; else trk_box="$HOME/"; fi
-	#					fi
-	#					local_set+=("$trk_set=$trk_box")
-	#					local $local_set
 				done
 			fi			
 		fi
+		eval _pol_list='$'_pol$elf'_list'
 		export wine_path=$wine_path
 		export wine_elf=$wine_elf
 		ifs=$IFS
@@ -1902,20 +1878,22 @@ ${misc_sets[@]}"
 '';;;$w_wine_binary_title;LBL;;
 $use_winepath;use_winepath;;use Wine binaries path (default:$HOME/.winebin);CHK;;
 '';;;$w_wine_wine_path;LBL;;
-$wine_path;wine_path;;$nf Wine binaries dir\t\t\t\t$end;DIR;;
+$wine_path;wine_path;;$nf Wine binaries dir\t\t$end;DIR;;
 '';;;$w_wine_wine_ver;LBL;;
 $wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;
 '';;;;LBL;;
 '';;;$w_wine_dl_info;LBL;;
-$wine_dis_cmd;cmd;;$vb click here to download from WineHQ staging$end,$img_winedis_bt;FBTN;;
-$wine_dis_cmd_dev;cmd;;$vb click here to download from WineHQ development$end,$img_winedis_bt;FBTN;;
-$wine_bin_cmd;cmd;;$vb click here to download a PoL Wine package$end,$img_winepol_bt;FBTN;;
+'';;;$w_wine_dl_warn;LBL;;
+unset#$_hq_stg0_list;_hq_stg0;;$vb WineHQ staging from 2.4 $end;CB;;
+unset#$_hq_stg1_list;_hq_stg1;;$vb WineHQ staging to 2.4 $end;CB;;
+unset#$_hq_dev0_list;_hq_dev0;;$vb WineHQ devel from 2.4 $end;CB;;
+unset#$_pol_list;_pol_pkg;;$vb PoL Wine package to 1.8.6 $end;CB;;
 '';;;;LBL;;
 '';;;$w_wine_wconfig;LBL;;
 $w_config;w_config;;Start Winecfg at app launch;CHK;;"
 		echo -e "$g_notif\n>>>> end fn_wine_binary ####\n$e_notif"
 		IFS=$ifs
-		item_sep=","
+		item_sep="#"
 		# window style and function
 		win_type=1
 		## focused field
@@ -2383,9 +2361,6 @@ $nf\\TIP:$end For downloading, you can replace file name path by internet URL."
 		pre_list=0
 		# var list sets
 		basic_sets="'';;;;LBL;;
-'';;;$w_tricks_trk_tip1;LBL;;
-'';;;$w_tricks_trk_tip0;LBL;;
-'';;;;LBL;;
 $w_install_exe;w_install_exe;;$w_tricks_trk_exe;CHK;;
 '';;;;LBL;;
 '';;;$w_tricks_info0;LBL;;
@@ -2797,77 +2772,36 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 		# window style and function
 		
 	}
-	control_line(){
-		#  | gzip -cd| sed -E -n "s/^.*(wine-staging[0-9]+-([0-9].*)\.x86_64.*)\".*$/\1 \2/p"
-		## connection test and PoL la bianry version per arch
-		unset pol_list
-		line=$(nc -z 8.8.8.8 53)
-		line=$?
-		
-		pol_list=('32,x86' '64,amd64')
+	last_bin(){
+		echo -e "$g_notif\n>>>> get last wine bin$e_notif"
 		if [ $line = 0 ]; then
-			ct_msg='On'
+			ct_msg=1
 		else
-			ct_msg='Off'
+			ct_msg=0
 		fi
-		for c in ${pol_list[@]}; do
-			arch=$(printf "$c"| cut -d',' -f1)
-			adir=$(printf "$c"| cut -d',' -f2)
-			if [ "$ct_msg" == 'On' ]; then
-				pol=$(mktemp --tmpdir pol.XXXXXXXX)
-				wget -O $pol http://wine.playonlinux.com/binaries/linux-$adir.lst
-				pol_x=( pol$arch=$(tac "$pol"| cut -d';' -f2| sed -n '1p' ) )
-				rm -f $pol
+		file_list=( _pol32 _pol64 _hq_stg0 _hq_dev0 _hq_stg1 )
+		for hint in ${file_list[@]}; do
+			if [ $ct_msg -gt 0 ]; then
+				_last=( $hint=$(cat $HOME/.winestarter/resources/ftp$hint.\[list\] | sed -n 's/*$//g;1p') )
+				export $_last
+				export $hint'_list'=$(cat $HOME/.winestarter/resources/ftp$hint.\[list\]| cut -d',' -f1|\
+				tr '\n' '#'| sed -n "s/#$//g;p")
 			else
-				pol_x=( pol$arch='no data available' )
+				_last=( $hint=\"no data available\" )
+				export $_last
 			fi
-			export $pol_x
 		done
-#		sys_version=$(/usr/bin/wine --version)
-		
-#		arch_list=('32,x86,i686' '64,amd64,x86_64')
-#		if [ $wine_elf = 1 ]; then ftp_elf='amd64'; http_elf='x86_64'; else ftp_elf='x86'; http_elf='i686'; fi
-#		file_temp=$(mktemp --tmpdir last.XXXXXXXX)
-#		
-#		dl_address[0]="http://wine.playonlinux.com/binaries/linux-$ftp_elf.lst"
-#		dl_address[1]="https://dl.winehq.org/wine-builds/fedora/"
-#		loc=0
-#		until [ $loc -eq 1 ]; do
-#			bin_class=$loc
-#			dl_address=$dl_address[$loc]
-#			download_list
-#		done
-#		
-#		
-#		
-#		
-#		if [ $line = 0 ]; then
-#			ct_msg='On'
-#		else
-#			ct_msg='Off'
-#		fi
-#		for src in 
-#		for c in ${arch_list[@]}; do
-#			arch=$(printf "$c"| cut -d',' -f1)
-#			adir=$(printf "$c"| cut -d',' -f2)
-#			if [ "$ct_msg" == 'On' ]; then
-#				pol=$(mktemp --tmpdir pol.XXXXXXXX)
-#				wget -O $pol http://wine.playonlinux.com/binaries/linux-$adir.lst
-#				pol_x=( pol$arch=$(tac "$pol"| cut -d';' -f2| sed -n '1p' ) )
-#				rm -f $pol
-#			else
-#				pol_x=( pol$arch='no data available' )
-#			fi
-#			export $pol_x
-#		done
-		
-		
 	}
+## launch a "wait please" UI until Wine packages infos are donwloaded 	
+	wait_message="$vb\Updating Wine packages list and news.$end"
+	fn_plz_wait &
+	WAIT_UI=$(pgrep -n yad)
+
 	key=$RANDOM
 	sleep 1
 	kill $YAD_PID
 	messages
-	control_line
+#	control_line
 	unset active_values active_export inactive_values inactive_export cl
 	## create 2 temp file for all conf section edit.
 	TEMP_conf=$(mktemp --tmpdir tmp1.XXXXXXXX)
@@ -2915,7 +2849,13 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 #		root_key="Program Files/"
 		cat $config_file > $TEMP_conf
 	fi
-	
+	## don't kill Wine packages information control 'wait' UI before bash process end.
+	while [ $(ps -p $BASH_PID | grep -c .) -gt 1 ]; do
+		sleep 1
+	done
+	kill $WAIT_UI
+	last_bin
+#	exit 0
 	section_list=('_wine' '_wbin' '_install' '_tricks' '_reged' '_nvidia_1' '_nvidia_2' '_xrandr' '_optimus' '_extended')
 	for s_var in ${section_list[@]}; do
 		eval f_var='$'$s_var
@@ -3051,41 +2991,46 @@ edit_wine_options(){
 	## restore IFS and exit to previous window
 	IFS=$ifs
 }
-select_wine_bin(){
-	colors ; icons_set
-	bin_class=0
-	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; else ftp_elf='x86'; fi
-	dl_address="http://wine.playonlinux.com/binaries/linux-$ftp_elf.lst"
-	site='PlayOnLinux'
-	window_ico="$img_desktop"
-	window_img="$img_dl_pol"
-	select_wine_binary
-}
-select_wine_dis(){ hq_stage='staging'; select_wine_hq; }
-select_wine_dis_dev(){ hq_stage='development'; select_wine_hq; }
-select_wine_hq(){
-	colors ; icons_set
-	bin_class=1
-	if [ $wine_elf = 1 ]; then http_elf='x86_64'; else http_elf='i686'; fi
-#	dl_address="https://dl.winehq.org/wine-builds/fedora/25/$http_elf/"
-	dl_address="https://dl.winehq.org/wine-builds/fedora"
-	site='WineHQ'
-	window_ico="$img_desktop"
-	window_img="$img_dl_whq"
-	select_wine_binary
-}
-download_list(){
-	wget -O $file_temp $dl_address
+
+control_last(){
+	date_stamp(){
+		file_temp=$(mktemp --tmpdir ftp_date.XXXX)
+		select_dev0
+		elf=$(printf "${tags[1]}"| cut -d',' -f1)
+		http_elf=$(printf "${tags[1]}"| cut -d',' -f2)
+		http_class=$(printf "${tags[1]}"| cut -d',' -f3)
+		wget -O $file_temp $dl_address/
+		os_v=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
+		sed -En "s/^.*([0-9]{2}).*$/\1/;1p")
+		wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
+		last_bin_date=$(tac $file_temp.[$os_v] | egrep "wine-$hq_stage$elf-[0-9]+"| sed -En "s/^.*indexcollastmod\">([0-9]{4}-[0-9]{2}-[0-9]{2}) [0-9]+:[0-9]+.*$/\1/;1p")
+		last_bin_date=$(printf "$last_bin_date"| sed -n "s/-//g;p")
+		if [ -s $HOME/.winestarter/last-update ]; then
+			previous_bin_date=$(cat $HOME/.winestarter/last-update|sed -n "s/-//g;p")
+			if [ $last_bin_date -gt $previous_bin_date ]; then
+				update=1
+				echo -n "$last_bin_date" > $HOME/.winestarter/last-update
+			else
+				update=0
+			fi
+		else
+			echo -n "$last_bin_date" > $HOME/.winestarter/last-update
+			update=1
+		fi
+	}
+	download_list(){
+#	wget -O $file_temp $dl_address
 	if [ $bin_class -gt 0 ]; then
+	wget -O $file_temp $dl_address
 	## WineHQ give multiple repos for fedora project. To get all availables, we take in all fedora
 	## version and put them in a single var.
 		os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
 		sed -En "s/^.*([0-9]{2}).*$/\1/p")
 		for os_v in ${os_version[@]}; do
 			wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
-			dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-$hq_stage$elf-[0-9]+"| \
-			sed -En "s/^.*$elf-([0-9]\.[0-9]*)-([0-9](.rc[0-9])?).$http_elf.*$/\1-\2-$hq_stage,$os_v/p")
-#			sed -En "s/^.*$elf-([0-9]\.[0-9]*)-([0-9]).$http_elf.*$/\1-\2-$hq_stage,$os_v/p")
+#			dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-$hq_stage$elf-[0-9]+")
+			dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-$hq_stage$elf-[0-9]+"|\
+			sed -En "s/^.*$elf-([0-9]\.[0-9]{1,2}(\.[0-9]{1,2})?)-([0-9](.rc[0-9])?).$http_elf.*$/\1-\3-$hq_stage,$os_v/p")
 		## merge only if Wine version is different.
 			if [ $os_v_p ]; then
 				if [ $os_v -ne $os_v_p ]; then
@@ -3104,61 +3049,91 @@ download_list(){
 				os_v_p=$os_v
 			fi
 		done
+		
 	else
 		wget -O $file_temp $dl_address
-		dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2)" )
+		## limit PoL Wine version list from 1.4 to 1.8.6
+		dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.8\.6.*$/,/^1\.4$/p')" )
 	fi
+	eval local_bin_list='$'{local_bin_$http_class[@]}
+#	echo "$local_bin_list"
 	if [ ${#local_bin_list[@]} -gt 0 ]; then
 		for existing in ${local_bin_list[@]}; do
-			if [ $(printf "$dl_bin_list"| egrep -wc "$existing,.*$") -gt 0 ]; then
-				dl_bin_list=$(echo "$dl_bin_list"| sed -En "s/^($existing),(.*$)/\1*,\2/g;p")
+			if [ $bin_class -gt 0 ]; then
+				if [ $(printf "$dl_bin_list"| egrep -wc "$existing,.*$") -gt 0 ]; then
+					dl_bin_list=$(echo "$dl_bin_list"| sed -En "s/^($existing),(.*$)/\1*,\2/g;p")
+				fi
+			else
+				if [ $(printf "$dl_bin_list"| egrep -wc "$existing") -gt 0 ]; then
+					dl_bin_list=$(echo "$dl_bin_list"| sed -En "s/^($existing)/\1*/g;p")
+				fi
 			fi
 		done
 	fi
-	echo "$dl_bin_list" > $file_temp.[list]
-}
-select_wine_binary(){
-	unset dl_bin_list local_bin_list wine_bin_list
-	wine_bin_temp=$(mktemp --tmpdir w_binary.XXXXXXXX)
-	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; elf='64'; else ftp_elf='x86'; elf=''; fi
-	# ls already insbtalled packages if any
-#	if [ $default_bin_dir ]; then 
-	if [ -d $wine_path ]&&[ "$wine_path" != "$HOME" ]; then	
-			local_bin_list=( $(ls -1x $wine_path/$ftp_elf) )
+#	echo "$dl_bin_list" > $file_temp.[list]
+	echo "$dl_bin_list" > $HOME/.winestarter/resources/ftp$tmp_list.[list]
+	}
+	## version newer than 2.4
+	select_stg0(){ hq_stage='staging'; tmp_list='_hq_stg0'; dir_ver='wine-builds'; select_hq; }
+	select_dev0(){ hq_stage='development'; tmp_list='_hq_dev0'; dir_ver='wine-builds'; select_hq; }
+	## version older than 2.4 from 1.9.16
+	select_stg1(){ hq_stage='staging'; tmp_list='_hq_stg1'; dir_ver='wine-builds.old'; select_hq; }
+#	select_dev1(){ hq_stage='development'; tmp_list='_hq_dev'; dir_ver='wine-builds.old'; select_hq; }
+	select_hq(){
+		bin_class=1
+		dl_address="https://dl.winehq.org/$dir_ver/fedora"
+		site='WineHQ'
+		tags=(',i686,x86' '64,x86_64,amd64')
+#		tags=('64,x86_64,amd64')
+	}
+	## version older than 1.9.16
+	select_pol_32(){ list_elf='32'; tags='32,x86,x86'; select_pol; }
+	select_pol_64(){ list_elf='64'; tags='64,amd64,amd64'; select_pol; }
+	select_pol(){
+		bin_class=0
+		list_class=$(printf "$tags"| cut -d',' -f2)
+		dl_address="http://wine.playonlinux.com/binaries/linux-$list_class.lst"
+		site='PlayOnLinux'
+		tmp_list="_pol$list_elf"
+	}
+	download_section(){	
+		# ls already insbtalled packages if any
+#		tag_cmd=('select_pol_32' 'select_pol_64' 'select_stg0' 'select_dev0')
+		tag_cmd=('select_pol_32' 'select_pol_64' 'select_stg0' 'select_dev0' 'select_stg1')
+		
+		for tag_list in ${tag_cmd[@]}; do
+			${tag_list}
+			file_temp=$(mktemp --tmpdir ftp$tmp_list.XXXX)
+			for used_tag in ${tags[@]}; do
+				elf=$(printf "$used_tag"| cut -d',' -f1)
+				http_elf=$(printf "$used_tag"| cut -d',' -f2)
+				http_class=$(printf "$used_tag"| cut -d',' -f3)
+				download_list
+			done
+		done
+	}
+	date_stamp
+	if [ $line = 0 ]; then
+		ct_msg=1
+	else
+		ct_msg=0
 	fi
-	if [ -s /usr/bin/wget ]; then
-		# First, download wine packages list. Because Fedora repository is more simple than debian one,
-		# list dosnload is done from there (i686 repo)
-		file_temp=$(mktemp --tmpdir ftp.XXXXXXXX)
-		p_text="$vb\Retrieving $site server information$end"
-		download_list | $yad_bin --width=200 --title "Please wait..." --text-align=center \
-		--no-buttons --on-top --window-icon=$img_wine_ui --progress --pulsate --auto-close \
-		--text="$p_text" --progress-text=""
-		
-#		wine_bin_list=$(cat $list_temp)
-#		wine_bin_list=( $(echo "$dl_bin_list"| tr '\n' ','|sed -n "s/,$//p") )
-		wine_bin_list=( $(cat $file_temp.[list]| cut -d',' -f1| tr '\n' ','|sed -n "s/,$//p") )
-		wine_bin=$($yad_bin --width=300 --title "$w_title" --image="$window_img" --borders=15 \
-		--window-icon="$window_ico" --form --text="$w_text" --separator=" " --item-separator="," \
-		--field="$vb Select $ftp_elf package from $site$end":CB "$wine_bin_list")
-		
-		if [ $? = 0	 ]; then
-			if [ $wine_bin != '' ]; then
-				wine_bin=$(printf	"$wine_bin"| sed -En "s/[*]? $//g;p")
-				if [ $bin_class -gt 0 ]; then
-					dist_dl_ver=$(cat $file_temp.[list]| sed -En "s/^$wine_bin,(.*)$/\1/p")
-				else
-					dist_dl_ver=0
-				fi
-#				printf "$wine_bin;$bin_class"| sed -n "s/ //g;p" > /tmp/w_bin_tmp
-				printf "$wine_bin;$bin_class;$dist_dl_ver" > $wine_bin_temp
+#	exit 0
+	export ct_msg=$ct_msg
+	if [ $ct_msg -gt 0 ]; then
+		if [ $update -gt 0 ]; then
+			wine_path=$HOME/.winebin
+#			if [ -d $wine_path ]&&[ "$wine_path" != "$HOME" ]; then
+			if [[ -d $wine_path && "$wine_path" != "$HOME" ]]; then
+				local_bin_x86=( $(ls -1 $wine_path/x86) )
+				local_bin_amd64=( $(ls -1 $wine_path/amd64) )
 			fi
-		else
-			rm -f $file_temp $list_temp
-			exit 0
+			download_section &
+			BASH_PID=$(pgrep -n bash)
+			export BASH_PID=$BASH_PID
 		fi
-		rm -f $file_temp $list_temp
 	fi
+#	exit 0
 }
 ### main ui buttons functions
 ## manage configs and bottles
@@ -3172,15 +3147,15 @@ change_fonts_colors(){
 Change UI fonts colors and kind at will, but keep in mind the sens of each of them: main, warning, unavialable.$end"
 	w_tip="$rb\\WARNING$end$vn: Don't select fonts with more than 2 words if it's not a \"regular\" or \"italic\", it won't be displayed correctly.\nYou can also extend window width up to 100px if the horizontal scrollbar still appears in some tabs.$end"
 	font_color=$($yad_bin --width=480 --height=300 --title "$w_title" --image="$img_wine_desktop" \
-			--window-icon=$img_wine_desk_ui --text "$w_text" --form --separator="|" --item-separator="," \
-			--borders=15 --field="":LBL '' \
-			--field="$vb Main messages color\t\t$end":CLR "$main" \
-			--field="$vb Warning messages color$end":CLR "$warn" \
-			--field="$vb Unavialable messages color$end":CLR "$freeze" \
-			--field="$vb Normal font type$end":FN "$font0 $size0" \
-			--field="$vb Titles font type$end":FN "$font1 $size1" \
-			--field="$vb Add more width to windoow display$end":SCL "$scale,0..100" \
-			--field="$w_tip":LBL '')
+		--window-icon=$img_wine_desk_ui --text "$w_text" --form --separator="|" --item-separator="," \
+		--borders=15 --field="":LBL '' \
+		--field="$vb Main messages color\t\t$end":CLR "$main" \
+		--field="$vb Warning messages color$end":CLR "$warn" \
+		--field="$vb Unavialable messages color$end":CLR "$freeze" \
+		--field="$vb Normal font type$end":FN "$font0 $size0" \
+		--field="$vb Titles font type$end":FN "$font1 $size1" \
+		--field="$vb Add more width to window display$end":SCL "$scale,0..100" \
+		--field="$w_tip":LBL '')
 	if [ $? = 1 ]; then bash $bash_opt $base_script; exit 0; fi
 	if [ $? = 0 ]; then
 		prev_colors=$(printf "$font_color"| sed -n "s/^|//;s/\(^.*\)||/\1/p" ) #
@@ -3580,7 +3555,6 @@ Select the Wne bottle to edit$end"
 				echo "$edit_config" > $config_file
 			fi
 			exit 0
-			
 		fi
 		from_config=1
 		export from_config=$from_config config_file=$config_file
@@ -3602,6 +3576,9 @@ Select the Wne bottle to edit$end"
 ## Script debug options
 #bash_opt='-x -c'
 bash_opt='-c'
+## check internet connection.
+line=$(nc -z 8.8.8.8 53)
+export line=$?
 ## Main button commands
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""
@@ -3621,8 +3598,10 @@ main_text0="$bf\\Stay simple with yours Wine bottles$end$vb\\n\
 $vb\\What do you want to do?$end\\n$vn(Hover buttons show tooltips)$end"
 
 export -f colors icons_set
-export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors select_wine_bin select_wine_dis select_wine_dis_dev select_wine_hq select_wine_binary download_list edit_reg_bin edit_regfile edit_wine_options
+export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors edit_reg_bin edit_regfile edit_wine_options
 export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt"
+control_last
+
 $yad_bin --width=520 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons \
 --form --text="$main_text0" --image=$the_big_button  --borders=15 \
 --field="":LBL '' \

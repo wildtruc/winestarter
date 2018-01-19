@@ -5,7 +5,7 @@ A not very simple, but very cool script to start and install wine emulated appli
 
 -------
 
-**NEWS**: code rewrite ended. Please send report for any bug.
+**NEWS**: It important for us to get feedback and bug reports from you. Don't leave us in darkness.
 
 -------
 
@@ -117,13 +117,16 @@ The `winestarter` conf file template is only a model for those wanting to use th
 
 If don't use `winestarter_conf`, you can edit the config file as you wish. It is a per game/app file, so you can create many conf files as you want. I will add a few other example in the repository ( You could contribute by adding yours, if you like)
 
-This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example with full parts added for user learning purpose and it will be updated when changes will be made: This one goes with 0.98.4 update.
+This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example with full parts added for user learning purpose and it will be updated when changes will be made: This one goes with 0.99.6 update.
 
 ```sh
 #! /bin/bash
 
 ## comments with '##' are unremovable, they are user help comments
 ## comments with '#' are unset feature
+
+## Allow extended features for winestarter configurator; off (0), on (1)
+_extended=0
 
 ## default is /home/$USER
 user_prefix=$HOME
@@ -134,6 +137,9 @@ game_path="$HOME/games/FFXIV/SquareEnix"
 ## Full game dir name in Progrma Files (including Program Files dir name)
 game_dir="SquareEnix/FINAL FANTASY XIV - A Realm Reborn"
 game_exe="boot/ffxivboot.exe"
+## By default Winestarter set full screen Wine windowed that improve game stability.
+## Set windowed mode: false (0), true (1, default)
+windowed=1
 ## set if the app is portable, it will be install at C: drive root: no (0), yes (1).
 app_portable=0
 ## if classic wine command fail, execute .exe inside the directory
@@ -152,7 +158,7 @@ w_config=0
 ## Do not remove or edit below except if you don't use winestarter configurator.
 _wine=1
 
-## first install launch and prefix creation (0) already set, (1) first launch
+## (0) first install launch and prefix creation already set, (1) first launch
 w_install_tricks=0
 ## Winetricks components list
 w_tricks_list="d3dx9,d3dx11_42,d3dx11_43,physx,xact_jun2010"
