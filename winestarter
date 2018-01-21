@@ -352,7 +352,7 @@ fn_use_winepath(){
 			dl_pkg=PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol
 			dl_list=( "$dl_address_0/$dl_pkg" )
 			unpack_list=( $dl_pkg )
-			if [ $b_elf -ne 64 ]; then h_elf='32'
+			if [ $b_elf -ne 64 ]; then h_elf='32'; fi
 			hq_ver='pol'$h_elf
 		fi
 		kill $WAIT_UI
@@ -393,7 +393,7 @@ fn_use_winepath(){
 		
 		if [ $wine_pack = 0 ]; then
 			cp -Rf wineversion/$wine_ver/ $wine_path/$ftp_elf
-			if [ -s $HOME/.winestarter/resources/ftp_$hq_ver.[list] ]; then
+			if [ -s $HOME/.winestarter/resources/ftp_$hq_ver.\[list\] ]; then
 				sed -ni "s/^\($wine_ver\)$/\1*/i;p" $HOME/.winestarter/resources/ftp_$hq_ver.[list]
 			fi
 		else
@@ -401,7 +401,7 @@ fn_use_winepath(){
 			cp -Rf opt/wine-$hq_short/* $wine_path/$ftp_elf/$wine_ver/
 #			if [ $b_elf = 64 ]; then ln -sf $wine_path/$ftp_elf/$wine_ver $wine_path/x86/; fi
 			if [ $b_elf = 64 ]; then cd $wine_path/x86; ln -sf ../$ftp_elf/$wine_ver ; fi
-			if [ -s $HOME/.winestarter/resources/ftp_$hq_ver.[list] ]; then
+			if [ -s $HOME/.winestarter/resources/ftp_$hq_ver.\[list\] ]; then
 				sed -ni "s/^\($wine_ver\),\(.*\)$/\1*,\2/i;p" \
 				$HOME/.winestarter/resources/ftp_$hq_ver.[list]
 			fi
