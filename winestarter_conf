@@ -321,7 +321,7 @@ main_code(){
 					_first=$(echo "$_section"| sed -n '1p'|sed -n "s|/|\\\/|g;p" )
 					_last=$(echo "$_section"| sed -n '$p')
 					## suppress previous section text from the conf file and replace it with section keyword
-					## in temporary conf file.
+					## in temporary conf file. FIXME ?
 					cat $TEMP_conf| sed -n "/$_first/,/^$_last/{;s/.*/$_out_var/};p"| uniq > $TEMP_edit
 					## Then replace the keyword by the modified section text.
 					perl -ni -pe "s|^$_out_var|$(echo "$_section")|i" $TEMP_edit
@@ -1310,10 +1310,13 @@ $_extended;_extended;;$msg_extended;CHK;;"
 			fn_binary_config
 		fi
 #		else
-			wine_path=$(cat $HOME/.winestarter/default-wine| cut -d';' -f2)
-			wine_elf=$(cat $HOME/.winestarter/default-wine| cut -d';' -f3)
-			if [ $wine_elf = 1 ]; then	dir_elf='amd64'; else dir_elf='x86'; fi
-			wine_ver=$wine_path/$dir_elf/$(cat $HOME/.winestarter/default-wine| cut -d';' -f1)
+		wine_path=$(cat $HOME/.winestarter/default-wine| cut -d';' -f2)
+#		wine_elf=$(cat $HOME/.winestarter/default-wine| cut -d';' -f3)
+		if ! [ $wine_elf ]; then
+			if [[ $(uname -m) =~ ^.*64 ]]; then wine_elf=1, else wine_elf=0; fi
+		fi
+		if [ $wine_elf = 1 ]; then	dir_elf='amd64'; else dir_elf='x86'; fi
+		wine_ver=$wine_path/$dir_elf/$(cat $HOME/.winestarter/default-wine| cut -d';' -f1)
 #		fi
 		## set wine environment variables
 		wine_elf_path=$wine_ver
@@ -1331,11 +1334,11 @@ $_extended;_extended;;$msg_extended;CHK;;"
 		wine_bin=$WINELOADER
 #		sys_version=$($wine_bin --version)
 		use_winepath=1
-		wine_pack=1
+#		wine_pack=1
 		_wbin=1
 		wine_bin_path=$wine_elf_path/bin/
-		${wine_bin_path}wineboot -i
-		
+#		${wine_bin_path}wineboot -i
+		sys_version=$($wine_bin --version)
 		## then, start as usual 
 		if [ $b_set = 1 ]; then
 			fn_basics_config
@@ -1359,10 +1362,11 @@ packages manager or directly from WineHQ staging below.$end"
 		w_wine_conf_txt2=""
 		w_wine_conf_txt3=""
 		w_wine_binary_tip="$vb\\You can choose any version from the selector, bust last is prefered.$end"
-		set_as_default_tip="$vb\\When set to default, installed package will be available to all future bottles, until you choose a different one for a specific usage.$end"
-		set_as_default=" Set package as default"
-		set_64_tip="$vb\\You can set the whole environment to 64bits bottles, but it's not recommanded for a flexible usage.$end"
-		set_64=" Set 64bits environment only"
+#		set_as_default_tip="$vb\\When set to default, installed package will be available to all future bottles, until you choose a different one for a specific usage.$end"
+		set_as_default_tip="$vb\\Installed package is set as default and will be available to all future bottles, until you choose a different one for a specific usage.$end"
+#		set_as_default=" Set package as default"
+#		set_64_tip="$vb\\You can set the whole environment to 64bits bottles, but it's not recommanded for a flexible usage.$end"
+#		set_64=" Set 64bits environment only"
 	
 		# x_width=$(xwininfo -stats -name "$w_title"| sed -E -n "s/^ +Width: +([0-9]+)/\1/p")
 		width=520
@@ -1371,24 +1375,33 @@ packages manager or directly from WineHQ staging below.$end"
 		c_chain=30
 		out=$(printf "%0.s " $( seq 1 $c_chain))
 		default_bin_dir=$HOME/.winebin
-		wine_dis_cmd="bash $bash_opt \"select_wine_dis\""
+#		wine_dis_cmd="bash $bash_opt \"select_wine_dis\""
 		
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
 		n=0
+#		_basics_fields="$w_wine_binary_tip;LBL;''
+#$vb click and select a WineHQ package$end,$img_winedis_bt;FBTN;$wine_dis_cmd
+#$set_as_default_tip;LBL;''
+#$set_as_default;CHK;FALSE"
+#		_basics_fields="$w_wine_binary_tip;LBL;''
+#$vb WineHQ staging package$end;CB;unset#$_hq_stg0_list
+#$vb WineHQ staging package (older)$end;CB;unset#$_hq_stg1_list
+#$set_as_default_tip;LBL;''
+#$set_as_default;CHK;FALSE"
 		_basics_fields="$w_wine_binary_tip;LBL;''
-$vb click and select a WineHQ package$end,$img_winedis_bt;FBTN;$wine_dis_cmd
-$set_as_default_tip;LBL;''
-$set_as_default;CHK;FALSE"
-		_basics_64="$set_64_tip;LBL;''
-$set_64;CHK;FALSE"
+$vb WineHQ staging package$end;CB;unset#$_hq_stg0_list
+$vb WineHQ staging package (older)$end;CB;unset#$_hq_stg1_list
+$set_as_default_tip;LBL;''"
+#		_basics_64="$set_64_tip;LBL;''
+#$set_64;CHK;FALSE"
 		## define system elf type and download destination
 		if [[ $(uname -m) =~ ^.*64 ]]; then
 			export wine_elf=1
 			http_elf='x86_64'; dir_elf='amd64'; b_elf='64'
 #			_basics_fields=$(echo -e "$_basics_fields\n$_basics_64")
-			_basics_fields="$_basics_fields
-$_basics_64"
+#			_basics_fields="$_basics_fields
+#$_basics_64"
 		else
 			export wine_elf=0
 			http_elf='i686'; dir_elf='x86'; b_elf=''
@@ -1396,13 +1409,13 @@ $_basics_64"
 		if [ -d $HOME/.winebin ]; then
 			if [ $(ls -1 $HOME/.winebin| grep -c .) -gt 0 ]; then
 				export wine_path=$HOME/.winebin
-				if [[ $(uname -m) =~ ^.*64 ]]; then dir_elf='amd64'; else dir_elf='x86'; fi
-				existing_list=$(ls -1 $HOME/.winebin/$dir_elf/| tr '\n' ','| sed -n "s/,$//g;p")
+#				if [[ $(uname -m) =~ ^.*64 ]]; then dir_elf='amd64'; else dir_elf='x86'; fi
+				existing_list=$(ls -1 $HOME/.winebin/$dir_elf/| tr '\n' '#'| sed -n "s/#$//g;p")
 				_more_basics=";LBL;''
 $w_wine_conf_path01;LBL;''
 $w_wine_conf_path1;LBL;''
 $w_wine_conf_txt$nf$out$end;CDIR;$default_bin_dir
-$w_wine_conf_txt1;CB;$existing_list"
+$w_wine_conf_txt1;CB;unset#$existing_list"
 			_basics_fields="$_more_basics
 $_basics_fields"
 			fi
@@ -1419,7 +1432,7 @@ $_basics_fields"
 		_fields=( $(echo -e "$_basics_fields"| sed -En "s/$_field_regex/--field=\1:\2/p") )
 		_fields_sets=( $(echo -e "$_basics_fields"| sed -En "s/$_field_regex/\3/p") )
 		wine_bin_output=$( $yad_bin --width=$width --title "$w_title" --separator=';'  \
-		--item-separator=',' --window-icon=$img_wine_desk_ui --align=left --borders=$borders \
+		--item-separator='#' --window-icon=$img_wine_desk_ui --align=left --borders=$borders \
 		--form --text="$w_text" --image=$win_image \
 		"${_fields[@]}" "${_fields_sets[@]}")
 		if [ $? = 1 ]; then exit 0; fi
@@ -1428,78 +1441,116 @@ $_basics_fields"
 		## set data coming fron the yad ui. 
 		use_winepath=1
 		wine_path=$(printf "$wine_bin_output"| cut -d';' -f4)
-		wine_default=$(printf "$wine_bin_output"| cut -d';' -f$((8+$n)))
-		wine_64=$(printf "$wine_bin_output"| cut -d';' -f$((10+$n)))
-		
-		wine_bin_temp=/tmp/w_binary.*
+		wine_default=$(printf "$wine_bin_output"| cut -d';' -f$((9+$n)))
+#		wine_64=$(printf "$wine_bin_output"| cut -d';' -f$((11+$n)))
+#		wine_ver_list=$(printf "$wine_bin_output"|\
+#		cut -d';' -f$((6-$n))-$((7+$n))| sed -En "s/(;|;;)/\ /g;p")
+		wine_ver_list=( $(printf "$wine_bin_output"|\
+		cut -d';' -f$((6-$n))-$((7+$n))| sed -En "s/(;|;;)/\ /g;p") )
+#		wine_final_list=$(printf "$wine_ver_list"| sed -En "s/(:|;;)/,/g;p")
+#		exit 0
+#		wine_bin_temp=/tmp/w_binary.*
 #		if [ -s /tmp/w_bin_tmp ]; then
-		if [ -s $wine_bin_temp ]; then
-#			wine_ver=$(cat /tmp/w_bin_tmp|cut -d';' -f1)
-#			dist_dl_ver=$(cat /tmp/w_bin_tmp|cut -d';' -f3)
-			wine_ver=$(cat $wine_bin_temp|cut -d';' -f1)
-			dist_dl_ver=$(cat $wine_bin_temp|cut -d';' -f3)
-			unset dl_list
-			## create tmp dir for package download
-			dl_dir=$(mktemp --tmpdir -d wine_dl.XXXXXXXX)	
-			pkg_ver=$(printf $wine_ver| cut -d'-' -f1)
-			pkg_rel=$(printf $wine_ver| cut -d'-' -f2)
-
-			## control if wine bin dir exist. If not create it from default
-			if ! [ -d $wine_path/$dir_elf/ ]; then mkdir -p $wine_path/$dir_elf; fi
-			## define download source and packages
-			dl_address_0="https://dl.winehq.org/wine-builds/fedora/$dist_dl_ver/$http_elf"
-			dl_address_1="https://dl.winehq.org/wine-builds/fedora/$dist_dl_ver/i686"
-			dl_list=(
-				"$dl_address_0/wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
-				"$dl_address_1/wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
-			)
-			unpack_list=(
-				"wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
-				"wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
-			)
-			## download command
-			dl_cmd(){ wget -P $dl_dir $pkgs 2>&1; }
-			## This perl regex Analyse and parse wget stdout field, then display it in a yad window
-			track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $pack_name [\1] time left: \3\t\2\/s/"; }
-			## now download
-			cd $dl_dir
-			for pkgs in ${dl_list[@]}; do
-				pack_name=$wine_ver
-				## download UI feeds
-				pkg_ext=$(printf "$pkgs"| sed -n "s/^.*\.//p")
-				site=$(printf "$pkgs"| sed -E -n "s/(^.*:\/\/)(\w+)\.(\w+)\.(\w+)\/.*$/\2.\3.\4/p")
-				pack=$(printf "$pkgs"| sed -n "s/^.*\///p")
-				w_text="$vb\\Downloading $pack\\nfrom $site server.$end"
-				## download progress bar UI
-				dl_cmd | track | $yad_bin --width=550 --title "$w_title" --align=center --borders=$borders \
-				--text="$w_text" --window-icon=filesave --image=$img_install --progress --auto-close
-				if [ $? = 1 ]; then exit 0; fi
-			done
-			## then, extract to wine bin directory
-			if [ $(ls -1 $dl_dir| egrep -c "$pkg_ver") -gt 0 ]; then
-				for dwld in ${unpack_list[@]}; do
-					e_text="$vb\\Extracting $dwld to $wine_path.$end"
-					$yad_bin --width=550 --title "$w_title" --align=center --no-buttons --borders=$borders \
-					--window-icon=filesave --progress --pulsate --auto-close --text="$e_text" \
-					--progress-text="" &
-					## seek the extrat UI yad PID
-					WAIT_UI=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
-					## extract rpm command through rpm2cpio
-					$rpm_bin $dwld | cpio -id
-					kill $WAIT_UI
+#		if [ -s $wine_bin_temp ]; then
+		if [ ${#wine_ver_list[@]} -gt 0 ]; then
+			if [ ${#wine_ver_list[@]} -gt 2 ];then
+#				echo "${wine_ver_list[2]}"
+#				exit 0
+				for _wine_ver in ${wine_ver_list[@]}; do
+					if [[ $_wine_ver != unset ]]; then
+						if [ $(ls -1 $HOME/.winebin/$dir_elf/$_wine_ver| grep -c .) -eq 0 ]; then
+							stage_list=( '_hq_stg0,1' '_hq_stg1,2' )
+							for stage in ${stage_list[@]}; do
+								_hq_stage=$(printf "$stage"| cut -d',' -f1)
+								if [ $(cat $HOME/.winestarter/resources/ftp$_hq_stage.\[list\]|\
+								grep -c "$_wine_ver") -gt 0 ]; then
+									wine_ver=$(cat $HOME/.winestarter/resources/ftp$_hq_stage.\[list\]|\
+									grep "$_wine_ver"|cut -d',' -f1)
+									
+									dist_dl_ver=$(cat $HOME/.winestarter/resources/ftp$_hq_stage.\[list\]|\
+									grep "$_wine_ver"|cut -d',' -f2)
+									pkg_ver=$(printf $wine_ver| cut -d'-' -f1)
+									pkg_rel=$(printf $wine_ver| cut -d'-' -f2)
+	#								wine_build=$(printf "$stage"| cut -d',' -f2)
+									wine_pack=$(printf "$stage"| cut -d',' -f2)
+								fi
+							done
+							exec_dl=1
+						else
+							wine_ver=$(printf "$_wine_ver"| sed -n "s/*$//g;p")
+							wine_pack=''
+							exec_dl=0
+						fi
+					fi
 				done
-				mkdir -p $wine_path/$dir_elf/$wine_ver/
-				cp -Rf opt/wine-staging/* $wine_path/$dir_elf/$wine_ver/
-				if [ $b_elf = 64 ]; then cd $wine_path/x86; ln -sf ../$dir_elf/$wine_ver ; fi
+				if [ $exec_dl = 1 ]; then
+					## create tmp dir for package download
+					dl_dir=$(mktemp --tmpdir -d wine_dl.XXXX)
+					## control if wine bin dir exist. If not create it from default
+					if ! [ -d $wine_path/$dir_elf/ ]; then mkdir -p $wine_path/$dir_elf; fi
+					## Define old or recent
+					if [ $wine_pack = 1 ]; then dir_ver='wine-builds.old'; else dir_ver='wine-builds'; fi
+					## define download source and packages
+					dl_address_0="https://dl.winehq.org/$dir_ver/fedora/$dist_dl_ver/$http_elf"
+					dl_address_1="https://dl.winehq.org/$dir_ver/fedora/$dist_dl_ver/i686"
+					dl_list=(
+						"$dl_address_0/wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
+						"$dl_address_1/wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
+					)
+					unpack_list=(
+						"wine-staging$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
+						"wine-staging-common-$pkg_ver-$pkg_rel.i686.rpm"
+					)
+	#				echo "${dl_list[@]}"
+	#				exit 0
+					## download command
+					dl_cmd(){ wget -P $dl_dir $pkgs 2>&1; }
+					## This perl regex Analyse and parse wget stdout field, then display it in a yad window
+					track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $pack_name [\1] time left: \3\t\2\/s/"; }
+					## now download
+					cd $dl_dir
+					for pkgs in ${dl_list[@]}; do
+						pack_name=$wine_ver
+						## download UI feeds
+						pkg_ext=$(printf "$pkgs"| sed -n "s/^.*\.//p")
+						site=$(printf "$pkgs"| sed -E -n "s/(^.*:\/\/)(\w+)\.(\w+)\.(\w+)\/.*$/\2.\3.\4/p")
+						pack=$(printf "$pkgs"| sed -n "s/^.*\///p")
+						w_text="$vb\\Downloading $pack\\nfrom $site server.$end"
+						## download progress bar UI
+						dl_cmd|track|$yad_bin --width=550 --title "$w_title" --align=center --borders=$borders \
+						--text="$w_text" --window-icon=filesave --image=$img_install --progress --auto-close
+						if [ $? = 1 ]; then exit 0; fi
+					done
+					## then, extract to wine bin directory
+					if [ $(ls -1 $dl_dir| egrep -c "$pkg_ver") -gt 0 ]; then
+						for dwld in ${unpack_list[@]}; do
+							e_text="$vb\\Extracting $dwld to $wine_path.$end"
+							$yad_bin --width=550 --title "$w_title" --align=center --no-buttons \
+							--borders=$borders --window-icon=filesave --progress --pulsate --auto-close \
+							--text="$e_text" --progress-text="" &
+							## seek the extrat UI yad PID
+							WAIT_UI=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
+							## extract rpm command through rpm2cpio
+							$rpm_bin $dwld | cpio -id
+							kill $WAIT_UI
+						done
+						mkdir -p $wine_path/$dir_elf/$wine_ver/
+						cp -Rf opt/wine-staging/* $wine_path/$dir_elf/$wine_ver/
+						if [ $b_elf = 64 ]; then cd $wine_path/x86; ln -sf ../$dir_elf/$wine_ver ; fi
+					fi
+				fi
+			else
+#				wine_ver=$(printf "$wine_bin_output"| cut -d';' -f5)
+				wine_ver=${wine_ver_list[0]}
+				wine_pack=''
 			fi
-		else
-			wine_ver=$(printf "$wine_bin_output"| cut -d';' -f5)
 		fi
-
 		## set if Wine env have to be set as default or not.
-		if [[ $wine_64 == TRUE ]]; then wine_elf=1; else wine_elf=0; fi
-		if [[ $wine_default == TRUE ]]; then printf "$wine_ver;$wine_path;$wine_elf" \
-		> $HOME/.winestarter/default-wine; fi
+#		if [[ $wine_64 == TRUE ]]; then default_elf=1; else default_elf=0; fi
+#		if [[ $wine_default == TRUE ]]; then printf "$wine_ver;$wine_path;$wine_elf" \
+#		if [[ $wine_default == TRUE ]]; then printf "$wine_ver;$wine_path" \
+#		> $HOME/.winestarter/default-wine; fi
+		printf "$wine_ver;$wine_path" > $HOME/.winestarter/default-wine
 	}
 	fn_tricks_list_build(){
 		if [ -x "$w_tricks_bin" ]; then
@@ -1578,7 +1629,7 @@ wine.mybottlename;bottle_prefix;;$nf Bottle prefix$end;;;
 '';;;$w_wine_game_path;LBL;;
 $game_path;game_path;;$nf Existing appli path$end;DIR;;
 '';;;$w_wine_elf;LBL;;
-'';;;$w_wine_elf_tip;LBL;;
+'';;;$w_wine_elf_tip_0;LBL;;
 $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 #$wine_app_elf;wine_app_elf;;Application type is full 64 bits;CHK;;"
 		item_sep=","
@@ -2890,6 +2941,7 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 }
 ########### MAIN ###########
 export wine_bin=$(find /usr/{bin,local/bin} -name wine)
+export wineserver_bin=$(find /usr/{bin,local/bin} -name wineserver)
 export w_tricks_bin=$(find /usr/{bin,local/bin} -name winetricks)
 export yad_bin=$(find /usr/{bin,local/bin} -name yad)
 export zen_bin=$(find /usr/{bin,local/bin} -name zenity)

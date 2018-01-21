@@ -23,6 +23,10 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 21/01/18 ) v0.99.7*
+ - Emergency bug fix: Forgot to update wtc fn_binary_env, fn_binary_config accordingly to change in wt. It cause misunderstading in conf file wt reading. User that already have a Wine distro package installed are not impact with this issue.
+ - fix wine_hq/pol recorded lists update: listings wasn't update to 'installed' after package download. This is required until according sites are updated.
+ 
 *( 19/01/18 ) v0.99.6*
  - Changed Wine packages list download behaviour to manage last version check on WineHQ web site. Now, lists are checked at program start and is only updated if website is updated.
  - ADD > Added WineHQ old staging package repository to binary packages list. Now we can get starting from 1.8 version. Older version can still be downloaded from PoL repository (without any garanty, I didn't test).
