@@ -336,6 +336,7 @@ main_code(){
 				${fn_reconf}
 				echo -e "$_section\n" >> $TEMP_conf
 			fi
+			sleep 1
 			IFS=$ifs
 		done
 		## if conf file is new one, define the conf name before copying.
@@ -613,10 +614,11 @@ _wine=$_wine"
 						wine_path=$user_prefix/$_def_val
 					fi
 				;;
-				_hq_stg0|_hq_stg1|_hq_dev0| _pol_pkg )
+				_hq_stb0|_hq_stg0|_hq_stg1|_hq_dev0| _pol_pkg )
 					if [[ $_val != 'unset' ]]; then
 						if [[ $_var == _pol_pkg ]]; then wine_ver=$_pol_pkg; wine_pack=0 ;fi
 						if [[ $_var == _hq_dev0 ]]; then wine_ver=$_hq_dev0; wine_pack=1 ;fi
+						if [[ $_var == _hq_stb0 ]]; then wine_ver=$_hq_stb0; wine_pack=1 ;fi
 						if [[ $_var == _hq_stg0 ]]; then wine_ver=$_hq_stg0; wine_pack=1 ;fi
 						if [[ $_var == _hq_stg1 ]]; then wine_ver=$_hq_stg1; wine_pack=2 ;fi
 						wine_ver=$(printf "$wine_ver"| sed -n "s/*$//g;p")
@@ -1316,10 +1318,14 @@ $_extended;_extended;;$msg_extended;CHK;;"
 			if [[ $(uname -m) =~ ^.*64 ]]; then wine_elf=1, else wine_elf=0; fi
 		fi
 		if [ $wine_elf = 1 ]; then	dir_elf='amd64'; else dir_elf='x86'; fi
-		wine_ver=$wine_path/$dir_elf/$(cat $HOME/.winestarter/default-wine| cut -d';' -f1)
-#		fi
+		wine_ver_default=$(cat $HOME/.winestarter/default-wine| cut -d';' -f1)
+		if [ $from_config = 1 ]; then
+			if [ $use_winepath -gt 0 ]; then wine_ver=$wine_ver; else wine_ver=$wine_ver_default; fi
+		else
+			wine_ver=$wine_ver_default
+		fi
 		## set wine environment variables
-		wine_elf_path=$wine_ver
+		wine_elf_path=$wine_path/$dir_elf/$wine_ver
 		export WINEVERPATH=$wine_elf_path
 		export PATH=$wine_elf_path/bin:$PATH
 		export WINESERVER=$wine_elf_path/bin/wineserver
@@ -1389,7 +1395,7 @@ packages manager or directly from WineHQ staging below.$end"
 #$vb WineHQ staging package (older)$end;CB;unset#$_hq_stg1_list
 #$set_as_default_tip;LBL;''
 #$set_as_default;CHK;FALSE"
-		_basics_fields="$w_wine_binary_tip;LBL;''
+		_basics_fields="$w_wine_binary_tip;LBL;''	
 $vb WineHQ staging package$end;CB;unset#$_hq_stg0_list
 $vb WineHQ staging package (older)$end;CB;unset#$_hq_stg1_list
 $set_as_default_tip;LBL;''"
@@ -1935,6 +1941,7 @@ $wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;
 '';;;;LBL;;
 '';;;$w_wine_dl_info;LBL;;
 '';;;$w_wine_dl_warn;LBL;;
+unset#$_hq_stb0_list;_hq_stb0;;$vb WineHQ stable from 2.4 $end;CB;;
 unset#$_hq_stg0_list;_hq_stg0;;$vb WineHQ staging from 2.4 $end;CB;;
 unset#$_hq_stg1_list;_hq_stg1;;$vb WineHQ staging to 2.4 $end;CB;;
 unset#$_hq_dev0_list;_hq_dev0;;$vb WineHQ devel from 2.4 $end;CB;;
@@ -2830,7 +2837,7 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 		else
 			ct_msg=0
 		fi
-		file_list=( _pol32 _pol64 _hq_stg0 _hq_dev0 _hq_stg1 )
+		file_list=( _pol32 _pol64 _hq_stb0 _hq_stg0 _hq_dev0 _hq_stg1 )
 		for hint in ${file_list[@]}; do
 			if [ $ct_msg -gt 0 ]; then
 				_last=( $hint=$(cat $HOME/.winestarter/resources/ftp$hint.\[list\] | sed -n 's/*$//g;1p') )
@@ -3125,6 +3132,8 @@ control_last(){
 #	echo "$dl_bin_list" > $file_temp.[list]
 	echo "$dl_bin_list" > $HOME/.winestarter/resources/ftp$tmp_list.[list]
 	}
+	## stable wine versions
+	select_stb0(){ hq_stage='stable'; tmp_list='_hq_stb0'; dir_ver='wine-builds'; select_hq; }
 	## version newer than 2.4
 	select_stg0(){ hq_stage='staging'; tmp_list='_hq_stg0'; dir_ver='wine-builds'; select_hq; }
 	select_dev0(){ hq_stage='development'; tmp_list='_hq_dev0'; dir_ver='wine-builds'; select_hq; }
@@ -3151,7 +3160,7 @@ control_last(){
 	download_section(){	
 		# ls already insbtalled packages if any
 #		tag_cmd=('select_pol_32' 'select_pol_64' 'select_stg0' 'select_dev0')
-		tag_cmd=('select_pol_32' 'select_pol_64' 'select_stg0' 'select_dev0' 'select_stg1')
+		tag_cmd=('select_pol_32' 'select_pol_64' 'select_stb0' 'select_stg0' 'select_dev0' 'select_stg1')
 		
 		for tag_list in ${tag_cmd[@]}; do
 			${tag_list}

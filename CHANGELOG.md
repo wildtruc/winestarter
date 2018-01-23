@@ -23,6 +23,11 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 23/01/18 ) v0.99.8*
+ - Emergency bug fix: Bad ID chekc in wt fn_use_winepath download section. Reversed lists tags.
+ - Fix: wtc In standalone install, defaut wine version was identified with full path (baaaad), modified as appropriate and chekc first if specific wine versio, is used in config first.
+ - Add: stable WineHQ repository ('cause, Wine 3.0 is stable :) ).
+  
 *( 21/01/18 ) v0.99.7*
  - Emergency bug fix: Forgot to update wtc fn_binary_env, fn_binary_config accordingly to change in wt. It cause misunderstading in conf file wt reading. User that already have a Wine distro package installed are not impact with this issue.
  - fix wine_hq/pol recorded lists update: listings wasn't update to 'installed' after package download. This is required until according sites are updated.

@@ -307,23 +307,26 @@ fn_use_winepath(){
 			if [[ $sys_arch =~ ^.*64 ]]; then
 				http_elf='x86_64'
 			fi
+			## identify Wine version type
 			if [[ $wine_ver =~ ^.*staging.*$ ]]; then
 				hq_stage='staging'; hq_short='staging'
+			elif [[ $wine_ver =~ ^.*stable.*$ ]]; then
+				hq_stage='stable'; hq_short='stable'
 			else
 				hq_stage='development'; hq_short='devel'
 			fi
-#			if [[ $wine_ver =~ ^.*.rc[0-9].*$ ]]; then
-#				rc_stage=$(echo "$wine_ver"| sed -En "s/^.*(rc[0-9]).*$/\1/p")
-#			else
-#				rc_stage=''
-#			fi
 			file_temp=$(mktemp --tmpdir ftp.XXXX)
-			if [ $wine_pack = 2 ]; then
-				dir_ver='wine-builds.old'; hq_ver='hq_dev0'
-			else
-				dir_ver='wine-builds'
-				if [ $wine_pack = 0 ]; then hq_ver='hq_stg0'; else hq_ver='hq_stg1'; fi
-			fi
+			## identify Wine repo type.
+			if [ $wine_pack = 2 ]; then dir_ver='wine-builds.old'; else dir_ver='wine-builds'; fi
+			## tag to identify already download lists.
+			case $hq_stage in
+				'staging')
+					if [ "$dir_ver" = 'wine-builds.old' ]]; then hq_ver='hq_stg1'; hq_ver='hq_stg0'; fi
+				;;
+				'stable') hq_ver='hq_stb0' ;;
+				'development') hq_ver='hq_dev0' ;;
+			esac
+			
 			dl_address="https://dl.winehq.org/$dir_ver/fedora"
 			dl_text="$vb\\Building WineHQ packages repository list.$end"
 			
