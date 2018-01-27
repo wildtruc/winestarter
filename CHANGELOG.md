@@ -23,6 +23,11 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 27/01/18 ) v0.99.9*
+ - makefile: Add a changelog display at update.
+ - Fix wtc: Forgot to update stable Wine version and real default Wine version in main tabs display. Apologies.
+ - wt: Removed no more used vars.
+
 *( 23/01/18 ) v0.99.8*
  - Emergency bug fix: Bad ID chekc in wt fn_use_winepath download section. Reversed lists tags.
  - Fix: wtc In standalone install, defaut wine version was identified with full path (baaaad), modified as appropriate and chekc first if specific wine versio, is used in config first.

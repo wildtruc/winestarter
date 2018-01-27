@@ -44,7 +44,7 @@ update:
 	$(INSTALL) -D -t $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	chown $(C_USER):$(C_USER) $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	sudo -u $(C_USER) cp -Rf ./.git $(CONF_DIR)/
-
+	sh ./changelog.sh
 		
 uninstall:
 	rm -Rf $(CONF_DIR)

@@ -1226,6 +1226,7 @@ _optimus=$_optimus"
 		fn_tricks_list_build &
 		unset form_win def_win default_win
 		unset tab_set tab_temp cfg_set t_display nv_field
+		hq_stb0=$(printf "$_hq_stb0"| cut -d',' -f1)
 		hq_stg0=$(printf "$_hq_stg0"| cut -d',' -f1)
 		hq_dev0=$(printf "$_hq_dev0"| cut -d',' -f1)
 #		main_tab_text="$bf\\Select settings by theme$end \\n \
@@ -1234,7 +1235,7 @@ _optimus=$_optimus"
 #$vb\\WineHQ (32/64) >$end $hq_stg0, $hq_dev0, $nf\\System >$end $sys_version"
 		main_tab_text="$bf\\Select settings by theme$end \\n \
 $nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
-$nf\\Last dowloadable:$end$vb\\WineHQ (32/64) >$end $hq_stg0, $hq_dev0, $nf\\System >$end $sys_version"
+$nf\\Last WineHQ versions >$end $hq_stb0, $hq_stg0, $hq_dev0,$nf System >$end $sys_version"
 		w_text="$bf Wine prefix$end\\n \
 $vb\\Set wine prefix name, appli/game directories, etc.$end\\n \
 $nf\\Check here the sections you would like to configure.$end"
@@ -1314,17 +1315,25 @@ $_extended;_extended;;$msg_extended;CHK;;"
 #		else
 		wine_path=$(cat $HOME/.winestarter/default-wine| cut -d';' -f2)
 #		wine_elf=$(cat $HOME/.winestarter/default-wine| cut -d';' -f3)
+		## detect system master elf type. 
 		if ! [ $wine_elf ]; then
 			if [[ $(uname -m) =~ ^.*64 ]]; then wine_elf=1, else wine_elf=0; fi
 		fi
+		## set .wienbin folder type as appropriate after detect.
 		if [ $wine_elf = 1 ]; then	dir_elf='amd64'; else dir_elf='x86'; fi
+		## check out box wine version if any.
 		wine_ver_default=$(cat $HOME/.winestarter/default-wine| cut -d';' -f1)
+		## set it as default system version is exist and set. 
+		if [ $wine_ver_default ]; then
+			if ! [ $sys_version ]; then sys_version=$wine_ver_default; fi
+		fi
+		## check if selected config file have a specific version set.
 		if [ $from_config = 1 ]; then
 			if [ $use_winepath -gt 0 ]; then wine_ver=$wine_ver; else wine_ver=$wine_ver_default; fi
 		else
 			wine_ver=$wine_ver_default
 		fi
-		## set wine environment variables
+		## set wine environment variables as appropriate from above settings.
 		wine_elf_path=$wine_path/$dir_elf/$wine_ver
 		export WINEVERPATH=$wine_elf_path
 		export PATH=$wine_elf_path/bin:$PATH
@@ -1344,7 +1353,7 @@ $_extended;_extended;;$msg_extended;CHK;;"
 		_wbin=1
 		wine_bin_path=$wine_elf_path/bin/
 #		${wine_bin_path}wineboot -i
-		sys_version=$($wine_bin --version)
+#		sys_version=$($wine_bin --version)
 		## then, start as usual 
 		if [ $b_set = 1 ]; then
 			fn_basics_config
@@ -3635,8 +3644,8 @@ Select the Wne bottle to edit$end"
 }
 . $HOME/.config/user-dirs.dirs
 ## Script debug options
-#bash_opt='-x -c'
-bash_opt='-c'
+bash_opt='-x -c'
+#bash_opt='-c'
 ## check internet connection.
 line=$(nc -z 8.8.8.8 53)
 export line=$?

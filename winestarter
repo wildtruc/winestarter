@@ -128,7 +128,8 @@ fn_regedit(){
 		if [[ $(cat -n $user_prefix/$bottle_prefix/$reg_file| grep -c .) -ge 3 ]]; then
 #			printf "boom!\n"
 			$wine_bin regedit $user_prefix/$bottle_prefix/$reg_file
-			$wine_bin_path$wineboot_bin -r
+			$wineboot_bin -r
+			$wineserver_bin -k
 		else
 			IFS=$ifs ; exit 0
 		fi
@@ -145,8 +146,9 @@ fn_regedit(){
 				$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Direct3D
 				printf "" > $user_prefix/$bottle_prefix/$reg_file
 			fi
+			$wineboot_bin -r
+			$wineserver_bin -k
 		fi
-		$wine_bin_path$wineboot_bin -r
 		rm -f $user_prefix/$bottle_prefix/$reg_file.new
 	fi
 }
@@ -183,7 +185,8 @@ fn_mime_asso(){
 				fi
 			fi
 		done
-		$wine_bin_path$wineboot_bin -r
+		$wineboot_bin -r
+		$wineserver_bin -k
 		rm -f $reg_temp
 	fi
 }
@@ -217,7 +220,8 @@ fn_reg_dlls(){
 					fi
 				done
 			done
-			$wine_bin_path$wineboot_bin -r
+			$wineboot_bin -r
+			$wineserver_bin -k
 		fi
 	fi
 }
@@ -1145,7 +1149,8 @@ if [ $windowed -gt 0 ]; then
 else
 	if [[ $(cat $default_reg| egrep -c "\"Desktop\"=\"Default\"") -gt 0 ]]; then
 		$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Explorer
-		$wineboot_bin -e
+		$wineboot_bin -u
+		$wineserver_bin -k
 	fi
 fi
 #exit 0
