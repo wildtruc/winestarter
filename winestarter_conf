@@ -3644,8 +3644,8 @@ Select the Wne bottle to edit$end"
 }
 . $HOME/.config/user-dirs.dirs
 ## Script debug options
-bash_opt='-x -c'
-#bash_opt='-c'
+#bash_opt='-x -c'
+bash_opt='-c'
 ## check internet connection.
 line=$(nc -z 8.8.8.8 53)
 export line=$?
