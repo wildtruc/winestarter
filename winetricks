@@ -12683,8 +12683,9 @@ load_wmp9()
 
     # remove builtin placeholders to allow update
     rm -f "$W_SYSTEM32_DLLS"/wmvcore.dll "$W_SYSTEM32_DLLS"/wmp.dll
-    # need native wmp override to allow update and later checks to succeed
-    w_override_dlls native wmp
+    rm -f "$W_PROGRAMS_X86_UNIX/Windows Media Player/wmplayer.exe"
+    # need native overrides to allow update and later checks to succeed
+    w_override_dlls native l3codeca.acm wmp wmplayer.exe wmvcore
 
     # FIXME: should we override quartz?  Builtin crashes when you play
     # anything, but maybe that's bug 30557 and only affects new systems?
@@ -12723,6 +12724,12 @@ load_wmp10()
     w_download https://download.microsoft.com/download/1/2/a/12a31f29-2fa9-4f50-b95d-e45ef7013f87/MP10Setup.exe c1e71784c530035916aad5b09fa002abfbb7569b75208dd79351f29c6d197e03
 
     w_set_winver winxp
+
+    # remove builtin placeholders to allow update
+    rm -f "$W_SYSTEM32_DLLS"/wmvcore.dll "$W_SYSTEM32_DLLS"/wmp.dll
+    rm -f "$W_PROGRAMS_X86_UNIX/Windows Media Player/wmplayer.exe"
+    # need native overrides to allow update and later checks to succeed
+    w_override_dlls native l3codeca.acm wmp wmplayer.exe wmvcore
 
     # Crashes on exit, but otherwise ok; see https://bugs.winehq.org/show_bug.cgi?id=12633
     w_try_cd "$W_CACHE/$W_PACKAGE"
