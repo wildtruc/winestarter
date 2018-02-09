@@ -77,7 +77,7 @@ icons_set(){
 }
 main_code(){
 		default_win_design(){
-		echo -e "$i_notif\n@@@@ default_win_design @@@@\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$i_notif\n@@@@ default_win_design @@@@\n$e_notif"
 		## reset IFS to include white space
 		ifs=$IFS
 		IFS=$(echo -ne "\n\b")
@@ -115,7 +115,7 @@ main_code(){
 		# ne pas tenir compte des labels
 		if [ $win_type = 0 ]; then
 			def_win=$($yad_bin --width=$w_width --title "$w_title" --image=$img_wine_ui \
-			--window-icon=$img_desktop --form --separator=';' --item-separator="$item_sep" \
+			--window-icon=$img_desktop --form --separator=';' --item-separator="$item_sep" $borders \
 			--align=left --text "$bf$w_text$end" $(echo "$field_list") $(echo "$chk_list") )
 			if [ $? = 1 ]; then exit 0; fi
 			from_output=$(echo "$def_win"| sed -n "s/;/\n/g;p"| cat -b| awk 'NF'| \
@@ -130,7 +130,7 @@ main_code(){
 		
 			## extract basic_sets data without labeled line and get exploitable datas only. 
 			echo "$basic_sets"| egrep -v "LBL|FBTN"| sed -E -n "s/$regex/\1;\2;\3;\6;\7/p" > $temp_a
-			echo -e "$g_notif >>>> CHECK ME$e_notif"
+			[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>> CHECK ME$e_notif"
 
 			w_width=$((594+$scale))
 			$yad_bin --width=$w_width $t_plug $t_rank $t_icon --text="$w_text" \
@@ -144,11 +144,11 @@ main_code(){
 		## restore IFS to previous state
 		IFS=$ifs
 		## from here, yad window is waiting for validation to go to next process.
-		echo -e "$g_notif\n>>>> $temp_a\n>>>> $(cat $temp_a)$e_notif"
-		echo -e "$g_notif\n>>>> $temp_b\n>>>> $(cat $temp_b)$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> $temp_a\n>>>> $(cat $temp_a)$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> $temp_b\n>>>> $(cat $temp_b)$e_notif"
 	}
 		default_tab_design(){
-		echo -e "$i_notif\n@@@@ default_tab_design @@@@\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$i_notif\n@@@@ default_tab_design @@@@\n$e_notif"
 		wait_message='CREATE UI'
 		fn_plz_wait &
 		WAIT_UI_1=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
@@ -197,12 +197,12 @@ main_code(){
 			else
 				local $_out_var=$_val
 			fi
-			echo -e "$g_notif\n>>>> tab_set \n>>>> ${tab_set[@]}$e_notif"
+			[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> tab_set \n>>>> ${tab_set[@]}$e_notif"
 		done
 		
 	}
 	default_tab_create(){
-		echo -e "$i_notif\n@@@@ default_tab_create @@@@\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$i_notif\n@@@@ default_tab_create @@@@\n$e_notif"
 		## after each tab lists are defined, analyse them by loop to create corresponding window tabs.
 		## cycle between each defined tabs to prepare their temp files 
 		for tab_vars in ${tab_set[@]}; do
@@ -230,7 +230,7 @@ main_code(){
 			fi
 			## add/create window tab data to be listed in extract_tmp_settings section.
 			tab_temp+=("$t_var;$t_val;$t_name;$temp_a;$temp_b;$tmp_key_a;$tmp_key_b")
-			echo -e "$g_notif\n>>>> tab temp\n>>>> ${tab_temp[@]}$e_notif"
+			[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> tab temp\n>>>> ${tab_temp[@]}$e_notif"
 			## if specific function is associated, execute it to get datas.
 			## each time a tab is assigned, start associated function to load tab content in temp files.
 			if [ $t_num -gt 0 ]; then ${t_fn_op}; fi ## <<<< SOOOO, IMPORTANT
@@ -267,11 +267,11 @@ main_code(){
 	}
 	## from here, this meaning tab data are modified/set and validation button has been pressed.
 	extract_tmp_settings(){
-		echo -e "$i_notif\n@@@@ extract_tmp_settings @@@@\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$i_notif\n@@@@ extract_tmp_settings @@@@\n$e_notif"
 		wait_message='WORKING'
 		fn_plz_wait &
 		WAIT_UI_2=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
-		echo -e "$g_notif\n>>>> tab temp resume :\n${tab_temp[@]}$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> tab temp resume :\n${tab_temp[@]}$e_notif"
 		for sets in "${tab_temp[@]}"; do
 			unset _out_conf_sets
 			_out_var=$(printf "$sets"| cut -d';' -f1)
@@ -304,7 +304,7 @@ main_code(){
 				fi				
 			done
 			
-			echo -e "$g_notif\n>>>> $_out_var vars list:\n${_out_conf_sets[@]}\n$e_notif"
+			[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> $_out_var vars list:\n${_out_conf_sets[@]}\n$e_notif"
 			
 			## define the config write method.
 			## If config file exist choose between 2 method:
@@ -312,12 +312,12 @@ main_code(){
 			## section already exist:
 				_fn_exist=$(cat $config_file| grep -wc "$_out_var")
 				## start the reconf section.
-				echo -e "$g_notif >>>>> reconf section for $_out_var$e_notif"
+				[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>>> reconf section for $_out_var$e_notif"
 				${fn_reconf}
 				## If section exist, enter changes then insert it in tempory conf file.
 				if [ $_fn_exist -gt 0 ]; then
 				## define the beginning and the end of section text.
-					echo -e "$g_notif >>>>> write temp file for $_out_var $e_notif"
+					[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>>> write temp file for $_out_var $e_notif"
 					_first=$(echo "$_section"| sed -n '1p'|sed -n "s|/|\\\/|g;p" )
 					_last=$(echo "$_section"| sed -n '$p')
 					## suppress previous section text from the conf file and replace it with section keyword
@@ -332,7 +332,7 @@ main_code(){
 				fi
 			else
 			## For new fresh conf, just write by pushing section conf text at the end of the file
-				echo -e "$g_notif >>>>> new fresh section for $_out_var$e_notif"
+				[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>>> new fresh section for $_out_var$e_notif"
 				${fn_reconf}
 				echo -e "$_section\n" >> $TEMP_conf
 			fi
@@ -404,7 +404,7 @@ $res_action;;;$res_launch;FBTN;;
 #	}
 	reconf_wine(){		
 		# "user_prefix bottle_prefix game_path game_dir game_exe use_winepath wine_path wine_ver"
-		echo -e "$g_notif\n##### reconf_wine $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_wine $e_notif"
 		## send output datas to local script env.
 		local ${_out_conf_sets[@]}
 		## rewrite specifics variables for correct display and use.
@@ -532,7 +532,7 @@ $res_action;;;$res_launch;FBTN;;
 	newconf_wine(){
 			_section="## Allow extended features for winestarter configurator; off (0), on (1)
 _extended=$_extended\n
-## default is $HOME
+## default is user's home.
 user_prefix=$user_prefix
 ## game/appli prefix name
 bottle_prefix=\"$bottle_prefix\"
@@ -587,10 +587,10 @@ _wine=$_wine"
 ## comments with '##' are user help comments
 ## comments with '#' are unset feature
 "
-		echo -e "$conf_headers" > $TEMP_conf
+		[[ $code_tag = 0 ]]|| echo -e "$conf_headers" > $TEMP_conf
 	}
 	reconf_wbin(){
-		echo -e "$g_notif\n##### reconf_wbin $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_wbin $e_notif"
 		## send output datas to local script env.
 		local ${_out_conf_sets[@]}
 		## take care that wine_path is not HOME prefix. user_prefix/winebin dir is default, but could
@@ -658,7 +658,7 @@ wine_pack=$wine_pack
 _wbin=$_wbin"
 	}
 	reconf_install(){
-		echo -e "$g_notif\n##### reconf_install $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_install $e_notif"
 		M=0
 		local ${_out_conf_sets[@]}
 		for _list in ${_out_conf_sets[@]}; do
@@ -746,7 +746,7 @@ w_extra_script=\"$w_extra_script\"
 _install=$_install"
 	}
 	reconf_tricks(){
-		echo -e "$g_notif\n##### reconf_tricks $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_tricks $e_notif"
 		M=0
 		local ${_out_conf_sets[@]}
 		for _list in ${_out_conf_sets[@]}; do
@@ -796,7 +796,7 @@ w_tricks_list=\"$w_tricks_list\"
 _tricks=$_tricks"
 	}
 	reconf_reged(){
-		echo -e "$g_notif\n##### reconf_reged $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_reged $e_notif"
 		M=0
 		R=0
 		unset _reged_var
@@ -807,7 +807,7 @@ _tricks=$_tricks"
 		for _list in ${_out_conf_sets[@]}; do
 			_var=$(printf "$_list"|cut -d'=' -f1)
 			_val=$(printf "$_list"|cut -d'=' -f2)
-			echo -e "$g_notif >>>>> ${_reged_var[*]} $e_notif"
+			[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>>> ${_reged_var[*]} $e_notif"
 			if ! [[ $_var =~ ^dll*|^mime* ]]; then
 				if [[ $_var == user_reg ]]; then
 					if [[ $user_reg =~ ^\[.*\]$ ]]; then unset -v user_reg; _val='unset'; fi
@@ -829,7 +829,7 @@ _tricks=$_tricks"
 					if [ $_val != unset ]; then
 						case $_var in
 							'Selected_Files')
-								echo -e "$g_notif >>>>> $_var $e_notif"
+								[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>>> $_var $e_notif"
 								selected_files_list=( $(echo "$_val"| sed -n "s/,/\n/g;p") )
 								for Files in ${selected_files_list[@]}; do
 									if [ $(printf "$local_association"| grep -c .) -gt 0  ]; then
@@ -857,7 +857,7 @@ _tricks=$_tricks"
 								_val=$prev_asso$(printf "${FileType_list[*]}"| tr ' ' ',')
 							;;
 							'mime_preset')
-								echo -e "$g_notif >>>>> $_var $e_notif"
+								[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>>> $_var $e_notif"
 								mime_preset_list=( "$_val" )
 								if [ $(printf "$local_association"| grep -c .) -gt 0  ]; then
 									for preset in ${mime_preset_list[@]}; do
@@ -875,11 +875,11 @@ _tricks=$_tricks"
 								local local_association=$_val
 							;;
 							'dll_reg_type')
-								echo -e "$g_notif >>>>> $_var $e_notif"
+								[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>>> $_var $e_notif"
 								if [[ $_val == register ]]; then _reg_class=1; else _reg_class=0; fi; ((R++))
 							;;
 							'dll_elf_type')
-								echo -e "$g_notif >>>>> $_var $e_notif"
+								[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>>> $_var $e_notif"
 								if [[ $_val == both ]]; then
 									_reg_elf=2
 								else
@@ -887,13 +887,13 @@ _tricks=$_tricks"
 								fi
 							;;
 							'dll_file_list')
-								echo -e "$g_notif >>>>> $_var $e_notif"
+								[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>>> $_var $e_notif"
 								if [[ $_val =~ \.(dll|DLL)$ ]]; then
 									_dlls_list=$(printf "$_val"| tr ',' '\n')
 									for _dlls in ${_dlls_list[@]}; do
 										_conf_dlls+=( "$(printf "$_dlls"| sed -n "s/^.*\///g;p")," )
 									done
-									echo -e "$g_notif >>>>> ${_conf_dlls[@]} $e_notif"
+									[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>>> ${_conf_dlls[@]} $e_notif"
 									_reg_dlls=$(echo "${_conf_dlls[@]}"| sed -n "s/\ //g;s/\,$//p")
 								fi
 							;;
@@ -963,7 +963,7 @@ dll_reg_manager=\"$dll_reg_manager\"
 _reged=$_reged"
 	}
 	reconf_nvidia_1(){
-		echo -e "$g_notif\n##### reconf_nvidia_1 $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_nvidia_1 $e_notif"
 		M=0
 		local ${_out_conf_sets[@]}
 		
@@ -1044,7 +1044,7 @@ $cmt__GL_OpenGLImageSettings __GL_OpenGLImageSettings=$__GL_OpenGLImageSettings
 _nvidia_1=$_nvidia_1"
 	}
 	reconf_nvidia_2(){
-		echo -e "$g_notif\n##### reconf_nvidia_2 $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_nvidia_2 $e_notif"
 		local ${_out_conf_sets[@]}
 		M=0
 		for _list in ${_out_conf_sets[@]}; do
@@ -1084,7 +1084,7 @@ $cmt__GL_IGNORE_GLSL_EXT_REQS __GL_IGNORE_GLSL_EXT_REQS=$__GL_IGNORE_GLSL_EXT_RE
 _nvidia_2=$_nvidia_2"
 	}
 	reconf_xrandr(){
-		echo -e "$g_notif\n##### reconf_xrandr $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_xrandr $e_notif"
 		local ${_out_conf_sets[@]}
 		M=0
 		# bck_mode=1920x1080 set_mode=1280x720 'default_desktop=compiz ccp' secondary_desktop=marco 'mouse_dev=Logitech K230' 'set_buttons=3 2 1'
@@ -1150,7 +1150,7 @@ mouse_btn='$mouse_btn'
 _xrandr=$_xrandr"
 	}
 	reconf_optimus(){
-		echo -e "$g_notif\n##### reconf_optimus $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_optimus $e_notif"
 		local ${_out_conf_sets[@]}
 		M=0
 		for _list in ${_out_conf_sets[@]}; do
@@ -1229,15 +1229,23 @@ _optimus=$_optimus"
 		hq_stb0=$(printf "$_hq_stb0"| cut -d',' -f1)
 		hq_stg0=$(printf "$_hq_stg0"| cut -d',' -f1)
 		hq_dev0=$(printf "$_hq_dev0"| cut -d',' -f1)
+		if [ $use_winepath -gt 0 ]; then
+			active_wine=$wine_ver
+		else
+			active_wine=$sys_version
+		fi
+#		_target_conf=$(printf "$bottle_prefix"|  sed -n "s/^.*[\/.\|.]\(\w*[Aa-Zz]\.\w*[Aa-Zz]*\)/\1/g;p")
+		_target_conf=$(printf "$bottle_prefix"|  sed -En "s/^.(.*)$/\1/g;p")
+		if [[ $_target_conf ]]; then target_conf=$_target_conf; fi
 #		main_tab_text="$bf\\Select settings by theme$end \\n \
 #$nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
 #$nf\\Last dowloadable:$end$vb PlayOnLinux >$end wine32 $_pol32, wine64 $_pol64\\n \
 #$vb\\WineHQ (32/64) >$end $hq_stg0, $hq_dev0, $nf\\System >$end $sys_version"
-		main_tab_text="$bf\\Select settings by theme$end \\n \
+		main_tab_text="$bf\\Select settings by theme$end $brf$target_conf$end\\n
 $nf\\Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end \\n \
 $nf\\Last WineHQ versions >$end $hq_stb0, $hq_stg0, $hq_dev0,$nf System >$end $sys_version"
-		w_text="$bf Wine prefix$end\\n \
-$vb\\Set wine prefix name, appli/game directories, etc.$end\\n \
+		w_text="$bf Wine prefix$end $brf$target_conf$end
+$vb\\Set wine prefix name, appli/game directories, etc.$end\\n
 $nf\\Check here the sections you would like to configure.$end"
 		w_title="Wine Start Config"
 		w_title1="$vb Nvidia OpenGL options$end"
@@ -1245,6 +1253,7 @@ $nf\\Check here the sections you would like to configure.$end"
 		w_title3="$vb Advanced features$end"
 		w_sub_3="Checking this option will allow extended features for advanced users"
 		wine_tip0="$vb Main prefix install sections$end"
+		wine_version="$vn\\Actual prefix Wine binary : Wine $active_wine$end"
 
 		## if Nvidia device is present, add it to menu entries.
 		if [ $($lpci_bin| grep -c "NVIDIA") -gt 0 ]; then
@@ -1271,13 +1280,16 @@ $_optimus;_optimus;Optimus*options**;$msg_optimus;CHK;fn_optimus_config;$img_opt
 '';;;;LBL;;
 '';;;$w_title3;LBL;;
 '';;;$w_sub_3;LBL;;
-$_extended;_extended;;$msg_extended;CHK;;"
+$_extended;_extended;;$msg_extended;CHK;;
+'';;;;LBL;;
+'';;;$wine_version;LBL;;"
 		## restore temporarly IFS.
 		IFS=$ifs
 		## item separator in output list
 		item_sep=","
 		## window style and function.
 		win_type=0
+		borders='--borders=15'
 		w_width='420'
 		main_height='--height=420'
 		main_scroll='--vscroll-policy=auto'
@@ -1612,7 +1624,7 @@ $_basics_fields"
 		default_tab_create
 	}
 	fn_wine_basics(){
-		echo -e "$g_notif\n>>>> start fn_wine_basics ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> start fn_wine_basics ####\n$e_notif"
 		unset basic_sets track_list # #
 		# window messages
 		w_wine_basic_tip=""
@@ -1681,7 +1693,7 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 	## at first launch for a botlle creation, sets the basics variables to access
 	## custom path dirs and new Wine dirs
 	fn_wine_basic_feed(){
-		echo -e "$g_notif\n>>>> start fn_wine_basic_feed ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> start fn_wine_basic_feed ####\n$e_notif"
 		## initial bottle set before launching main features
 		# ';;/home/mike;;;wine.botlle;;/home/games/FFXIV/SquareEnix;;;TRUE;'
 		unset basic_list
@@ -1728,7 +1740,7 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 
 	}
 	fn_wine_config(){
-		echo -e "$g_notif >>>> start fn_wine_config $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>> start fn_wine_config $e_notif"
 		unset  basic_sets misc_sets def_args
 		# check install elf type
 		fn_wine_elf_query
@@ -1817,9 +1829,13 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 		else
 			_option_log_pre=$(date +%s)
 		fi
+		
 		## button command
 		option_edit_cmd="bash $bash_opt \"edit_wine_options\""
 		# window messages
+		w_text="$bf Wine prefix$end
+$vb\\Set wine prefix name, appli/game directories, etc.$end\\n
+$nf\\Check here the sections you would like to configure.$end"
 		w_wine_user_prefix="$vb\\Set user prefix if not the user's default one:$end"
 		w_wine_prefix="$vb\\Set the Wine Bottle prefix to use:$end"
 		w_wine_prefix_tip="$nf\\\Ex:$end wine.my_bottle, no space and \"wine.\" suffix is mandatory."
@@ -1879,11 +1895,11 @@ ${misc_sets[@]}"
 		win_type=1
 		## focused field
 		focus=''
-		echo -e "$g_notif\n>>>> end fn_wine_config ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_wine_config ####\n$e_notif"
 		default_win_design
 	}
 	fn_wine_binary(){
-		echo -e "$g_notif\n>>>> start fn_wine_binary ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> start fn_wine_binary ####\n$e_notif"
 		unset basic_sets track_list 
 		w_wine_use_winepath="$vb Set if you want to use a custom Wine binary path:$end"
 		w_wine_binary_title="$vb\\You can choose and activate here a custom Wine binary directory. Some apps (particulary old ones) could need old Wine versions. Datas are provided by PlayOnLinux and WineHQ Wine packagesserver.$end"
@@ -1958,7 +1974,7 @@ unset#$_pol_list;_pol_pkg;;$vb PoL Wine package to 1.8.6 $end;CB;;
 '';;;;LBL;;
 '';;;$w_wine_wconfig;LBL;;
 $w_config;w_config;;Start Winecfg at app launch;CHK;;"
-		echo -e "$g_notif\n>>>> end fn_wine_binary ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_wine_binary ####\n$e_notif"
 		IFS=$ifs
 		item_sep="#"
 		# window style and function
@@ -1968,7 +1984,7 @@ $w_config;w_config;;Start Winecfg at app launch;CHK;;"
 		default_win_design
 	}
 	fn_regedit_config(){
-		echo -e "$g_notif\n>>>> start fn_regedit_config ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> start fn_regedit_config ####\n$e_notif"
 		unset basic_sets misc_sets
 		# config file preset
 		nv_smi=$(find /usr/{bin,local/bin} -name nvidia-smi)
@@ -1984,7 +2000,7 @@ $w_config;w_config;;Start Winecfg at app launch;CHK;;"
 		fi
 		vid_mem='128,256,512,768,1024,2048,3072,4096,6144'
 		
-		echo -e "$g_notif >>>> detect previous registry $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>> detect previous registry $e_notif"
 		reg_file=$(mktemp --tmpdir reg1.XXXXXXXX)
 		reg_key='HKEY_CURRENT_USER'
 		if [ $from_config = 1 ]; then
@@ -2039,7 +2055,7 @@ $w_config;w_config;;Start Winecfg at app launch;CHK;;"
 			local $reg_variable
 		done
 		if [ $_extended = 1 ]; then
-			echo -e "$g_notif >>>> start extended features $e_notif"
+			[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>> start extended features $e_notif"
 			if [ -s $HOME/.winestarter/resources/mime-preset.lst ]; then
 				res_mime_preset=$(cat $HOME/.winestarter/resources/mime-preset.lst| tr '\n' ','| \
 				sed -n "s/,$//p")
@@ -2147,7 +2163,7 @@ $user_prefix/$bottle_prefix/drive_c/windows;dll_file_list;;$w_reg_3_cmd2;MFL;;"
 			basic_sets="${basic_sets[@]}
 ${misc_sets[@]}"
 		fi
-		echo -e "$g_notif\n>>>> end fn_regedit_config ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_regedit_config ####\n$e_notif"
 		item_sep=","
 		# start form display
 		win_type=1
@@ -2157,7 +2173,7 @@ ${misc_sets[@]}"
 		# create main window variables
 	}
 	fn_make_tricks_menu(){
-		echo -e "$g_notif\n>>>> start fn_make_tricks_menu$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> start fn_make_tricks_menu$e_notif"
 		prim_file=$(mktemp --tmpdir trk1.XXXXXXXX)
 		sec_file=$(mktemp --tmpdir trk2.XXXXXXXX)
 		menu_file=$(mktemp --tmpdir trk3.XXXXXXXX)
@@ -2258,10 +2274,10 @@ ${misc_sets[@]}"
 		echo "\"" >> $menu_conf
 		
 		IFS=$ifs
-		echo -e "$g_notif\n>>>> end fn_make_tricks_menu $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_make_tricks_menu $e_notif"
 	}
 	fn_winetricks(){
-		echo -e "$g_notif\n>>>> start fn_winetricks $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> start fn_winetricks $e_notif"
 		unset basic_sets track_list track_sets conf_dat
 		unset prim_keywords sec_keywords
 		w_tricks_dlls=$HOME/.winestarter/resources/tricks_dlls.txt
@@ -2331,7 +2347,7 @@ ${misc_sets[@]}"
 		# var list sets
 		trk_action="bash $bash_opt \"$w_tricks_bin --gui &>/dev/null\""
 		. $menu_conf
-		echo -e "$g_notif\n>>>> end fn_winetricks ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_winetricks ####\n$e_notif"
 		IFS=$ifs
 		item_sep=","
 		# start form display
@@ -2343,7 +2359,7 @@ ${misc_sets[@]}"
 		# window style and function
 	}
 	fn_install_soft(){
-		echo -e "$g_notif\n>>>> start fn_install_soft ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> start fn_install_soft ####\n$e_notif"
 		unset  basic_sets misc_sets track_list
 		
 		pkgs_log=$user_prefix/$bottle_prefix/packages.log
@@ -2460,7 +2476,7 @@ $w_extra_script;w_extra_script;;$w_more_scpt3;FL;;"
 		basic_sets="${basic_sets[@]}
 ${misc_sets[@]}"
 		fi
-		echo -e "$g_notif\n>>>> end fn_install_soft ####\n$e_notif"
+	[[ $code_tag = 0 ]]|| 	echo -e "$g_notif\n>>>> end fn_install_soft ####\n$e_notif"
 		item_sep=","
 		# start form display
 		win_type=1
@@ -2470,7 +2486,7 @@ ${misc_sets[@]}"
 		# window style and function
 	}
 	fn_nvidia_config_1(){
-		echo -e "$g_notif\n>>>> start fn_nvidia_config_1 ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> start fn_nvidia_config_1 ####\n$e_notif"
 		unset basic_sets track_list #
 		# window messages
 		w_nv_tip0="$vb All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
@@ -2541,7 +2557,7 @@ $__GL_SYNC_TO_VBLANK,0,1;__GL_SYNC_TO_VBLANK;;$nf Sync to VBLANK$end;CB;;
 $__GL_THREADED_OPTIMIZATIONS,0,1;__GL_THREADED_OPTIMIZATIONS;;$nf Preload libpthread$end;CB;;
 '';;;$w_nv_perf;LBL;;
 $__GL_OpenGLImageSettings,1,2,3;__GL_OpenGLImageSettings;;$nf Nvidia graphic Performance set$end;CB;;"
-		echo -e "$g_notif\n>>>> end fn_nvidia_config_1 ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_nvidia_config_1 ####\n$e_notif"
 		
 		item_sep=","
 		# start form display
@@ -2552,7 +2568,7 @@ $__GL_OpenGLImageSettings,1,2,3;__GL_OpenGLImageSettings;;$nf Nvidia graphic Per
 		# window style and function
 	}
 	fn_nvidia_config_2(){
-		echo -e "$g_notif\n>>>> start fn_nvidia_config_2 ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> start fn_nvidia_config_2 ####\n$e_notif"
 		unset basic_sets track_list  #
 		# window messages
 		w_nv_tip0="$vb All variable are unset by default. (0) mean 'off' (1) means 'on'.$end"
@@ -2597,7 +2613,7 @@ $__GL_ALLOW_UNOFFICIAL_PROTOCOL,0,1;__GL_ALLOW_UNOFFICIAL_PROTOCOL;;$nf Unoffici
 $__GL_GSYNC_ALLOWED,0,1;__GL_GSYNC_ALLOWED;;$nf G-Sync$end;CB;;
 '';;;$w_nv_glsl0;LBL;;
 $__GL_IGNORE_GLSL_EXT_REQS,0,1;__GL_IGNORE_GLSL_EXT_REQS;;$nf Ignore GLGS extension check$end;CB;;"
-		echo -e "$g_notif\n>>>> end fn_nvidia_config_2 ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_nvidia_config_2 ####\n$e_notif"
 		
 		item_sep=","
 		# start form display
@@ -2609,7 +2625,7 @@ $__GL_IGNORE_GLSL_EXT_REQS,0,1;__GL_IGNORE_GLSL_EXT_REQS;;$nf Ignore GLGS extens
 	}
 	# base display auto-detection scripts
 	get_xrandr_list(){
-			echo -e "$g_notif >>>> get_xrandr_list$e_notif"
+			[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>> get_xrandr_list$e_notif"
 			unset display_ connect_ dsp_vars dsp_res_ dsp_res_list
 			ifs=$IFS
 			IFS=$(echo -en "\n\b")
@@ -2650,11 +2666,11 @@ $__GL_IGNORE_GLSL_EXT_REQS,0,1;__GL_IGNORE_GLSL_EXT_REQS;;$nf Ignore GLGS extens
 			done
 			}
 	fn_xrandr_config(){
-		echo -e "$g_notif >>>> start fn_xrandr_config ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>> start fn_xrandr_config ####\n$e_notif"
 		unset basic_sets track_list
 		# create the  data to display in the yad tab
 		display_field_set(){
-			echo -e "$g_notif >>>> display_field_set $e_notif"
+			[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>> display_field_set $e_notif"
 #			X=0; x=1; l=6
 			monitor_filter=1
 			for x_var in ${dsp_vars[@]}; do
@@ -2679,7 +2695,7 @@ $set_mode,$reso_list;set_mode;;$field_msg1;CB;;$monitor"
 			done			
 		}
 		get_pointer_list(){
-			echo -e "$g_notif >>>> get_pointer_list$e_notif"
+			[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>> get_pointer_list$e_notif"
 			xinput_list=$(xinput list | grep "pointer"|grep -v "master\|XTEST"| \
 			perl -pe "s|^.* ([A-Z].*[a-z]) (\w*[A-Z]+.*id=[0-9]*)+.*$|\1 \2|;s|([ ]*)\t|;|p")
 			
@@ -2709,13 +2725,13 @@ $set_mode,$reso_list;set_mode;;$field_msg1;CB;;$monitor"
 			if [[ $_listed != '' && ! $_listed =~ ^\w*unset|^0 ]]; then
 				case $_vars in
 					'auto_set')
-						echo -e "$g_notif >>>> get xrd conf$e_notif"
+						[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>> get xrd conf$e_notif"
 						set_output=$(printf "$set_xrandr"| cut -d' ' -f3)
 						set_mode=$(printf "$set_xrandr"| cut -d' ' -f5)
 						bck_mode=$(printf "$bck_xrandr"| cut -d' ' -f5)
 					;;
 					'mouse_set')
-						echo -e "$g_notif >>>> get mouse conf$e_notif"
+						[[ $code_tag = 0 ]]|| echo -e "$g_notif >>>> get mouse conf$e_notif"
 						set_dev_id=$(printf "$mouse_btn"| cut -d' ' -f3)
 						set_buttons=$(printf "$mouse_btn"| sed -n "s|^.*$set_dev_id \([0-9].*\)$|\1|p")
 					;;
@@ -2776,7 +2792,7 @@ $secondary_desktop,$desktop_list;secondary_desktop;;$w_xrandr_compo2;CBE;;
 '';;;$w_xrandr_tip5;LBL;;
 $mouse_dev,$mouse_list$v_unset;mouse_dev;;$w_xrandr_mouse;CB;;
 $set_buttons,1 2 3,3 2 1$v_unset;set_buttons;;$w_xrandr_buttons;CB;;"
-		echo -e "$g_notif\n>>>> end fn_xrandr_config ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_xrandr_config ####\n$e_notif"
 		
 		item_sep=","
 		# start form display
@@ -2788,7 +2804,7 @@ $set_buttons,1 2 3,3 2 1$v_unset;set_buttons;;$w_xrandr_buttons;CB;;"
 		
 	}
 	fn_optimus_config(){
-		echo -e "$g_notif\n>>>> start fn_optimus_config ####\n$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> start fn_optimus_config ####\n$e_notif"
 		unset basic_sets track_list
 		# window messages
 		w_text="$bf Optimus special options and sets$end\\n$vb\\If you own a Optimus Laptop, you can set here the dedicated commands and options.$end"
@@ -2828,7 +2844,7 @@ $opti_SYNC;opti_SYNC;;$w_opti_sync;CHK;;
 $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 '';;;;LBL;;
 '';;;$w_opti_warn;LBL;;"
-		echo -e "$g_notif\n>>>> end fn_optimus_config $e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_optimus_config $e_notif"
 		
 		item_sep=","
 		# start form display
@@ -2840,7 +2856,7 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 		
 	}
 	last_bin(){
-		echo -e "$g_notif\n>>>> get last wine bin$e_notif"
+		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> get last wine bin$e_notif"
 		if [ $line = 0 ]; then
 			ct_msg=1
 		else
@@ -2859,11 +2875,12 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 			fi
 		done
 	}
-## launch a "wait please" UI until Wine packages infos are donwloaded 	
-	wait_message="$vb\Updating Wine packages list and news.$end"
-	fn_plz_wait &
-	WAIT_UI=$(pgrep -n yad)
-
+	## if BASH_PID is not null, launch a "wait please" UI until Wine packages infos are donwloaded 	
+	if [[ $BASH_PID != null ]]; then
+		wait_message="$vb\Updating Wine packages list and news.$end"
+		fn_plz_wait &
+		WAIT_UI=$(pgrep -n yad)
+	fi
 	key=$RANDOM
 	sleep 1
 	kill $YAD_PID
@@ -2917,10 +2934,12 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 		cat $config_file > $TEMP_conf
 	fi
 	## don't kill Wine packages information control 'wait' UI before bash process end.
-	while [ $(ps -p $BASH_PID | grep -c .) -gt 1 ]; do
-		sleep 1
-	done
-	kill $WAIT_UI
+	if [[ $BASH_PID != null ]]; then
+		while [ $(ps -p $BASH_PID | grep -c .) -gt 1 ]; do
+			sleep 1
+		done
+		kill $WAIT_UI
+	fi
 	last_bin
 #	exit 0
 	section_list=('_wine' '_wbin' '_install' '_tricks' '_reged' '_nvidia_1' '_nvidia_2' '_xrandr' '_optimus' '_extended')
@@ -3190,6 +3209,7 @@ control_last(){
 	fi
 #	exit 0
 	export ct_msg=$ct_msg
+	export BASH_PID='null'
 	if [ $ct_msg -gt 0 ]; then
 		if [ $update -gt 0 ]; then
 			wine_path=$HOME/.winebin
@@ -3201,6 +3221,7 @@ control_last(){
 			download_section &
 			BASH_PID=$(pgrep -n bash)
 			export BASH_PID=$BASH_PID
+		
 		fi
 	fi
 #	exit 0
@@ -3374,7 +3395,7 @@ edit_desktop(){
 	
 		# extract the desktop file entry variables, if any, and make them usable by the script
 		if [ -e $XDG_DESKTOP_DIR/$exe_name.desktop ]; then
-			echo -e ">>>>>>>>>>>>>>>>>\n"
+			[[ $code_tag = 0 ]]|| echo -e ">>>>>>>>>>>>>>>>>\n"
 			ifs=$IFS
 			IFS=$(echo -en "\n\b")
 			desktop_data=( $(cat $XDG_DESKTOP_DIR/$exe_name.desktop| egrep -v "^\[.*\]$") )
@@ -3459,7 +3480,7 @@ $vb You can create or modify every main fields of a desktop file$end"
 	w_splitter=$((380+$scale))
 	$yad_bin --width=$w_width --height=300 --title "$w_title" --window-icon=$img_wine_desk_ui \
 	--borders=15 --text "$w_text" --paned --key=$key --orient=hor --splitter=$w_splitter
-	if [ $? = 1 ]; then exit 0; fi
+	if [ $? = 1 ]; then bash $bash_opt $base_script; exit 0; fi
 	## extract setted variable from temp files
 	# create a new temp file if creating a new desktop file
 	temp3=$(mktemp --tmpdir desktop.XXXXXXXX)
@@ -3543,118 +3564,207 @@ $vb You can create or modify every main fields of a desktop file$end"
 		fi
 	fi
 	# all done, bye bye.
-	exit 0
+	bash $bash_opt $base_script; exit 0
 }
 edit_bottle(){
 	unset more_value
 	sleep 1
 	kill $YAD_PID
 	list_bottles
-	if [ $desktop_file = 1 ]; then
-		if [ $rstart = 1 ]; then
-		w_text="$bf Restart function system$end$vb\\n \
-You can here restart Winecfg or Winetricks at next Winestarter launch. This feature could be really useful after a Wine update or just to control Winecfg state$end"
-		win_icon=$img_wine_restart
-		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$img_wine_reload --borders=15 \
-			--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
-			--align=left --text "$w_text" --field="":LBL '' \
-			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
-			--field="Relaunch Winecfg UI":CHK 'FALSE' \
-			--field="Restart Winetricks process":CHK 'FALSE')
-		else
-		w_text="$bf Wine bottle desktop file edition$end$vb\\n \
-Select the bottle you would like for a desktop file$end"
-		win_icon=$img_wine_desk_ui
-		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon --borders=15 \
-			--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
-			--align=left --text "$w_text" --field="":LBL '' \
-			--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
-			)
-		fi	
-	else
-		win_icon=$img_wine_ui
-		unset nv_field nv_list
-		if [ $($lpci_bin| grep -c "NVIDIA") -gt 0 ]; then
-			nv_field+=("--field=:LBL")
-			nv_list+=('')
-			nv_field+=("--field=$vb Select a Wine bottle$end:CB")
-			nv_list+=("$bottle_list")
-			nv_field+=("--field=$vb Select edit option$end:CB")
-			nv_list+=('Edit the whole bottle#Edit config file directly#Edit Nvidia options only')
-			w_text="$bf Wine bottle edition$end$vb\\n \
+	## options by selector window type.
+	case $cmd_type in
+		## 0 > conf file edition.
+		0) win_icon=$img_wine_ui
+			unset nv_field nv_list
+			if [ $($lpci_bin| grep -c "NVIDIA") -gt 0 ]; then
+				nv_field+=("--field=:LBL")
+				nv_list+=('')
+				nv_field+=("--field=$vb Select a Wine bottle$end:CB")
+				nv_list+=("$bottle_list")
+				nv_field+=("--field=$vb Select edit option$end:CB")
+				nv_list+=('Edit the whole bottle#Edit config file directly#Edit Nvidia options only')
+				w_text="$bf Wine bottle edition$end$vb\\n
 You can choose between edit a entire bottle or the Nvidia OpenGL environment options only$end"
-		else
-			w_text="$bf Wine bottle edition$end$vb\\n \
+			else
+				w_text="$bf Wine bottle edition$end$vb\\n
 Select the Wne bottle to edit$end"
-			nv_field+=("--field=:LBL")
-			nv_list+=('')
-			nv_field+=("--field=$vb Select a Wine bottle$end:CB")
-			nv_list+=("$bottle_list")
-			nv_field+=("--field=$vb Select edit option$end:CB")
-			nv_list+=('Edit the whole bottle#Edit config file directly')
-		fi
-		edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon --borders=15 \
-		--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
-		--align=left --text "$w_text" "${nv_field[@]}" "${nv_list[@]}")
-	fi
-	if [ $? = 1 ]; then exit 0; fi
+				nv_field+=("--field=:LBL")
+				nv_list+=('')
+				nv_field+=("--field=$vb Select a Wine bottle$end:CB")
+				nv_list+=("$bottle_list")
+				nv_field+=("--field=$vb Select edit option$end:CB")
+				nv_list+=('Edit the whole bottle#Edit config file directly')
+			fi
+			edit_win=$($yad_bin --width=420 --title "$w_title" --image=$win_icon --borders=15 \
+			--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
+			--align=left --text "$w_text" "${nv_field[@]}" "${nv_list[@]}")
+		;;
+		## 1 > desktop file management.
+		1) w_text="$bf Wine bottle desktop file edition$end$vb\\n
+Select the bottle you would like for a desktop file$end"
+			win_icon=$img_wine_desk_ui
+			edit_win=$($yad_bin --width=520 --title "$w_title" --image=$win_icon --borders=15 \
+				--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
+				--align=left --text "$w_text" --field="":LBL '' \
+				--field="$vb Select a Wine bottle\t$end":CB "$bottle_list")
+		;;
+		## 2 > restart features.
+		2) w_text="$bf Restart function system$end$vb\\n
+You can here restart Winecfg or Winetricks at next Winestarter launch. This feature could be really useful after a Wine update or just to control or manage Winecfg$end"
+			win_icon=$img_wine_restart
+			edit_win=$($yad_bin --width=420 --title "$w_title" --image=$img_wine_reload --borders=15 \
+				--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
+				--align=left --text "$w_text" --field="":LBL '' \
+				--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
+				--field="Relaunch Winecfg UI":CHK 'FALSE' \
+				--field="Restart Winetricks process":CHK 'FALSE')
+		;;
+		## 3 > manage bottle's conf file.
+		3) w_text="$bf Wine botlles management$end\\n
+$vb\\Rename, remove, clone.
+In some case, it's easiest to just rename or clone an existing prefix than re-create a new one.$end
+$nf\\Example:$end$vn creating a D3DX11 predifine prefix for all future game installation. It allow you to not have to download or configure many features again.$end"
+			win_icon=$img_wine_restart
+			edit_win=$($yad_bin --width=520 --title "$w_title" --image=$img_wine_opts --borders=15 \
+				--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
+				--align=left --text "$w_text" --field="":LBL '' \
+				--field="$vb Select a Wine bottle\t$end":CB "$bottle_list" \
+				--field="$vb Select action$end":CB 'Clone#Rename#Remove')
+		;;
+	esac
+	if [ $? = 1 ]; then bash $bash_opt $base_script; exit 0; fi
 	_edit_bottle=$(printf "${edit_win[@]}"| cut -d';' -f2)
 	config_file=$HOME/.winestarter/configs/$_edit_bottle.conf
-	if [ $desktop_file = 0 ]; then
-		if [ $(printf "${edit_win[@]}"| grep -c "Nvidia") -gt 0 ];then
-			code=1; else code=0
-		fi
-	fi
-	if [ $rstart = 1 ]; then
-		_winecfg=$(printf "${edit_win[@]}"| cut -d';' -f3)
-		_winetrk=$(printf "${edit_win[@]}"| cut -d';' -f4)
-		[[ $_winecfg == TRUE ]]&& perl -ni -pe "s|^(w_config)=([0-9])$|\1=1|i" $config_file
-		[[ $_winetrk == TRUE ]]&& perl -ni -pe "s|^(w_install_tricks)=([0-9])$|\1=1|i" $config_file
-		exit 0
-	fi
-	if [ -e $HOME/.winestarter/configs/$_edit_bottle.conf ]; then
-		## if previous option is config file direct edit, launch zenity text edit and exit.
-		if [ $(printf "${edit_win[@]}"| grep -c "directly") -gt 0 ];then
-			e_text="$bf\\Fast Config Edit$end\n This editor is for quick config edits. All '##' comments are removable if you're confortable without them, but we don't recommand it."
-			edit_config=$($yad_bin --width=800 --height=600 --title="$w_title" --borders=15 \
-			--window-icon=$img_wine_desk_ui --text-info  --text="$vb$e_text$end" \
-			--editable --filename=$config_file)
-			if [ $? = 1 ]; then
-				exit 0
-			else
-				echo "$edit_config" > $config_file
+	## each button give specification by commands
+	case $cmd_type in
+		0) if [ $(printf "${edit_win[@]}"| grep -c "Nvidia") -gt 0 ];then
+				code=1; else code=0
 			fi
+			## prefx edit section comes with options, if this option is config file direct edit,
+			## launch zenity/yad text edit and exit.
+			if [ $(printf "${edit_win[@]}"| grep -c "directly") -gt 0 ];then
+				e_text="$bf\\Fast Config Edit$end\n
+This editor is for quick config edits. All '##' comments are removable if you're okay without them, but we don't recommand it."
+				edit_config=$($yad_bin --width=800 --height=600 --title="$w_title" --borders=15 \
+				--window-icon=$img_wine_desk_ui --text-info  --text="$vb$e_text$end" \
+				--editable --filename=$config_file)
+				if [ $? = 0 ]; then
+					echo "$edit_config" > $config_file
+				else
+					bash $bash_opt $base_script
+				fi
+			else
+				bash_cmd="colors; icons_set; b_set=0; code=$code; main_code"
+			fi
+		;;
+		1) bash_cmd="colors; icons_set; edit_desktop" ;;
+		2) _winecfg=$(printf "${edit_win[@]}"| cut -d';' -f3)
+			_winetrk=$(printf "${edit_win[@]}"| cut -d';' -f4)
+			[[ $_winecfg == TRUE ]]&& perl -ni -pe "s|^(w_config)=([0-9])$|\1=1|i" $config_file
+			[[ $_winetrk == TRUE ]]&& perl -ni -pe "s|^(w_install_tricks)=([0-9])$|\1=1|i" $config_file
+			exit 0 ;;
+		3) _managed=$(printf "${edit_win[@]}"| cut -d';' -f3)
+			unset _action_type _ui_options_0 _ui_options_1
+			case $_managed in
+				## copy/paste prefix and conf file indented by 1, or fill a new name.
+				'Clone')
+					w_text="$bf\\Clone$end"
+					n=0
+					_bottle_pre=$(printf "$_edit_bottle"| sed -En "s/^(.*)_[0-9]$/\1/g;p")
+					if [[ $_edit_bottle =~ ^.*_[0-9] ]]; then
+						n=$(printf "$_edit_bottle"| sed -En "s/^.*_([0-9])$/\1/g;p")
+						_bottle_to=$(printf "$_edit_bottle"| sed -En "s/^(.*)_[0-9]$/\1/g;p")
+					fi
+					((n++))
+					_ui_options_0+=("--field=$vb\\If no new name is privided, clone name is automaticaly idented by 1$end\\nEx: $_edit_bottle become $_bottle_pre\\_$n:LBL")
+					_ui_options_1+=('')
+					_ui_options_0+=("--field=$vf\\or change the clone name (optional)$end:")
+					_ui_options_1+=('')
+				;;
+				## juste rename selected prefix.
+				'Rename')
+					w_text="$bf\\Rename$end"
+					_ui_options_0+=("--field=$vb\\This will also rename all dedicated reg files inside the bottle$end:LBL")
+					_ui_options_1+=('')
+					_ui_options_0+=("--field=$nf\\New prefix name$end:")
+					_ui_options_1+=("$_edit_bottle")
+				;;
+				## wipe prefix and conf file. Check box to preserve conf file.
+				'Remove')
+					w_text="$bf\\Remove$end"
+					_ui_options_0+=("--field=$rb\\WARNING$end$nf: This will remove definitively $_edit_bottle config file and prefix.$end:LBL")
+					_ui_options_1+=('')
+					_ui_options_0+=("--field=$vb\\Are you really sure ?$end:LBL")
+					_ui_options_1+=('')
+				;;
+			esac
+			## UI interface
+			select_win=$($yad_bin --width=520 --title "$w_title" --image=$img_wine_opts --borders=15 \
+				--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
+				--align=left --text "$w_text" --field="":LBL '' \
+				"${_ui_options_0[@]}" "${_ui_options_1[@]}" )
+			if [ $? = 0 ]; then
+				_bottle_from=$_edit_bottle
+#				[[ $_bottle_to ]]|| _bottle_to=$(printf "$select_win"| cut -d';' -f2)
+				case $_managed in
+					'Clone') [[ $_bottle_to ]]|| _bottle_to=$(printf "$select_win"| cut -d';' -f2)
+						if ! [[ $_bottle_to ]]; then _bottle_to=$_edit_bottle'_'$n; fi
+						_action_type+=(
+						"cp -f $config_file $HOME/.winestarter/configs/$_bottle_to.conf"
+						"cp -Rf -T $HOME/.$_bottle_from $HOME/.$_bottle_to"
+						"mv -f -T $HOME/.$_bottle_to/$_bottle_from.reg $HOME/.$_bottle_to/$_bottle_to.reg"
+						"sed -ni s/^bottle_prefix=.*$/bottle_prefix=\".$_bottle_to\"/g;p $HOME/.winestarter/configs/$_bottle_to.conf"
+						);;
+					'Rename') _bottle_to=$(printf "$select_win"| cut -d';' -f3)
+						_action_type+=(
+						"mv -f $config_file $HOME/.winestarter/configs/$_bottle_to.conf"
+						"mv -f -T $HOME/.$_bottle_from $HOME/.$_bottle_to"
+						"mv -f -T $HOME/.$_bottle_to/$_bottle_from.reg $HOME/.$_bottle_to/$_bottle_to.reg"
+						"sed -ni s/^bottle_prefix=.*$/bottle_prefix=\".$_bottle_to\"/g;p $HOME/.winestarter/configs/$_bottle_to.conf"
+						);;
+					'Remove') _action_type+=("rm -Rf $config_file $HOME/.$_bottle_from");;
+				esac
+				for lets_work in "${_action_type[@]}"; do
+					${lets_work}
+				done
+				bash $bash_opt $base_script; exit 0
+			else
+				bash $bash_opt $base_script; exit 0
+			fi
+		;;		
+	esac
+	if [[ $cmd_type =~ 0|1 ]]; then
+		if [ -e $HOME/.winestarter/configs/$_edit_bottle.conf ]; then
+			from_config=1
+			export from_config=$from_config config_file=$config_file
+			## launch bash command.
+			bash $bash_opt "$bash_cmd"; exit 0
+		else
 			exit 0
 		fi
-		from_config=1
-		export from_config=$from_config config_file=$config_file
-		## Cause of a too much long loading time, better to place winetricks basic_sets here
-		## and then, export it as appropriate.
-		fn_make_tricks_menu
-		## check if selection is desktop file entry or not
-		if [ $desktop_file = 1 ]; then
-			bash $bash_opt "colors; icons_set; edit_desktop"
-		else
-			bash $bash_opt "colors; icons_set; b_set=0; code=$code; main_code"
-		fi
-	else
-		exit 0
 	fi
-	exit 0
 }
 . $HOME/.config/user-dirs.dirs
 ## Script debug options
 #bash_opt='-x -c'
+#code_tag=1
 bash_opt='-c'
+code_tag=0
 ## check internet connection.
 line=$(nc -z 8.8.8.8 53)
 export line=$?
 ## Main button commands
+## commande type are :
+## cmd_type = 0 > conf file edition.
+## cmd_type = 1 > desktop file management.
+## cmd_type = 2 > restart features.
+## cmd_type = 3 > manage bottle's conf file.
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
-main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; desktop_file=0; rstart=0; edit_bottle\""
-main_cmd_2="bash $bash_opt \"colors; icons_set; from_config=1; desktop_file=1; rstart=0; edit_bottle\""
+main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; cmd_type=0; edit_bottle\""
+main_cmd_2="bash $bash_opt \"colors; icons_set; from_config=1; cmd_type=1; edit_bottle\""
 main_cmd_3="bash $bash_opt \"colors; icons_set; change_fonts_colors\""
-main_cmd_4="bash $bash_opt \"colors; icons_set; from_config=1; desktop_file=1; rstart=1; edit_bottle\""
+main_cmd_4="bash $bash_opt \"colors; icons_set; from_config=1; cmd_type=2; edit_bottle\""
+main_cmd_5="bash $bash_opt \"colors; icons_set; from_config=1; cmd_type=3; edit_bottle\""
 
 the_big_button="$HOME/.winestarter/png/defaults/winestarter_128.png"
 
@@ -3663,13 +3773,13 @@ main_text4="$vb\\Modify$end"
 
 list_bottles
 #messages; main_code
-main_text0="$bf\\Stay simple with yours Wine bottles$end$vb\\n\
+main_text0="$bf\\Stay simple with your Wine bottles$end$vb\\n\
 \"Don't be a clic machine !\"$end\\n\\n\
 $vb\\What do you want to do?$end\\n$vn(Hover buttons show tooltips)$end"
 
 export -f colors icons_set
 export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors edit_reg_bin edit_regfile edit_wine_options
-export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt"
+export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt" code_tag=$code_tag
 control_last
 
 $yad_bin --width=520 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons \
@@ -3679,9 +3789,9 @@ $yad_bin --width=520 --title "Winestarter configurator"  --window-icon=$img_wine
 --field="$vb New Wine prefix $end"!$img_wine_add!"Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \
 --field="$main_text4":LBL '' \
 --field="$vb Edit a Wine bottle$end"!$img_wine_mod!"Add or change features, options, etc in an existing Wine bottle":FBTN "$main_cmd_1" \
+--field="$vb Manage Wine bottles$end"!$img_tricks_bt!"Remove,rename, clone an existing Wine bottle":FBTN "$main_cmd_5" \
 --field="$vb Edit or create a Desktop file$end"!$img_wine_desk_bt!"Create a new or modify an existing Wine bottle Desktop file":FBTN "$main_cmd_2" \
 --field="$vb Change fonts colors$end"!$img_wine_colors!"If you occur issues with default fonts colors, you can change them here":FBTN "$main_cmd_3" \
 --field="$vb Restart features$end"!$img_wine_restart!"You can restart here some functions at next launch, ex: winecfg":FBTN "$main_cmd_4"
 
 exit 0
-

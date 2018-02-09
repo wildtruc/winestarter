@@ -2,7 +2,7 @@
 wtc => winestarter_conf, wt => winestarter
 
 ### Issues
- - [ ] remove PlayOnLinux wine pakages installation because they're often not exploitable (delayed/probably not).
+ - [x] ~~remove PlayOnLinux wine pakages installation because they're often not exploitable.~~
  - [x] winestarter yad popups don't looking very nice and need improvement.
  - [x] *v0.98.2* - wtc
  	- #1 Bad images export in WineHQ, PoL download selectors.
@@ -23,6 +23,13 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 09/02/18 ) v1.00*
+ - Time to go through the scary crossroad and put version to 1. there no know major bugs and minors are not known at this moment, then...
+ - For better understanding on what's going on, version will be classified as following: major update v'x', minor: v'x.xx' and fixes v'x.xx.x'.
+ - wtc: Added a prefix conf management button in main window (remove, rename, clone).
+ - wtc: devel tag will know only display in debug/devel mode (removing time still unknown)
+ - wtc: fixed little bug in Wine info download 'wait' UI.
+ 
 *( 27/01/18 ) v0.99.9*
  - makefile: Add a changelog display at update.
  - Fix wtc: Forgot to update stable Wine version and real default Wine version in main tabs display. Apologies.
