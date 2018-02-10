@@ -3618,9 +3618,14 @@ You can here restart Winecfg or Winetricks at next Winestarter launch. This feat
 				--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
 				--field="Relaunch Winecfg UI":CHK 'FALSE' \
 				--field="Restart Winetricks process":CHK 'FALSE')
+				## TODO
+				## activate external Wine version support (if version is set)
+				## relaunch apps install process
+				## reset desktop env function (end user ui and mouse)
+				## reset xrandr management
 		;;
 		## 3 > manage bottle's conf file.
-		3) w_text="$bf Wine botlles management$end\\n
+		3) w_text="$bf Wine bottles management$end\\n
 $vb\\Rename, remove, clone.
 In some case, it's easiest to just rename or clone an existing prefix than re-create a new one.$end
 $nf\\Example:$end$vn creating a D3DX11 predifine prefix for all future game installation. It allow you to not have to download or configure many features again.$end"
@@ -3660,8 +3665,12 @@ This editor is for quick config edits. All '##' comments are removable if you're
 		1) bash_cmd="colors; icons_set; edit_desktop" ;;
 		2) _winecfg=$(printf "${edit_win[@]}"| cut -d';' -f3)
 			_winetrk=$(printf "${edit_win[@]}"| cut -d';' -f4)
+			## TODO
+			## load config file first
+			## check if realoded function exist then display a resume window before lauching process
 			[[ $_winecfg == TRUE ]]&& perl -ni -pe "s|^(w_config)=([0-9])$|\1=1|i" $config_file
 			[[ $_winetrk == TRUE ]]&& perl -ni -pe "s|^(w_install_tricks)=([0-9])$|\1=1|i" $config_file
+			## display effective operation resume 
 			exit 0 ;;
 		3) _managed=$(printf "${edit_win[@]}"| cut -d';' -f3)
 			unset _action_type _ui_options_0 _ui_options_1
