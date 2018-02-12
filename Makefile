@@ -19,7 +19,7 @@ install:
 	mkdir -p $(CONF_DIR)/png
 	mkdir -p $(CONF_DIR)/png/defaults
 	cp -Rf ./emblems $(CONF_DIR)/
-	cp -Rf ./png/* $(CONF_DIR)/png/
+	cp -Rf ./png/*.png $(CONF_DIR)/png/
 	cp -Rf ./png/defaults/* $(CONF_DIR)/png/defaults/
 	cp -f ./color.conf $(CONF_DIR)/
 	cp -f ./options.list $(CONF_DIR)/resources
@@ -33,7 +33,7 @@ install:
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/applications/ winestarter.desktop
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/winestarter_128.png
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/wine48w.png
-	$(INSTALL) -Dm644 -t /usr/share/polkit-1/actions/ com.github.pkexec.winestarter_wipe.policy
+	$(INSTALL) -Dm644 -t /usr/share/polkit-1/actions/ ./com.github.pkexec.winestarter_wipe.policy
 	$(INSTALL) -Dm644 -t $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	chown $(C_USER):$(C_USER) $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	sudo -u $(C_USER) cp -Rf ./.git $(CONF_DIR)/
@@ -47,7 +47,7 @@ update:
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/applications/ winestarter.desktop 
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/winestarter_128.png
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/wine48w.png
-	$(INSTALL) -Dm644 -t /usr/share/polkit-1/actions/ com.github.pkexec.winestarter_wipe.policy
+	$(INSTALL) -Dm644 -t /usr/share/polkit-1/actions/ ./com.github.pkexec.winestarter_wipe.policy
 	$(INSTALL) -Dm644 -t $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	chown $(C_USER):$(C_USER) $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	sudo -u $(C_USER) cp -Rf ./.git $(CONF_DIR)/
