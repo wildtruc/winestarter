@@ -23,6 +23,10 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 12/02/18 ) v1.01*
+ - wt: Added a memory cache wipe tool using polkit for admin priviledges. Winestarter will ask for memory cache wipe if it's over 60% of total memory usage. To use with caution, if you have some server with high cache data in RAM, this feature could wipe this data. So, it's maybe a better idea to not use if you are in this kind of situation. Will add a conf option (set to 0/1) in next update for user convenience.
+ - wt: Clean useless comments and lines.
+
 *( 09/02/18 ) v1.00*
  - Time to go through the scary crossroad and put version to 1. there no know major bugs and minors are not known at this moment, then...
  - For better understanding on what's going on, version will be classified as following: major update v'x', minor: v'x.xx' and fixes v'x.xx.x'.

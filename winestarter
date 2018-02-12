@@ -24,7 +24,6 @@
 ## usage : winestart CONFIGFILE 
 
 ## define per game conf files dir
-#scpt_dir=$HOME/.user_scripts
 scpt_dir=$HOME/.winestarter
 w_tricks=$(find /usr/{bin,local/bin} -name winetricks)
 yad_bin=$(find /usr/{bin,local/bin} -name yad)
@@ -59,10 +58,6 @@ config_file=$scpt_dir/configs/$conf
 if [ -e $HOME/.config/user-dirs.dirs ]; then
 	. $HOME/.config/user-dirs.dirs
 fi
-#DESK_DIR=$(cat $HOME/.config/user-dirs.dirs| grep "XDG_DESKTOP_DIR"| \
-#sed -n "s|\"||g;s|\$HOME|$HOME|p")
-#DESK_DIR=("$DESK_DIR")
-#DESK_DIR=("$XDG_DESKTOP_DIR")
 ## yad fonts colors
 vb='<span color="'$main'" weight="bold" font="'$font0' '$size0'">'
 vn='<span color="'$main'" weight="normal" font="'$font0' '$size0'">'
@@ -113,6 +108,42 @@ zen_question(){
 	$zen_bin --width=$w_width --title='' --question --window-icon=$d_img --ok-label="$bt_do" \
 	--cancel-label="$bt_undo" --text="$text"
 }
+wipe_cache(){
+## Control system cache memory. If too high, display an admin window and ask to clear it with warnings.
+## use /proc/meminfo MemTotal / Buffers / Cached+Slab (critical avaluate on 60% Buffers+Cached+Slab)
+## define critical left free memory
+critical='40'
+## use 'free' systeù tool to define memory class
+m_total=$(free -wm | sed -n "/Mem/p"| awk '{print $2}')
+m_used=$(free -wm | sed -n "/Mem/p"| awk '{print $3}')
+m_cache=$(free -wm | sed -n "/Mem/p"| awk '{print $7}')
+## translate in percentage
+_m_used=$(($((100*$m_used))/$m_total))
+_m_cache=$(($((100*$m_cache))/$m_total))
+_m_free=$(($((100*$(($m_total-$(($m_used+$m_cache))))))/$m_total))
+## if total free memory is lower than defined critical then start wipe process
+if [ $_m_free -le $critical ]; then
+## unless cache memory is higher than real memory used, do not continue.
+	if [ $_m_cache -gt $_m_used ]; then
+		_cc_total=$(($m_used+$m_cache))
+		_cc_used=$(($((100*$m_used))/$_cc_total))
+		_cc_cache=$(($((100*$m_cache))/$_cc_total))
+		if [ $_cc_used -le $critical ]; then
+			echo -e "»»»» Memory cache used over $_cc_cache% (left:$_m_free%)"
+			text="$vb\\Memory cache is using $_m_cache% of RAM. You can wipe it or leave it as it is. Some apps are known to use a lot of cache memory, so be careful and know what you're doing.$end\\n\\n$brf\\WARNING$end$vb Do not use if your system is a production server, it may wipe all servers cached data.$end"
+			dialog_list="gtk-close;$warning;Wipe;Cancel"; zen_question
+			if [ $? = 0 ]; then
+				if [[ $EUID -ne 0 ]]; then
+#					pkexec /usr/local/sbin/winestarter_cache
+					pkexec sh -c "echo -e \"»»»» Cleaning memory cache.\"; sync; echo 3 > /proc/sys/vm/drop_caches"
+				fi
+			fi
+		fi
+	fi
+else
+	echo -e "»»»» Memory cache used under critical (left:$_m_free%). Clear"
+fi
+}
 ## optimus special sets
 fn_optimus(){
 	export vblank_mode=$opti_VBLK
@@ -124,9 +155,7 @@ fn_optimus(){
 fn_regedit(){
 	if ! [ -e $user_prefix/$bottle_prefix/$reg_file ]; then
 		printf "REGEDIT4\n\n$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file
-#		if [[ $(cat -n $user_prefix/$bottle_prefix/$reg_file| sed -n '$p'|awk '{print $1}') -ge 3 ]]; then
 		if [[ $(cat -n $user_prefix/$bottle_prefix/$reg_file| grep -c .) -ge 3 ]]; then
-#			printf "boom!\n"
 			$wine_bin regedit $user_prefix/$bottle_prefix/$reg_file
 			$wineboot_bin -r
 			$wineserver_bin -k
@@ -233,18 +262,12 @@ fn_download_ui(){
 	fi
 	## This perl regex Analyse and parse wget stdout field, then display it in a yad window
 	track(){ perl -p -e "$| = 1; s/^.* +([0-9]+%) +([0-9,.]+[GMKB]) +([0-9hms,.]+).*$/\1\n# $pck_dsp [\1] time left: \3\t\2\/s/"; }
-#	site=$(printf "$pkgs"| sed -n "s/\(^.*\/\/\)\(.*\.\w*[a-z]\)\/*.*$/\2/p")
 	pkg_ext=$(printf "$pkgs"| sed -n "s/^.*\.//p")
-#	site=$(printf "$pkgs"| sed -n -E "s/(^.*\/\/)(.*\.\w*[a-z])\/*.*\.(w*$pkg_ext)$/\2/p")
 	site=$(printf "$pkgs"| sed -E -n "s/(^.*:\/\/)(\w+)\.(\w+)\.(\w+)\/.*$/\2.\3.\4/p")
 	pack=$(printf "$pkgs"| sed -n "s/^.*\///p")
 	pck_dsp=$(printf "$pack"| sed -En "s/.\w*[0-9].rpm//p")
-#	w_text="$vb\\Downloading $pack from $site server.$end"
 	w_text="Downloading from $site server."
-	## yad progress bar
-#	dl_cmd | track | $yad_bin --width=550 --title "$w_title" --text="$w_text" \
-#	--window-icon=filesave --image=$filesave --progress --auto-close
-#	dl_cmd | track | $zen_bin --width=550 --title "$w_title" --text="$w_text" \
+	## zenity progress bar
 	dl_cmd | track | $zen_bin --width=550 --title "$w_text" \
 	--window-icon=filesave --progress --auto-close --no-cancel
 }
@@ -264,8 +287,6 @@ fn_use_winepath(){
 				wget --read-timeout=10 -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
 				dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-$hq_stage$b_elf-[0-9]+"|\
 				sed -En "s/^.*$b_elf-([0-9]\.[0-9]{1,2}(\.[0-9]{1,2})?)-([0-9](.rc[0-9])?).$http_elf.*$/\1-\3-$hq_stage,$os_v/p")
-#				sed -En "s/^.*$b_elf-([0-9]\.[0-9]*)-([0-9](.rc[0-9])?).$http_elf.*$/\1-\2-$hq_stage,$os_v/p")
-	#			sed -En "s/^.*$b_elf-([0-9]\.[0-9]*)-([0-9]).$http_elf.*$/\1-\2-$hq_stage,$os_v/p")
 				if [ $os_v_p ]; then
 					if [ $os_v -ne $os_v_p ]; then
 						new_output=$(echo "${dl_bin_list[$os_v]}"| cut -d',' -f1)
@@ -287,7 +308,6 @@ fn_use_winepath(){
 			## limit PoL Wine version list from 1.4 to 1.8.6
 			dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.8\.6.*$/,/^1\.4$/p')" )
 		fi
-#		dist_dl_ver=$(echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2)
 		echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2 > $file_temp.[stamp]
 	}
 	## set Wine binary environment arch.
@@ -305,7 +325,6 @@ fn_use_winepath(){
 		w_title="Winestarter"
 		## create the download list to fill in the yad loop.
 		if [ $wine_pack -gt 0 ]; then
-#			if [ $wine_elf = 1 ]; then http_elf='x86_64'; b_elf='64'; else http_elf='i686'; b_elf=''; fi
 			if [ $wine_elf = 1 ]; then http_elf='x86_64'; else http_elf='i686'; fi
 			## Check again system arch.
 			if [[ $sys_arch =~ ^.*64 ]]; then
@@ -332,20 +351,12 @@ fn_use_winepath(){
 			esac
 			
 			dl_address="https://dl.winehq.org/$dir_ver/fedora"
-			dl_text="$vb\\Building WineHQ packages repository list.$end"
-			
-#			$zen_bin --width=550 --title "$w_title" --window-icon=filesave \
-#			--progress --pulsate --auto-close --no-cancel --text="$dl_text" &
-#			WAIT_UI=$(ps -A | grep "zenity" | awk '{print $1}'| sed -n '1p')
-#			download_list			
+			dl_text="$vb\\Building WineHQ packages repository list.$end"		
 			download_list | $zen_bin --width=550 --title "$w_title" --text="$dl_text" \
 			--window-icon=filesave --progress --pulsate --auto-close --no-cancel
 			dist_dl_ver=$(cat $file_temp.[stamp])
-#			dist_dl_ver=$(echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2)
 			dl_address_0="$dl_address/$dist_dl_ver/$http_elf"
 			dl_address_1="$dl_address/$dist_dl_ver/i686"
-#			dl_address_0="https://dl.winehq.org/wine-builds/fedora/25/$http_elf"
-#			dl_address_1="https://dl.winehq.org/wine-builds/fedora/25/i686"
 			dl_list=(
 				"$dl_address_0/wine-$hq_stage$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
 				"$dl_address_1/wine-$hq_stage-common-$pkg_ver-$pkg_rel.i686.rpm"
@@ -406,7 +417,6 @@ fn_use_winepath(){
 		else
 			mkdir -p $wine_path/$ftp_elf/$wine_ver/
 			cp -Rf opt/wine-$hq_short/* $wine_path/$ftp_elf/$wine_ver/
-#			if [ $b_elf = 64 ]; then ln -sf $wine_path/$ftp_elf/$wine_ver $wine_path/x86/; fi
 			if [ $b_elf = 64 ]; then cd $wine_path/x86; ln -sf ../$ftp_elf/$wine_ver ; fi
 			if [ -s $HOME/.winestarter/resources/ftp_$hq_ver.\[list\] ]; then
 				sed -ni "s/^\($wine_ver\),\(.*\)$/\1*,\2/i;p" \
@@ -418,9 +428,7 @@ fn_use_winepath(){
 	
 }
 fn_install_tricks(){
-#	unset new_tricks_list
 	unset diff_tricks
-#	i_list_file=$user_prefix/$bottle_prefix/tricks_install.log
 	w_list_file=$user_prefix/$bottle_prefix/winetricks.log
 	w_tricks_reserve=$scpt_dir/resources/tricks_workaround.txt
 	
@@ -444,7 +452,6 @@ fn_install_tricks(){
 			_w_list_file=$(cat $w_list_file| egrep -v "$w_filters")
 			echo "$_w_list_file"| sort -bd >$tmp_log
 			if [ $(echo "$_w_tricks_list"| grep -c .) -gt 0 ]; then
-#			if [ ${#_w_tricks_list[*]} -gt 0 ]; then
 				## find diff between w_tricks_list and already installed.
 				diff_tricks=$(echo "$_w_tricks_list"| grep -vFf "$tmp_log")
 				if [[ $diff_tricks ]]; then
@@ -468,8 +475,7 @@ fn_install_tricks(){
 				if [ $if_diff = 1 ]; then
 					if [ ${#w_tricks_loop[@]} -gt 0 ]; then
 						## take care for all brend new install and already existant ones.
-						if [ -s $w_list_file ]; then new_repo=0; else new_repo=1; fi 
-			#			if [ "$w_tricks_list" ]; then
+						if [ -s $w_list_file ]; then new_repo=0; else new_repo=1; fi
 						e_text="$vb\\Winetricks is working$end"		
 						(for w_list in "${w_tricks_loop[@]}"; do
 							echo "# Installing $w_list"
@@ -479,7 +485,6 @@ fn_install_tricks(){
 			#				--window-icon=filesave --progress --pulsate --auto-close --no-buttons
 						)| $zen_bin --width=250 --title="$w_title" --text="$e_text" \
 						--window-icon=filesave --progress --pulsate --auto-close --no-cancel
-			#				perl -ni -pe "s|(w_install_tricks)=[0-9]|\1=0|i" $config_file
 						if [ -s $w_list_file ]; then
 							## analyse winetricks log again to get newly installed dlls.
 							cat $w_list_file| egrep -v "$w_filters"| sort -bd > $tmp_log
@@ -499,7 +504,6 @@ fn_install_tricks(){
 								if [ $new_repo -eq 0 ]; then
 									## treat w_list_file for newly install dlls from config.
 									_new_tricks=$(cat $tmp_log| tr '\n' ','| sed -n "s/,$//p")
-#									sed -ni "s|^\(w_tricks_list\)=\"\(.*\)\"$|\1=\"\2,$_new_tricks\"|i;p" \
 									sed -ni "s|^\(w_tricks_list\)=\".*\"$|\1=\"$_new_tricks\"|i;p" \
 									$config_file
 								fi
@@ -537,28 +541,21 @@ fn_install_tricks(){
 	fi
 }
 fn_extract_lnk(){
-#	local $DESK_DIR
 	sct_time=$(date +%H%M)
-#	dsk_dir=$XDG_DESKTOP_DIR
-	
 	desktop_file=$(ls -rtgGB --time-style=+%H%M $XDG_DESKTOP_DIR |sed -n '$p')
 	dsk_name=$(ls -rt1 $XDG_DESKTOP_DIR| egrep ".desktop" | sed -n '$p')
-#	dsk_name=$(echo "$desktop_file"| sed -n "s/\(^.*$sct_time\) \(.*\..*$\)/\2/p")
 	f_name=$(echo "$dsk_name"| sed -n "s/^\(.*\)\..*$/\1/g;p")
 	if [ "$dsk_name" ]; then
-#		IFS=$(echo -en "\n\b")
 		if [ $(cat $XDG_DESKTOP_DIR/"$dsk_name"| grep -c "Path=" ) -gt 0 ]; then
 			d_dest_dir=$(cat $XDG_DESKTOP_DIR/$dsk_name| grep "Path="|sed -n "s/^.*c:\\///p")
 			if [ $(echo "$d_dest_dir"| egrep -c "(^\s*Prog.*Files)") -gt 0 ];then
 				root_key="Program Files"$elf_ext"/"
-#				game_dir=$(echo "$d_dest_dir"| sed -En "s/^(Prog.*Files)\/(.*)/\2/p")
 				game_dir=$(echo $d_dest_dir| sed -n "s|^\(Prog.*Files$elf_ext\)/\(.*\)|\2|p")
 			else
 				root_key='/'
 				game_dir=$(echo "$d_dest_dir"| sed -n "s/\/$//p")
 			fi
 		fi
-#		w_dest_lnk=$(cat $XDG_DESKTOP_DIR/$dsk_name| grep "Exec="|sed -n "s/^.*C://p"| cut -d' ' -f3)
 		p_dest_lnk=$(cat $XDG_DESKTOP_DIR/$dsk_name| grep "Exec="|sed -n "s/^.*C:.*Unix \(.*.lnk\)/\1/p")
 		b_dest_lnk=$XDG_DESKTOP_DIR/$f_name.lnk
 		if [ -s $b_dest_lnk ]; then
@@ -574,7 +571,6 @@ fn_extract_lnk(){
 			t_dest_exe=$($strings_bin "$w_dest_lnk"| egrep "(\s*[\w]*.exe)"|sed -n '1p')
 			t_dest_dir=$($wine_bin winepath -u $($strings_bin "$w_dest_lnk"| egrep "(\s*[\w]*.exe)"|sed -n '$p'))
 			t_dest_dir_exe=$(printf "$t_dest_dir"| sed -n "s/^.*\///p")
-#			t_dest_dir_exe=$($strings_bin "$w_dest_lnk"| egrep "(\s*[\w]*.exe)"|sed -n "s/^.*\\\//p")
 			if [[ $t_dest_exe ]]; then
 				game_exe=$t_dest_exe	
 			else
@@ -616,15 +612,12 @@ fn_extract_lnk(){
 }
 fn_convert_desktop_file(){
 	if [ -s $convert_bin ]; then
-#	local $DESK_DIR
-	
 	exe_key=$(printf "$game_exe"| perl -pe "s/^.*\///p")
 	wine_dsk=$(printf "$XDG_DESKTOP_DIR"| sed -n "s/^.*\///p")
 	lnk_key=$(ls -1 "$user_prefix/$bottle_prefix/drive_c/users/Public/$wine_dsk/"| egrep "(\s*.*\.lnk$)")
 	
 	
 	if [ -s $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; then
-#		dsk_dir=$XDG_DESKTOP_DIR
 		dsk_key=$(echo "$game_exe"| perl -pe "s/^.*\/(.*).exe/\1/g;p")
 		
 		if ! [ $dsk_name ]; then
@@ -634,7 +627,6 @@ fn_convert_desktop_file(){
 				desktop_file_list=( $(ls -1 $XDG_DESKTOP_DIR| egrep "(\s*.desktop$)") )
 				for _file in "${desktop_file_list[@]}"; do
 					if [ $(cat $XDG_DESKTOP_DIR/$_file| egrep -ci "(\s*$dsk_key)") -gt 0 ]; then
-#						dsk_name=$(cat $XDG_DESKTOP_DIR/$_file| sed -n "s/Name=//p")
 						dsk_name=$(cat $XDG_DESKTOP_DIR/$_file| sed -n "s/Name=//p"| egrep -i "(\s*$dsk_key)")
 						if [ "$dsk_name" == '' ]; then
 							dsk_name=$(printf "$_file"| sed -n "s/.desktop$//p")
@@ -725,7 +717,6 @@ fn_install_exe(){
 			fn_download_ui
 		fi		
 	}
-	echo "######################## 1"
 	pkgs_log=$user_prefix/$bottle_prefix/packages.log
 	
 	if [ "$w_exe_path" != '' ]; then
@@ -749,9 +740,6 @@ fn_install_exe(){
 		fn_extract_lnk
 		sleep 1
 		abort=0
-#	else
-#		abort=$?
-#		exit 0
 	fi
 	if [ $(printf "$w_more_pkgs"| grep -c .) -gt 0 ]; then
 		extra_log=$user_prefix/$bottle_prefix/extra_pcks.log
@@ -832,7 +820,6 @@ fn_install_exe(){
 			######
 			_archive_type=( zip tar rar 7z tar.7z exe )
 			for _type in ${_archive_type[@]}; do
-#				if [ $(printf "$w_install_zip"| grep -c ".$_type") -gt 0 ]; then
 				check_type=$(printf "$w_install_zip"| egrep -oi "$_type$")
 				case $check_type in
 					'zip')
@@ -859,13 +846,11 @@ fn_install_exe(){
 #				fi
 			done
 			if [ $cd_to = 1 ]; then cd $target_dir; fi
-#			if [ $( `$cmd_list` | egrep -ic "setup.exe") -gt 0 ]; then
 			if [ $auto = 0 ]; then
 				if [ $( $cmd $_opt_list $w_install_zip | egrep -ic "setup.exe") -gt 0 ]; then
 					warn_msg
 					target_dir=$XDG_DOWNLOAD_DIR/$w_install_dir
 					mkdir -p $target_dir
-	#				cd $target_dir
 					$cmd $_opt_ex0 $w_install_zip $_opt_ex1 $target_dir
 					if [ $go_on = 1 ]; then
 						setup_bin=$(ls -1 $target_dir/| egrep -i "setup.exe")
@@ -919,8 +904,6 @@ fn_install_exe(){
 		cp -f $w_extra_script $user_prefix/$bottle_prefix/drive_c/Program\ Files"$w_elf_ext"/$game_dir/
 	fi	
 	if [ $abort = 1 ]; then
-#	if ! [ -x $user_prefix/$bottle_prefix/drive_c/Program\ Files"$w_elf_ext"$game_dir/$game_exe ]; then
-		
 		echo -e "»»»» EXE path was not found.\n# Defining the right install executable path is mandatory.\n# EXIT.\n"
 		if [ $zen_bin ]; then
 			text="$brf\\EXE path was not found.$end$vb\nDefining the right install executable path is mandatory.\n\nEXIT.$end"
@@ -933,7 +916,6 @@ fn_install_exe(){
 }
 fn_game_dir_exist(){
 	## search where is the "Prgram Files" dir and type.
-	echo "######################## 2"
 	fn_root_key
 	if [[ $game_dir == '' && $game_exe == '' ]]; then
 		mkdir -p $user_prefix/$bottle_prefix/drive_c/Program\ Files"$elf_ext"
@@ -944,9 +926,7 @@ fn_game_dir_exist(){
 		-wholename "*$game_exe") ]; then
 			bin_dir_target=$(find -L \
 			$user_prefix/$bottle_prefix/drive_c/Program\ {Files,Files\ \(x86\)} -wholename "*$game_exe")
-#			bin_target=$(echo -e "$bin_dir_target"| sed -n 's/^.*\///g;p')
 			if [[ "$bin_dir_target" =~ ^.*x86.*$ ]]; then
-#				root_key="Program\ Files\ \(x86\)"
 				root_key='Program Files (x86)/'
 				sed_key='Files\ (x86)\/'
 			else
@@ -959,7 +939,6 @@ fn_game_dir_exist(){
 	
 	## search if there any app path in "Program Files" or root. If none, link the predifine app dir if any.
 	if [[ $game_path != '' ]]; then
-#	if [[ $game_path == '' ]]; then
 		link=$(printf "$game_path"| sed -n "s/^.*\///g;p")
 		target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"$link/
 		if ! [ -d $target_dir ]; then
@@ -967,19 +946,12 @@ fn_game_dir_exist(){
 		fi
 		target_app=$user_prefix/$bottle_prefix/drive_c/"$root_key"
 		if [ $zen_bin ]; then
-		echo "######################## 3"
 			if [ -d $target_dir ]; then
 				if [ "$game_dir" == '' ]; then game_dir='none'; fi
-#				if [ "$game_dir" != '' ]; then game_dir='none'; fi
 				if ! [ -d $target_app$game_dir ]; then
-#				if [ -d $target_app$game_dir ]; then
 					if [ $(ls -1 $target_dir| grep -c .) -gt 1 ]; then
 						d_text="$bf\\More that one directory found in path$end"
-#						target_ls=$( ( ls -1 $target_dir| tr '\n' '!' )| yad --title 'WARMING' --width=400 \
-#						--form --field="Please select one":CB --separator='' --text="$d_text" )
-						## TODO > list field
 						_n_val=1
-#						_val_list=$(ls -1 $target_dir| egrep ".(exe|EXE)$")
 						_dir_list=$(du -ah -d 1 $target_dir| egrep -v ".(EXE|exe|dlls|bin)$"| \
 						sed -En "s/^.*[\.]?\/(.*)$/\1/p")
 						for _dir in ${_dir_list[@]}; do
@@ -1006,9 +978,6 @@ fn_game_dir_exist(){
 				if ! [ -s $target_app$game_dir/$game_exe ]; then
 					w_title='Select app exe in directory'
 					d_text="$bf\\App executable is not set$end$vb:\\nChoose one in the list below.$end"
-#					exe_ls=$( ( ls -1 $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/| tr '\n' '!'
-#					)| $yad_bin --title 'WARMING' --width=400 --form --field="Please select one":CB \
-#					--separator='' --text="$d_text" )
 					_n_val=1
 					_exe_list=$(ls -1 $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/ | \
 					egrep ".(exe|EXE)$")
@@ -1058,7 +1027,6 @@ fn_wine_binary(){
 		export WINELOADER=$wine_elf_path/bin/wine
 		if [ $wine_elf = 1 ]; then
 			export WINEDLLPATH=$wine_elf_path/$libs/wine/fakedlls
-#			export LD_LIBRARY_PATH="$wine_elf_path/lib:$wine_elf_path/$libs:$LD_LIBRARY_PATH"
 			export LD_LIBRARY_PATH=$wine_elf_path/lib:$wine_elf_path/$libs:$LD_LIBRARY_PATH
 			#":/lib:/lib64:/usr/lib:/usr/lib64"
 		else
@@ -1066,14 +1034,7 @@ fn_wine_binary(){
 			export LD_LIBRARY_PATH="$wine_elf_path/lib:$LD_LIBRARY_PATH"
 			#":/lib:/lib64:/usr/lib:/usr/lib64"
 		fi
-#		PATH="$PATH:$wine_elf_path/bin"
-#		export LD_LIBRARY_PATH
-#		export PATH
-#		echo "$LD_LIBRARY_PATH"
-#		wine_bin=$WINELOADER
 		wine_bin_path=$wine_elf_path/bin/
-	#	wineboot -u
-	#	wine --version
 	## sandoxing wine by exec in WINELOADER directory
 	cd $WINEVERPATH/bin
 	fi
@@ -1090,6 +1051,8 @@ fn_replace_env(){
 	fi
 }
 cd $scpt_dir
+## memory cache overload control and wipe if necessary
+wipe_cache
 ## set xrandr if necessary
 if [ $auto_set -gt 0 ]; then
 	${set_xrandr}
@@ -1122,7 +1085,6 @@ fn_convert_desktop_file
 winestarter_reg=$user_prefix/$bottle_prefix/winestarter.reg
 default_reg=$user_prefix/$bottle_prefix/user.reg
 if [ $windowed -gt 0 ]; then
-	echo "######################## 4"
 #	cd $WINEVERPATH/bin
 #	[[ -s $winestarter_reg ]]|| touch $winestarter_reg	
 	if [[ $(cat $default_reg| egrep -c "\"Desktop\"=\"Default\"") -eq 0 ]]; then
@@ -1156,14 +1118,12 @@ fi
 #exit 0
 reg_file=$(printf "$conf"| sed -n "s/\.conf//p")".reg"
 ## create and insert registry entry if any.
-#if [[ $(printf "$user_reg"| sed -n '$p') != '' ]]; then fn_regedit; fi
 fn_regedit
 if [ $(printf "$local_association"| grep -c .) -gt 0 ]; then fn_mime_asso; fi
 if [ $(printf "$dll_reg_manager"| grep -c .) -gt 0 ]; then fn_reg_dlls; fi
 if [ $w_config = 1 ]; then fn_wineconf ; fi
 
 ## check one last time that appli directory exist
-#if ! [ -s $user_prefix/$bottle_prefix/drive_c/Program\ Files/$game_dir/$game_exe ] || \
 if ! [ -s $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe ]; then
 	IFS=$ifs 
 	echo -e "»»»» Can't find $game_exe for $user_prefix/$bottle_prefix
@@ -1184,12 +1144,10 @@ else
 fi
 ## capture app exe for pid discovering and before cmd line conversion
 game_exe_only=$(echo "$game_exe"| perl -pe "s/^.*\///p")
-## execute
 if [ $special_cmd -gt 0 ]; then
 	cd $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir
 	## xhange wine_bin to full path
 	wine_bin=$wine_bin_path$wine_bin
-#	$opti_run $wine_bin "$user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe"
 	$opti_run $wine_bin $game_exe $wine_opts &
 elif [ $start_cmd -gt 0 ]; then
 	# pull wine start command line in unix syle
@@ -1197,9 +1155,6 @@ elif [ $start_cmd -gt 0 ]; then
 	"$user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir/$game_exe" $wine_opts &
 else
 	## Replace Linux slash by Windows backslash
-#	game_dir=$(printf "$game_dir"|sed -n "s/\//\\\/g;p")
-#	game_exe=$(printf "$game_exe"|sed -n "s/\//\\\/g;p")
-#	$opti_run $wine_bin C:\\$win_prog$game_dir\\$game_exe $wine_opts &
 	$wine_bin --version
 	SOFT_PATH=$($wine_bin winepath -w "$user_prefix/$bottle_prefix/drive_c/"$win_prog"$game_dir/$game_exe")
 	$opti_run $wine_bin $SOFT_PATH $wine_opts &
@@ -1208,20 +1163,14 @@ fi
 IFS=$ifs
 ## find .exe pid file and let some time for exe too launch before
 sleep 5
-#exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"|sed -n "s/^.*\/\(\w*\([A-Z]\|[a-z]\).exe\).*$/\1/;s/^\(.\{3\}\).*/\1/g;1p")
 if [ $(ps -A | grep -c "$game_exe_only") -gt 0 ]; then
 	exe_short=$(echo "$game_exe_only"|sed -n "s/^\(.\{3\}\).*/\1/g;p")
 else
 	exe_short=$(echo "$game_exe_only"|sed -n "s/^\(.\{3\}\).*/\1/g;p")
-#	exe_short=$(ps -A -o time,ruser,cmd |grep -v "00:00:00"|grep "$USER.*\.exe"| \
-#	sed -n "s/^.*[\/\|\\\]//;s/^\(.\{3\}\).*/\1/g;p")
 fi
-#bin_pid="pgrep ^\(\s*$exe_short.*$\)"
-#bin_pid="pgrep ^$exe_short.*.exe$"
 bin_pid="pgrep ^$exe_short.*.e.*$"
 A_PID=$(${bin_pid})
 ## if script is launched from winestarter configurator, ger Yad pid and kill it
-#if [ $YAD_PID ]; then killall -9 yad ; fi
 if [ $YAD_PID ]; then kill $YAD_PID $(($YAD_PID+1)) ; fi
 ## if replace window manager is set, don't kill it before the app is ended
 if [ $set_desktop_env -gt 0 ]; then
