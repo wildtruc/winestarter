@@ -16,8 +16,9 @@ install:
 	mkdir -p $(CONF_DIR)/configs
 	mkdir -p $(CONF_DIR)/desktop
 	mkdir -p $(CONF_DIR)/resources
+	mkdir -p $(CONF_DIR)/png
 	cp -Rf ./emblems $(CONF_DIR)/
-	cp -Rf ./png $(CONF_DIR)/
+	cp -Rf ./png/* $(CONF_DIR)/png/
 	cp -f ./color.conf $(CONF_DIR)/
 	cp -f ./options.list $(CONF_DIR)/resources
 	cp -f ./mime-* $(CONF_DIR)/resources/
