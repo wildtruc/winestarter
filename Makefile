@@ -30,7 +30,7 @@ install:
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/applications/ winestarter.desktop
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/winestarter_128.png
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/wine48w.png
-	$(INSTALL) -Dm644 -t /usr/share/poltik-1/actions/ com.github.pkexec.winestarter_wipe.policy
+	$(INSTALL) -Dm644 -t /usr/share/polkit-1/actions/ com.github.pkexec.winestarter_wipe.policy
 	$(INSTALL) -Dm644 -t $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	chown $(C_USER):$(C_USER) $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	sudo -u $(C_USER) cp -Rf ./.git $(CONF_DIR)/
@@ -44,7 +44,7 @@ update:
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/applications/ winestarter.desktop 
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/winestarter_128.png
 	$(INSTALL) -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/wine48w.png
-	$(INSTALL) -Dm644 -t /usr/share/poltik-1/actions/ com.github.pkexec.winestarter_wipe.policy
+	$(INSTALL) -Dm644 -t /usr/share/polkit-1/actions/ com.github.pkexec.winestarter_wipe.policy
 	$(INSTALL) -Dm644 -t $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	chown $(C_USER):$(C_USER) $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	sudo -u $(C_USER) cp -Rf ./.git $(CONF_DIR)/
