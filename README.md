@@ -7,6 +7,8 @@ A not very simple, but very cool script to start and install wine emulated appli
 
 **NOTICE**: It important for us to get feedback and bug reports from you. Don't leave us in darkness.
 
+**WARNING v1.02**: This update need a `make install` after `make update` or `git pull`, only way for new pngs to take place.
+
 -------
 
 Consider this like a Wine graphical extension more than a new Wine environment like PoL or CodeWeavers's CrossOver. The goal for end user is to simplify Wine usual command line with a graphical user interface with the most explantions as possible, and for advanced user, a Wine execution script with extended config file that could be modified as the way he want.

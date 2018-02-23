@@ -35,6 +35,7 @@ wtc => winestarter_conf, wt => winestarter
  - wt/wtc: (extended options) Added options 'Prevent crash dialog to popup' and 'Exceptions handle by app only' (debugging). First prevent Windbg crash dialog GUI to be displayed for app that finally starting at the end, second, allow to print app exceptions handles by themself only (not Wine) making debugging debugging a bit easier.
  - new: Add winestarter_kill script. Because, all tip and trick don't prevent on exceptional situation, added the winestart_kill script similar to end process kill pid apps GUI, allowing to kill properly all wine processes in 'world end' situation. (Command line only, usage: winestart_kill after app launch) 
  - few fix and update to makefile.
+ - This update need a 'make install' after 'make update' if you're using this updating way. 'make update' is enought if you use 'git pull', only way for new pngs to take place.
  
 *( 12/02/18 ) v1.01*
  - wt: Added a memory cache wipe tool using polkit for admin priviledges. Winestarter will ask for memory cache wipe if it's over 60 percent of total memory usage. To use with caution, if you have some server with high cache data in RAM, this feature could wipe this data. So, it's maybe a better idea to not use if you are in this kind of situation. Will add a conf option (set to 0/1) in next update for user convenience.
