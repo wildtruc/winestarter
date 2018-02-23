@@ -60,8 +60,10 @@ $vb\\Application is crashed or unrespondsive.\n
 Select below the command to be killed (single or multple) and clean all Wine process.$end\n
 $nf\\Note:$end$vn Start by application pid if existing, if it do not work then restart the killer
 and use safe mode by selecting all Wine processes and kill them all at once.$end"
+
+		text="$bf\\$text$end"
 		_pid_to_kill=$($zen_bin --width=600 --height=400 --title="winestarter rescue" --text "$text" \
-			--window-icon=$win_icon --list --checklist --multiple --column "select" --column "pid" 
+			--window-icon=$win_icon --list --checklist --multiple --column "select" --column "pid" \
 			--column "command" --separator="," "${zen_list[@]}" )
 		pid_to_kill=( $(echo "$_pid_to_kill"|sed -n "s/,/\n/g;p") )
 		if [ $? -eq 0 ]; then
