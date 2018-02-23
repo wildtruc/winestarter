@@ -23,6 +23,19 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 19/02/18 ) v1.02*
+ - wtc: Added Wipe memory cache options allow/disallow to Wine prefix config options sets.
+ - note: it is mandatory to update your config files first to include this new option. 
+ - wtc: Added more options to restart features section. This is now more a quick setup features allowing to fast restart some actions. I could add more, will figure out.
+ - wtc: Modified some icons to be more clear on some sections.
+ - wtc: Added a Wine regedit GUI button to regedit section.
+ - wtc: Added Wine control panel end user GUI to Wine prefix tab.
+ - wt: Modified app pid detection behaviour for better detection.
+ - wt: Added a end process kill pid apps GUI. In case winedbg is detected, script display a zenity GUI listing all wine active processes with tip on 'what to do' giving the possibility to kill running app if something goes wrong.
+ - wt/wtc: (extended options) Added options 'Prevent crash dialog to popup' and 'Exceptions handle by app only' (debugging). First prevent Windbg crash dialog GUI to be displayed for app that finally starting at the end, second, allow to print app exceptions handles by themself only (not Wine) making debugging debugging a bit easier.
+ - new: Add winestarter_kill script. Because, all tip and trick don't prevent on exceptional situation, added the winestart_kill script similar to end process kill pid apps GUI, allowing to kill properly all wine processes in 'world end' situation. (Command line only, usage: winestart_kill after app launch) 
+ - few fix and update to makefile.
+ 
 *( 12/02/18 ) v1.01*
  - wt: Added a memory cache wipe tool using polkit for admin priviledges. Winestarter will ask for memory cache wipe if it's over 60 percent of total memory usage. To use with caution, if you have some server with high cache data in RAM, this feature could wipe this data. So, it's maybe a better idea to not use if you are in this kind of situation. Will add a conf option (set to 0/1) in next update for user convenience.
  - wt: Clean useless comments and lines.

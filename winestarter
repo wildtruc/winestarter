@@ -26,13 +26,13 @@
 ## define per game conf files dir
 scpt_dir=$HOME/.winestarter
 w_tricks=$(find /usr/{bin,local/bin} -name winetricks)
-yad_bin=$(find /usr/{bin,local/bin} -name yad)
 zen_bin=$(find /usr/{bin,local/bin} -name zenity)
 convert_bin=$(find /usr/{bin,local/bin} -name convert)
 wrestool_bin=$(find /usr/{bin,local/bin} -name wrestool)
 strings_bin=$(find /usr/{bin,local/bin} -name strings)
 rpm_bin=$(find /usr/{bin,local/bin} -name rpm2cpio)
 cab_bin=$(find /usr/{bin,local/bin} -name cabextract)
+#yad_bin=$(find /usr/{bin,local/bin} -name yad)
 
 wine_bin='wine'
 wineboot_bin='wineboot'
@@ -73,22 +73,24 @@ png_stock=$HOME/.winestarter/png/defaults
 filesave=$png_stock/'wine-install48.png'
 warning=$png_stock/'wine-warn48.png'
 inform=$png_stock/'wine-info48.png'
+kill_img=$png_stock/'bottle_manager48.png'
+#kill_img=$png_stock/'control_panel16.png'
 # text=""; dialog_list="$text;gtk-close;$inform"; yad_warnings
-yad_warning(){
-#	d_txt=$(printf "$dialog_list"|cut -d';' -f1)
-	d_btt=$(printf "$dialog_list"|cut -d';' -f1)
-	d_img=$(printf "$dialog_list"|cut -d';' -f2)
-	w_width=500
-	if [ $yad_bin ]; then
-		$yad_bin --width=$w_width --height=$(($w_width/3)) --title "" --borders 15 --button="$d_btt":1 \
-		--image=$d_img --text="$text" --timeout=3
-#	$yad_bin --width=400 --height=100 --title "" --button="$d_btt":1 \
-#	--image=$d_img --timeout=3 --form --field="$text":LBL ''
-	else
-		[ $zen_bin ]&& zen_warning
-	fi
-#	zenity --height=150 --title='' --warning --window-icon=$d_img --text="$text" --timeout=3
-}
+#yad_warning(){
+##	d_txt=$(printf "$dialog_list"|cut -d';' -f1)
+#	d_btt=$(printf "$dialog_list"|cut -d';' -f1)
+#	d_img=$(printf "$dialog_list"|cut -d';' -f2)
+#	w_width=500
+#	if [ $yad_bin ]; then
+#		$yad_bin --width=$w_width --height=$(($w_width/3)) --title "" --borders 15 --button="$d_btt":1 \
+#		--image=$d_img --text="$text" --timeout=3
+##	$yad_bin --width=400 --height=100 --title "" --button="$d_btt":1 \
+##	--image=$d_img --timeout=3 --form --field="$text":LBL ''
+#	else
+#		[ $zen_bin ]&& zen_warning
+#	fi
+##	zenity --height=150 --title='' --warning --window-icon=$d_img --text="$text" --timeout=3
+#}
 zen_warning(){
 	## model line: "gtk-close;'info/warn image';'height divider';'window time-out'"
 	d_btt=$(printf "$dialog_list"|cut -d';' -f1)
@@ -104,7 +106,7 @@ zen_question(){
 	d_img=$(printf "$dialog_list"|cut -d';' -f2)
 	bt_do=$(printf "$dialog_list"|cut -d';' -f3)
 	bt_undo=$(printf "$dialog_list"|cut -d';' -f4)
-	w_width=400
+	w_width=500
 	$zen_bin --width=$w_width --title='' --question --window-icon=$d_img --ok-label="$bt_do" \
 	--cancel-label="$bt_undo" --text="$text"
 }
@@ -157,6 +159,7 @@ fn_regedit(){
 		printf "REGEDIT4\n\n$user_reg\n" > $user_prefix/$bottle_prefix/$reg_file
 		if [[ $(cat -n $user_prefix/$bottle_prefix/$reg_file| grep -c .) -ge 3 ]]; then
 			$wine_bin regedit $user_prefix/$bottle_prefix/$reg_file
+			notify-send -t 2800 "Reloading register with new settings"
 			$wineboot_bin -r
 			$wineserver_bin -k
 		else
@@ -175,10 +178,43 @@ fn_regedit(){
 				$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Direct3D
 				printf "" > $user_prefix/$bottle_prefix/$reg_file
 			fi
+			notify-send -t 2800 "Reloading register with new settings"
 			$wineboot_bin -r
 			$wineserver_bin -k
 		fi
 		rm -f $user_prefix/$bottle_prefix/$reg_file.new
+	fi
+}
+fn_wine_dbg(){
+	if [ $_extended -gt 0 ]; then
+		dbg_reg_hd='REGEDIT4\n\n[HKEY_CURRENT_USER\Software\Wine\WineDbg]'
+		## prepare reg headers.
+		echo -e "$dbg_reg_hd" > $user_prefix/$bottle_prefix/dbg_reg.reg
+		## if set; loop and create insertion text.
+		dbg_list=('dbg_dialog,ShowCrashDialog' 'dbg_handle,BreakOnFirstChance')
+		## define updating rank to 0 for next conditionnal request compatibilty.
+		_updating=0
+		for _dbg_val in ${dbg_list[@]}; do
+			dbg_name=$(printf "$_dbg_val"| cut -d',' -f1)
+			dbg_keyword=$(printf "$_dbg_val"| cut -d',' -f2)
+			eval _val_set="$"$dbg_name
+			if [ $_val_set -gt 0 ]; then _val_set=0; else _val_set=1; fi
+			dbg_dword=$_val_set
+			reg_line="\"$dbg_keyword\"=dword:0000000$dbg_dword"
+			## check if value is already set.
+			if [ $(cat $user_prefix/$bottle_prefix/user.reg| grep -c "$reg_line") -eq 0 ]; then
+				echo -e "\"$dbg_keyword\"=dword:0000000$dbg_dword"| tee -a \
+				$user_prefix/$bottle_prefix/dbg_reg.reg
+				((_updating++))
+			fi
+		done
+		## if value are updated or sipmly sets, start regedit.
+		if [ $_updating -gt 0 ]; then
+			$wine_bin regedit $user_prefix/$bottle_prefix/dbg_reg.reg
+			notify-send -t 2800 "Reloading WineDbg with new settings"
+			$wineboot_bin -r
+			$wineserver_bin -k
+		fi
 	fi
 }
 fn_mime_asso(){
@@ -214,6 +250,7 @@ fn_mime_asso(){
 				fi
 			fi
 		done
+		notify-send -t 2800 "Reloading Wine with new mime types"
 		$wineboot_bin -r
 		$wineserver_bin -k
 		rm -f $reg_temp
@@ -249,6 +286,7 @@ fn_reg_dlls(){
 					fi
 				done
 			done
+			notify-send -t 2800 "Reloading Wine with new dlls settings"
 			$wineboot_bin -r
 			$wineserver_bin -k
 		fi
@@ -638,9 +676,10 @@ fn_convert_desktop_file(){
 				if ! [ -s $XDG_DESKTOP_DIR/$dsk_name.desktop ]; then
 					if [ -x $zen_bin ]; then
 #					if [ -x $yad_bin ]; then
-						d_text0="$bf\\Desktop file auto detection for $brf$dsk_key$end failed.\\nSelect a desktop file entry manually. Or just cancel to pass.$end"
-						d_text1="$vb\\You can also use winestarter_conf after and choose button:$end$bf\nEdit or create a desktop file$end"
-						w_width=400; div=4
+						d_text0="$brf$dsk_key$end$bf desktop file auto detection failed.$end\\n
+$vb\\Select a desktop file entry manually. Or just cancel to pass.\n$end
+$nf\\CAUTION:$end$vn Winestarter looks for .lnk file to create its dedicated desktop file entry, if this file is not found or doesn't exist, prefer use$nf winestarter_conf$end after by selecting main window button:$end$nf\n$bf>$end Edit or create a desktop file$end"
+						w_width=500; div=4
 						w_height=$(($w_width/$div))
 						$zen_bin --width=$w_width --height=$w_height --title='' --window-icon="$d_img" \
 						--ok-label='Select' --cancel-label='Cancel' --question --text="$d_text0\n$d_text1"
@@ -694,7 +733,7 @@ fn_convert_desktop_file(){
 			if [ $w_install_exe -gt 0 ]; then
 				echo -e "»»»» PLEASE PROCESS WITH WINESTARER_CONF INSTEAD, IF AVAILABLE."
 				if [ $zen_bin ]; then
-					text="$brf\\No desktop file found for convertion$end$vb.\nPlease process with winestarter_conf instead$end"
+					text="$brf\\No desktop file found for convertion$end$vb.\n\nPlease process with winestarter_conf instead$end"
 					dialog_list="gtk-close;$inform;4;4"; zen_warning
 				fi
 			fi
@@ -1042,6 +1081,7 @@ fn_wine_binary(){
 fn_wineconf(){
 	winecfg
 	perl -ni -pe "s|(w_config)=[0-9]|\1=0|i" $config_file
+	notify-send -t 2800 "Reloading Wine with new winecfg settings"
 	$wineboot_bin -r
 }
 fn_replace_env(){
@@ -1050,9 +1090,85 @@ fn_replace_env(){
 		$secondary_desktop --replace &
 	fi
 }
+## managed app and wine pids discovering.
+fn_wine_kill(){
+	sub_kill(){
+#		unset _pid_list
+#		line=52
+		text="$bf\\$app_name seems buggy and WineDbg is running$end\\n
+$vb\\$app_name could start normally or not. If you feel unsafe, keep this window open. 
+This way, you will be allowed to kill it any time properly if something goes wrong.$end
+$nf\\Note:$end$vn You can kill only app pid, but safe mode is to select all Wine processes and kill them all at once
+because Wineserver doesn't always receive the app term signal.$end"
+		_pid_list=( $(ps --ppid=$wine_grp -o pid,cmd | \
+		sed -En "s/^[ ]?($grp_id_key[0-9]{3,4}) ((\w*\.exe .*)|(C:.*)|(.*wineserver.*))$/\1 \2/p") )
+		while [ $(ps --ppid=$wine_grp -o cmd| grep -c "winedbg") -gt 0 ]; do
+			sleep 5
+		done
+		if [ $(ps -f --ppid=$wine_grp -o cmd | grep -c "$pid_short_name.*.exe") -gt 0 ]; then
+#			unset zen_list pid_to_kill
+			if [ $(ps --pid $wineserver_pid| grep -c .) -gt 1 ]; then
+				for pid_line in "${_pid_list[@]}"; do
+					zen_list+=("false")
+					zen_list+=( $(echo "$pid_line"| sed -En "s/^[ ]?([0-9]{4,5}) (.*)$/\1/g;p") )
+					zen_list+=( $(echo "$pid_line"| sed -En "s/^[ ]?([0-9]{4,5}) (.*)$/\2/g;p") )
+				done
+#				height=420
+				_pid_to_kill=$($zen_bin --width=600 --height=400 --title="winestarter apps pids" \
+				--window-icon=  --text "$text" --list --checklist --multiple \
+				--column "select" --column "pid" --column "command" --separator="," "${zen_list[@]}" )
+				if [ $? -eq 0 ]; then
+					pid_to_kill=( $(echo "$_pid_to_kill"|sed -n "s/,/\n/g;p") )
+					if [[ $_pid_to_kill ]]; then
+						for kills in "${pid_to_kill[@]}"; do
+							kill -9 $kills
+						done
+					fi
+				fi
+			fi
+		fi
+	}
+	wine_grp=$(ps -A -f | grep wineserver | grep -v "pts"| awk '{print $3}'| sed -n '1p')
+	grp_id_key=$(ps -A -f | grep wineserver | grep -v "pts"| awk '{print $2}'| sed -En "s/^(.{1}).*$/\1/p")
+	wineserver_pid=$(ps --ppid=$wine_grp -o pid,cmd | grep "wineserver"| awk '{print $1}')
+	pid_short_name=$(printf "$game_exe_only"| sed -En "s/^(.{3}).*/\1/g;p")
+#	n=1
+	## if app crash, wineserver is usally still running. Detect winserver pid to check that anything goes 
+	## wrong. If it is the case, display a pid list to kill proberly the buggy app.
+	app_name=$(printf "$game_exe_only"| sed -n "s/\.exe//g;p")
+	ifs=$IFS
+	IFS=$(echo -en "\n\b")
+	until [[ $(pidof -s winedgb) ]]; do
+		## count 10 second then exit to next step.
+		_dbg_pid=$(ps --ppid=$wine_grp -o cmd| grep -c "winedbg")
+		((c++)) && if [ $_dbg_pid -eq 0 ]; then ((c==7)); else break; fi && break
+		sleep 1
+	done
+#	if [ $(ps --ppid=$wine_grp -o cmd| grep -c "winedbg") -gt 0 ]; then
+	if [ $_dbg_pid -gt 0 ]; then
+		sub_kill
+	fi
+
+	if [ $(ps -f --ppid=$wine_grp -o cmd | grep -c "$pid_short_name.*.exe") -gt 0 ]; then
+		while [[ $(ps -f --ppid=$wine_grp -o pid,cmd | grep "$pid_short_name.*.exe"| awk '{print $1}') ]]; do
+			if [[ $(pidof -s winedgb) ]]; then sub_kill; fi
+			app_pid=$(ps -f --ppid=$wine_grp -o pid,cmd | grep "$pid_short_name.*.exe"| awk '{print $1}')
+			sleep 10
+		done
+		if [ $(ps --pid $app_pid| grep -c .) -gt 1 ]; then kill $app_pid; fi
+	fi
+	IFS=$ifs
+	## if replace window manager or xrandr is set, don't kill before app is properly killed.
+	if [ $set_desktop_env -gt 0 ]; then
+		$default_desktop --replace &
+	fi
+	if [ $auto_set -gt 0 ]; then ${bck_xrandr}; fi
+	exit 0
+}
+ 
 cd $scpt_dir
 ## memory cache overload control and wipe if necessary
-wipe_cache
+if [ $cache_wipe -gt 0 ]; then wipe_cache; fi
 ## set xrandr if necessary
 if [ $auto_set -gt 0 ]; then
 	${set_xrandr}
@@ -1103,6 +1219,7 @@ if [ $windowed -gt 0 ]; then
 			sleep 1
 			$wine_bin regedit $user_prefix/$bottle_prefix/winestarter.reg
 #			$wine_bin regedit winestarter.reg
+			notify-send -t 3000 "Reloading Wine with new display settings"
 			$wineboot_bin -u
 			$wineserver_bin -k
 			
@@ -1111,11 +1228,14 @@ if [ $windowed -gt 0 ]; then
 else
 	if [[ $(cat $default_reg| egrep -c "\"Desktop\"=\"Default\"") -gt 0 ]]; then
 		$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Explorer
+		notify-send -t 2800 "Reloading Wine with no display settings"
 		$wineboot_bin -u
 		$wineserver_bin -k
 	fi
 fi
 #exit 0
+## Wine Dbg behaviour options and management
+fn_wine_dbg
 reg_file=$(printf "$conf"| sed -n "s/\.conf//p")".reg"
 ## create and insert registry entry if any.
 fn_regedit
@@ -1143,7 +1263,7 @@ else
 	win_prog="$root_key"
 fi
 ## capture app exe for pid discovering and before cmd line conversion
-game_exe_only=$(echo "$game_exe"| perl -pe "s/^.*\///p")
+export game_exe_only=$(echo "$game_exe"| perl -pe "s/^.*\///p")
 if [ $special_cmd -gt 0 ]; then
 	cd $user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir
 	## xhange wine_bin to full path
@@ -1159,34 +1279,13 @@ else
 	SOFT_PATH=$($wine_bin winepath -w "$user_prefix/$bottle_prefix/drive_c/"$win_prog"$game_dir/$game_exe")
 	$opti_run $wine_bin $SOFT_PATH $wine_opts &
 fi
+## find .exe pid file and let some time for exe too launch before
+#sleep 10
+## if script is launched from winestarter configurator, get Yad pid and kill it
+if [[ $(pidof yad) ]]; then killall -15 yad ; fi
+## Script wont send started app îd to system before bash code exit.
+## To prevent this launch pid manager and tester out of the box. 
+fn_wine_kill &
 ## restore linux regex
 IFS=$ifs
-## find .exe pid file and let some time for exe too launch before
-sleep 5
-if [ $(ps -A | grep -c "$game_exe_only") -gt 0 ]; then
-	exe_short=$(echo "$game_exe_only"|sed -n "s/^\(.\{3\}\).*/\1/g;p")
-else
-	exe_short=$(echo "$game_exe_only"|sed -n "s/^\(.\{3\}\).*/\1/g;p")
-fi
-bin_pid="pgrep ^$exe_short.*.e.*$"
-A_PID=$(${bin_pid})
-## if script is launched from winestarter configurator, ger Yad pid and kill it
-if [ $YAD_PID ]; then kill $YAD_PID $(($YAD_PID+1)) ; fi
-## if replace window manager is set, don't kill it before the app is ended
-if [ $set_desktop_env -gt 0 ]; then
-#	sleep 2
-	while [[ $(${bin_pid}) ]]; do 
-		sleep 10
-	done
-	$default_desktop --replace &
-fi
-## if xrandr resolution is set, don't kill it before the app is ended
-if [ $auto_set -gt 0 ]; then
-#	sleep 5
-#	bin_pid="pgrep $short_name*"
-	while [[ $(${bin_pid}) ]]; do 
-		sleep 10
-	done
-	${bck_xrandr}
-fi
 exit 0

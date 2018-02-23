@@ -48,32 +48,40 @@ icons_set(){
 	png_stock=$HOME/.winestarter/png/defaults
 	## window bar icon
 	img_desktop=$png_stock/'wine48w.png'
-	
+	## main window
 	img_wine_add=$png_stock/'new_bottle16.png'
 	img_wine_mod=$png_stock/'config16.png'
+	img_wine_mng=$png_stock/'bottle_manager16.png'
 	img_wine_desk_bt=$png_stock/'desktop16.png'
-	img_wine_desk_ui=$png_stock/'wine48w.png'
+	img_wine_colors=$png_stock/'colors16.png'
+	img_wine_restart=$png_stock/'reload.png'
+	## tabs
 	img_wine_ui=$png_stock/'wine-wine48.png'
-	img_wine_desktop=$png_stock/'colors48.png'
 	img_wine_cfg1=$png_stock/'wine-winecfg48.png'
 	img_wine_cfg2=$png_stock/'wine-msiexec48.png'
-	img_wine_opts=$png_stock/'colors48.png'
 	img_tricks=$png_stock/'wine-winetricks48.png'
-	img_tricks_bt=$png_stock/'wine16w.png'
-	img_install=$png_stock/'wine-install48.png'
 	img_reged=$png_stock/'wine-winefile48.png'
 	img_nv_cm=$png_stock/'nvidia48.png'
 	img_nv_ext=$png_stock/'graphic_set48.png'
 	img_xrandr=$png_stock/'display48.png'
 	img_opti=$png_stock/'optimus48.png'
-	img_wine_colors=$png_stock/'colors16.png'
-	img_wine_restart=$png_stock/'reload.png'
-	img_wine_reload=$png_stock/'reload48.png'
-	## PoL and WineHQ selection and download set
+	## buttons
+	img_tricks_bt=$png_stock/'wine16w.png'
+	img_reg_bt=$png_stock/'reg_manager16.png'
+	img_ctrlpanel_bt=$png_stock/'control_panel16.png'
+	## buttons other
 	img_winepol_bt=$png_stock/'playonlinux16.png'
 	img_winedis_bt=$png_stock/'wine16r.png'
-	img_dl_pol=$png_stock/'wine48w.png'
-	img_dl_whq=$png_stock/'wine48r.png'
+	img_install=$png_stock/'wine-install48.png'
+	## popups
+	img_bottle_mng=$png_stock/'bottle_manager48.png'
+	img_wine_desktop=$png_stock/'colors48.png'
+	img_wine_reload=$png_stock/'reload48.png'
+	img_wine_opts=$png_stock/'bottle_manager48.png'
+	
+	## others
+	img_wine_desk_ui=$img_desktop
+	img_wine_final=$png_stock/'good_day.png'
 }
 main_code(){
 		default_win_design(){
@@ -363,7 +371,7 @@ main_code(){
 		conf_target=$(printf "$bottle_prefix"|  sed -n "s/^.*[\/.\|.]\(\w*[Aa-Zz]\.\w*[Aa-Zz]*\)/\1/g;p")
 		w_title="Wine Starter"
 		main_tab_text="$bf Configuration applied to$end $brf$conf_target$end"
-		tab_set=("1;_resume;Resume;fn_end_game_1;$img_wine_desk_ui")
+		tab_set=("1;_resume;Resume;fn_end_game_1;$img_wine_final")
 #		"2;_resume;Warnings;fn_end_game_2;$img_wine_desk_ui")
 		# window style and function
 		win_type=1
@@ -447,7 +455,7 @@ $res_action;;;$res_launch;FBTN;;
 				;;
 			esac
 		done
-		## Extended appears in tab only if extended option check pbox is setted.
+		## Extended appears in tab only if extended option check box is setted.
 		if [ $_extended = 1 ]; then
 			if ! [ -e $user_prefix/$bottle_prefix/options.log ]; then
 				touch $user_prefix/$bottle_prefix/options.log
@@ -522,8 +530,9 @@ $res_action;;;$res_launch;FBTN;;
 				## if global options value return 0 or 'unset' 
 					_args+=('')
 				fi
+				wine_opts="${_args[@]}"
 			fi
-			wine_opts="${_args[@]}"
+			## if tother otions need attention, manage them below
 		fi
 		_wine=1
 		if [ $from_config = 0 ]; then newconf_headers; fi
@@ -531,7 +540,10 @@ $res_action;;;$res_launch;FBTN;;
 	}
 	newconf_wine(){
 			_section="## Allow extended features for winestarter configurator; off (0), on (1)
-_extended=$_extended\n
+_extended=$_extended
+## Allow asking for cache memory wipe at winestater boot: off (0), on (1)
+## NOTICE: Cache wipe question popup only appear above 60% memory cache used.
+cache_wipe=$cache_wipe\n 
 ## default is user's home.
 user_prefix=$user_prefix
 ## game/appli prefix name
@@ -554,12 +566,19 @@ start_cmd=$start_cmd
 ## set a 64 bits bottle: false (0), true (1)
 wine_elf=$wine_elf
 
+## WineDbg speicals:
+## In some case WineDbg crash dialog popups even if finally the managed app launch correctly.
+## This option prevent the crash dialog to popup on working apps start: on (1), off (0)
+dbg_dialog=$dbg_dialog
+## This option let application handles exceptions by itself, then WneDbg only catches exceptions that
+## are not handled by the app and could make debbuging a bit easier: on (1), off (0)
+dbg_handle=$dbg_handle
 ## In some apps, it's possible to send extended options at the end of command line.
 ## It can be some extra DLLs, game map, etc. Add them here.
 wine_opts=\"$wine_opts\"
 
 ## to lauch winecfg at first launch
-w_config=1
+w_config=$w_config
 ## Do not remove or edit below except if you don't use winestarter configurator.
 _wine=$_wine"
 	}
@@ -652,7 +671,7 @@ wine_path=\"$wine_path\"
 ## custom Wine binary name
 wine_ver='$wine_ver'
 ## Which kind of packages do you want to use: (leave empty if already in bin directory)
-## PlayOnLinux (0), WineHQ staging/development > 2.4 (1), WineHQ old staging < 2.4 (2).
+## PlayOnLinux (0), WineHQ stable/staging/development > 2.4 (1), WineHQ old staging < 2.4 (2).
 wine_pack=$wine_pack
 ## Do not remove or edit below except if you don't use winestarter configurator.
 _wbin=$_wbin"
@@ -1206,7 +1225,7 @@ _optimus=$_optimus"
 	messages(){
 		main_tab_text="$bf Select settings by theme$end$nf\\n \
  Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end"
-		msg_wine="Set a new Wine prefix (mandatory)"
+		msg_wine="Set a new Wine prefix"
 		msg_wcfg="Set a custom Wine binary"
 		msg_tricks="Winetricks packages install (Windows packages)"
 		msg_install="Install a Windows Software"
@@ -1351,6 +1370,7 @@ $_extended;_extended;;$msg_extended;CHK;;
 		export PATH=$wine_elf_path/bin:$PATH
 		export WINESERVER=$wine_elf_path/bin/wineserver
 		export WINELOADER=$wine_elf_path/bin/wine
+#		export WINEREGEDIT=$wine_elf_path/bin/regedit
 		if [ $wine_elf = 1 ]; then
 			export WINEDLLPATH=$wine_elf_path/lib64/wine/fakedlls
 			export LD_LIBRARY_PATH=$wine_elf_path/lib:$wine_elf_path/lib64:$LD_LIBRARY_PATH
@@ -1407,6 +1427,7 @@ packages manager or directly from WineHQ staging below.$end"
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
 		n=0
+## TODO < REMOVE
 #		_basics_fields="$w_wine_binary_tip;LBL;''
 #$vb click and select a WineHQ package$end,$img_winedis_bt;FBTN;$wine_dis_cmd
 #$set_as_default_tip;LBL;''
@@ -1469,6 +1490,7 @@ $_basics_fields"
 		use_winepath=1
 		wine_path=$(printf "$wine_bin_output"| cut -d';' -f4)
 		wine_default=$(printf "$wine_bin_output"| cut -d';' -f$((9+$n)))
+## TODO < REMOVE
 #		wine_64=$(printf "$wine_bin_output"| cut -d';' -f$((11+$n)))
 #		wine_ver_list=$(printf "$wine_bin_output"|\
 #		cut -d';' -f$((6-$n))-$((7+$n))| sed -En "s/(;|;;)/\ /g;p")
@@ -1572,6 +1594,7 @@ $_basics_fields"
 				wine_pack=''
 			fi
 		fi
+## TODO < REMOVE
 		## set if Wine env have to be set as default or not.
 #		if [[ $wine_64 == TRUE ]]; then default_elf=1; else default_elf=0; fi
 #		if [[ $wine_default == TRUE ]]; then printf "$wine_ver;$wine_path;$wine_elf" \
@@ -1783,7 +1806,7 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 					done
 					wine_arg_msc="\\$(echo "${_arg_msc[*]}")"
 					if [ $(echo "$wine_arg_msc"| egrep -cx '^\\$') -eq 1 ]; then
-						wine_arg_msc='unset'
+						wine_arg_msc="unset"
 					fi
 					ifs=$IFS
 					IFS=$(echo -en "\n\b")
@@ -1811,11 +1834,19 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 			fi
 			if [[ $game_path == '' ]]; then game_path="$HOME/"; fi
 			if [ $_extended = 1 ]; then chk_arg_opts; fi
+			if ! [ $windowed ]; then windowed=1; fi
+			if ! [ $cache_wipe ]; then cache_wipe=1; fi
+			if ! [ $dbg_dialog ]; then dbg_dialog=0; fi
+			if ! [ $dbg_handle ]; then dbg_handle=0; fi
 		else
 			app_portable='FALSE'
 			special_cmd='FALSE'
 			start_cmd='FALSE'
 			windowed='TRUE'
+			cache_wipe='TRUE'
+			dbg_dialog='FALSE'
+			dbg_handle='FALSE'
+			w_config='TRUE'
 			if ! [ -d $game_path ]; then game_path="$user_prefix"; fi
 			if [ $_extended = 1 ]; then chk_arg_opts; fi
 		fi
@@ -1831,23 +1862,39 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 		fi
 		
 		## button command
+		control_panel="bash $bash_opt \"env WINEPREFIX=$user_prefix/$bottle_prefix $wine_bin control\""
 		option_edit_cmd="bash $bash_opt \"edit_wine_options\""
 		# window messages
 		w_text="$bf Wine prefix$end
 $vb\\Set wine prefix name, appli/game directories, etc.$end\\n
 $nf\\Check here the sections you would like to configure.$end"
+		## notes
+		w_wine_elf_tip="$nf\\Note:$end The initial install is actually set to Wine $nf"$elf"Bits$end. If you would like a different install type, you need to create a new prefix."
+		## env sets
 		w_wine_user_prefix="$vb\\Set user prefix if not the user's default one:$end"
 		w_wine_prefix="$vb\\Set the Wine Bottle prefix to use:$end"
 		w_wine_prefix_tip="$nf\\\Ex:$end wine.my_bottle, no space and \"wine.\" suffix is mandatory."
 		w_wine_game_path="$vb\\Set the full game/app path if different from bottle:$end"
 		w_wine_game_dir="$vb\\Set full Wine style game/app directory:$end$vn (if already existing)$end"
 		w_wine_game_exe="$vb\\Set the Wine game/app executable to launch:$end$vn (if already existing)$end"
+		## excution type sets
+		w_wine_option_ttl0="$bf\\Execution type options$end"
 		w_wine_portable="$vb\\Set if the game/app is portable or you wish to install an already existing path to the C: drive root:$end"
 		w_wine_game_spl="$vb\\Set if the app have to be started from the app directory:$end"
-		w_wine_elf_tip="$nf\\Note:$end The initial install is actually set to Wine $nf"$elf"Bits$end. If you would like a different install type, you need to create a new prefix."
+		## wine control panel
+		w_wine_option_ttl1="$bf\\Wine control panel end user GUI$end"
+		w_control_panel_tip="$vb\\Wine control panel can offer joystick calibration and some others cool stuffs, like apps removal and internet connection settings$end"
+		## optional sets
+		w_wine_option_ttl2="$bf\\Wine behaviour options$end"
 		w_windowed_tip="$vb\\In practice, winecfg windowed mode at full screen usually give to games better performances. This is Winestarter default.$end"
-		
-		w_wine_cmd="$bf Wine or app command line arguments$end"
+		w_nocrash_tip="$vb\\Sometime Crash Dialog appears without avoid final app launch. Set the below option to prevent Crash Dialog to popup.$end"
+		w_exceptionhandle_tip="$vb\\When app crash or wont exec, WineDebug prints a lot of line and mix app messages and Wine messages. To only catches exceptions handle by Wine and make debug a bit eaisier, set the below options.$end"
+		w_cache_tip="$vb\\Some apps use a lot memory cache either on Linux or Windows, by default Winestarter allow to ask for memory cache wipe if it looks too high and can cause bad behaviour under the Wine layer. By the other hand, production data/web server could be affect by the cache wipe, so to use with cautions. Uncheck the option if you do not wish to allow this at all.$end"
+		## extended sets
+		w_wine_debugger="$bf\\WineDbg behaviour$end"
+		w_wine_dbg_dlog="$vb\\In some case WineDbg crash dialog popups even if finally the managed app launch correctly. This option prevent the crash dialog to popup on working apps start.$end\n$nf\\Note:$end$vn It doesn't stop winedbg process, only GUI display.$end"
+		w_wine_dbg_except="$vb\\WineDbg prints app and wine debug exceptions lines indifferently. When set, this option let application handles exceptions by itself, then WineDbg only catches exceptions that are not handled by the app and could make debbuging a bit easier.$end"
+		w_wine_cmd="$bf\\Wine or app command line arguments$end"
 		w_wine_cmd_tip="$vb\\You can set here Wine specific command line options. It can come from Wine by itself or specific from the app.$end"
 		w_wine_cmd_gl="Force OpenGL only (opengl)"
 		w_wine_cmd_sdx="Prevent Steam bottle sandboxing (no-cef-sandbox)"
@@ -1868,16 +1915,30 @@ $game_dir;game_dir;;$nf Full Wine appli directory$end;DIR;;
 '';;;$w_wine_game_exe;LBL;;
 $game_exe;game_exe;;$nf EXE file$end;FL;;
 '';;;;LBL;;
+'';;;$w_wine_option_ttl0;LBL;;
 '';;;$w_wine_portable;LBL;;
 $app_portable;app_portable;;Portable app (or to be set at C: drive root);CHK;;
 '';;;$w_wine_game_spl;LBL;;
 $special_cmd;special_cmd;;execute binary file inside the directory;CHK;;
 $start_cmd;start_cmd;;execute binary from absolute path (using Wine \"start\" command);CHK;;
 '';;;;LBL;;
+'';;;$w_wine_option_ttl1;LBL;;
+'';;;$w_control_panel_tip;LBL;;
+$control_panel;cmd;;$vb click to launch Wine control Panel$end,$img_ctrlpanel_bt;FBTN;;
+'';;;;LBL;;
+'';;;$w_wine_option_ttl2;LBL;;
 '';;;$w_windowed_tip;LBL;;
-$windowed;windowed;;Set Wine to full windowed mode (dark background);CHK;;"
+$windowed;windowed;;Set Wine to full windowed mode (dark background);CHK;;
+'';;;$w_cache_tip;LBL;;	
+$cache_wipe;cache_wipe;;Set memory cache wipe question popup at winestarter boot;CHK;;"
 		## extended menu
 		misc_sets="'';;;;LBL;;
+'';;;$w_wine_debugger;LBL;;
+'';;;$w_wine_dbg_dlog;LBL;;
+$dbg_dialog;dbg_dialog;;Prevent crash dialog to popup;CHK;;
+'';;;$w_wine_dbg_except;LBL;;
+$dbg_handle;dbg_handle;;Exceptions handle by app only;CHK;;
+'';;;;LBL;;
 '';;;$w_wine_cmd;LBL;;
 '';;;$w_wine_cmd_tip;LBL;;
 ${cmd_line_opts[*]}
@@ -1905,7 +1966,8 @@ ${misc_sets[@]}"
 		w_wine_binary_title="$vb\\You can choose and activate here a custom Wine binary directory. Some apps (particulary old ones) could need old Wine versions. Datas are provided by PlayOnLinux and WineHQ Wine packagesserver.$end"
 		w_wine_wine_path="$vb Set full path of customs Wine binaries repository:$end"
 		w_wine_wine_ver="$vb Set the custom Wine directory name:$end"
-		w_wine_dl_info="$vb\\Here, you can set the custom Wine binary package to download. You can choose between PlayOnLinux packages (for Wine older than 2.4) or WineHQ-staging packages (above 2.4).$end"
+		w_wine_dl_info="$vb\\Here, you can set the custom Wine binary package to download. You can choose between PlayOnLinux packages (for Wine older than 2.4) or WineHQ packages (above 2.4).$end"
+#		w_wine_dl_note="$rb\\CAUTION:$end$vn Wine 3.x configured prefix can't be downgrade to Wine 2.x versions. If you wish to downgrade, you need to setup a new prefix.$end"
 		w_wine_dl_warn="$rb\\WARNING:$end$vn Set one package only, otherwise, WineHQ Staging will be auto set.$end"
 		w_wine_wine_pol="$vb Download a binary package from PlayOnLinux repo:$end"
 		w_wine_wconfig="$vb\\When set, new Wine binary will setup new environment, this set will allow winecfg to start at boot:$end"
@@ -2118,6 +2180,8 @@ $vb\\or edit a file manualy (will be merge with others sets)$end" #\\n \
 		w_reg_def_VID="$nf VideoMemorySize$end$vn  $mem_comment$end"
 #		w_reg_def_=""
 #		w_reg_def_=""
+		w_reg_launch="Click to launch regedit GUI separatly"
+		reg_action="bash $bash_opt \"env WINEPREFIX=$user_prefix/$bottle_prefix $wine_bin regedit &>/dev/null\""
 
 		basic_sets="'';;;;LBL;;
 '';;;$w_reg_manual0;LBL;;
@@ -2131,7 +2195,8 @@ $CheckFloatConstants,enabled,disabled$CheckFloatConstants_unset;CheckFloatConsta
 $Nonpower2Mode,repack;Nonpower2Mode$Nonpower2Mode_unset;;$nf Nonpower2Mode$end;CB;;
 $x_mem,$vid_mem$VideoMemorySize_unset;VideoMemorySize;;$w_reg_def_VID;CBE;;
 '';;;$w_reg_manual1;LBL;;
-$user_reg;user_reg;;$w_reg_manual2;TXT;;"
+$user_reg;user_reg;;$w_reg_manual2;TXT;;
+$reg_action;;;$w_reg_launch,$img_reg_bt;FBTN;;"
 
 		misc_sets="'';;;;LBL;;
 '';;;$w_reg_2_title;LBL;;
@@ -3609,20 +3674,22 @@ Select the bottle you would like for a desktop file$end"
 				--field="$vb Select a Wine bottle\t$end":CB "$bottle_list")
 		;;
 		## 2 > restart features.
-		2) w_text="$bf Restart function system$end$vb\\n
-You can here restart Winecfg or Winetricks at next Winestarter launch. This feature could be really useful after a Wine update or just to control or manage Winecfg$end"
+		2) w_text="$bf Restart and quick setup function system$end$vb\\n
+You can here restart/setup some functions like Winecfg, Winetricks,etc at next Winestarter launch.
+This feature could be really useful in case of a Wine prefix update, or just to quickly control/manage/setup Wine prefix and other Winestarter options.$end"
 			win_icon=$img_wine_restart
 			edit_win=$($yad_bin --width=420 --title "$w_title" --image=$img_wine_reload --borders=15 \
 				--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
 				--align=left --text "$w_text" --field="":LBL '' \
 				--field="$vb Select a Wine bottle$end":CB "$bottle_list" \
-				--field="Relaunch Winecfg UI":CHK 'FALSE' \
-				--field="Restart Winetricks process":CHK 'FALSE')
-				## TODO
-				## activate external Wine version support (if version is set)
-				## relaunch apps install process
-				## reset desktop env function (end user ui and mouse)
-				## reset xrandr management
+				--field=" Relaunch Winecfg UI":CHK 'FALSE' \
+				--field=" Restart Winetricks install process":CHK 'FALSE' \
+				--field=" Restart apps install process (if set)":CHK 'FALSE' \
+				--field=" (Re)Activate Wine external binary support (if set)":CHK 'FALSE' \
+				--field=" (Re)Activate optional end user GUI switch (if set)":CHK 'FALSE' \
+				--field=" (Re)Activate optional mouse settings (if set)":CHK 'FALSE' \
+				--field=" (Re)Activate optional xrandr settings (if set)":CHK 'FALSE' \
+				)
 		;;
 		## 3 > manage bottle's conf file.
 		3) w_text="$bf Wine bottles management$end\\n
@@ -3630,7 +3697,7 @@ $vb\\Rename, remove, clone.
 In some case, it's easiest to just rename or clone an existing prefix than re-create a new one.$end
 $nf\\Example:$end$vn creating a D3DX11 predifine prefix for all future game installation. It allow you to not have to download or configure many features again.$end"
 			win_icon=$img_wine_restart
-			edit_win=$($yad_bin --width=520 --title "$w_title" --image=$img_wine_opts --borders=15 \
+			edit_win=$($yad_bin --width=520 --title "$w_title" --image=$img_bottle_mng --borders=15 \
 				--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
 				--align=left --text "$w_text" --field="":LBL '' \
 				--field="$vb Select a Wine bottle\t$end":CB "$bottle_list" \
@@ -3649,28 +3716,84 @@ $nf\\Example:$end$vn creating a D3DX11 predifine prefix for all future game inst
 			## launch zenity/yad text edit and exit.
 			if [ $(printf "${edit_win[@]}"| grep -c "directly") -gt 0 ];then
 				e_text="$bf\\Fast Config Edit$end\n
-This editor is for quick config edits. All '##' comments are removable if you're okay without them, but we don't recommand it."
+Editor is for quick config edits. Don't remove '##' comments they're essential for winestarter_conf."
 				edit_config=$($yad_bin --width=800 --height=600 --title="$w_title" --borders=15 \
 				--window-icon=$img_wine_desk_ui --text-info  --text="$vb$e_text$end" \
 				--editable --filename=$config_file)
 				if [ $? = 0 ]; then
 					echo "$edit_config" > $config_file
 				else
-					bash $bash_opt $base_script
+					bash $bash_opt $base_script; exit 0
 				fi
 			else
 				bash_cmd="colors; icons_set; b_set=0; code=$code; main_code"
 			fi
 		;;
 		1) bash_cmd="colors; icons_set; edit_desktop" ;;
-		2) _winecfg=$(printf "${edit_win[@]}"| cut -d';' -f3)
-			_winetrk=$(printf "${edit_win[@]}"| cut -d';' -f4)
-			## TODO
+		2) 
 			## load config file first
-			## check if realoded function exist then display a resume window before lauching process
-			[[ $_winecfg == TRUE ]]&& perl -ni -pe "s|^(w_config)=([0-9])$|\1=1|i" $config_file
-			[[ $_winetrk == TRUE ]]&& perl -ni -pe "s|^(w_install_tricks)=([0-9])$|\1=1|i" $config_file
-			## display effective operation resume 
+			. $config_file
+			_case_list=( '_wine,Wine Basics' '_tricks,Winetricks' '_install,Install' '_wbin,Wine binary' '_xrandr,Display options' )
+			for section_def in "${_case_list[@]}"; do
+				section=$(printf "$section_def"| cut -d',' -f1)
+				section_title=$(printf "$section_def"| cut -d',' -f2)
+				eval _section='$'$section
+				if [ $_section -gt 0 ]; then
+					case $section in
+						'_wine') _vars_list=( 'w_config, Winecfg,3,\t\t' );;
+						'_tricks') _vars_list=( 'w_install_tricks,Winetricks,4,\t\t' );;
+						'_install') _vars_list=( 'w_install_exe,Install package,5,\t' );;
+						'_wbin') _vars_list=( 'use_winepath,Wine binary pack,6,\t' );;
+						'_xrandr') _vars_list=( 'set_desktop_env,End user desktop,7,\t' 'mouse_set,Mouse devise,8,\t' 'auto_set,Display variable,9,\t' );;
+					esac
+					for _list in "${_vars_list[@]}"; do
+						_var_call=$(printf "$_list"| cut -d',' -f1)
+						_msg_call=$(printf "$_list"| cut -d',' -f2)
+						_var_num=$(printf "$_list"| cut -d',' -f3)
+						_var_tab=$(printf "$_list"| cut -d',' -f4)
+						_section_var=$(printf "${edit_win[@]}"| cut -d';' -f$_var_num)
+						if [[ $_section_var == TRUE ]]; then
+							case $_var_call in
+#								'w_config') _secondary_list='' ;;
+								'w_install_tricks') _secondary_list=( 'w_tricks_list' );;
+								'w_install_exe') _secondary_list=( 'w_exe_path' 'w_more_pkgs' 'w_install_zip' );;
+								'use_winepath') _secondary_list=( 'wine_ver' );;
+								'set_desktop_env') _secondary_list=( 'secondary_desktop' );;
+								'mouse_set') _secondary_list=( 'mouse_dev' );;
+								'auto_set') _secondary_list=( 'bck_xrandr' );;
+							esac
+							_var_exist=0
+							if [ ${#_secondary_list[@]} -gt 0 ]; then
+								for sub_var in ${_secondary_list[@]}; do
+									eval _sub_var='$'$sub_var
+									if [[ $_sub_var != '' ]]; then
+										_var_exist=1
+									fi
+								done
+							else
+								_var_exist=1
+							fi
+							if [ $_var_exist -eq 1 ]; then
+								sed -Eni "s/^($_var_call)=([0-9])$/\1=1/g;p" $config_file
+								_msg_resume+=( "$nf$_msg_call section:$end$_var_tab\RESET\n" )
+							else
+								_msg_resume+=( "$nf$_msg_call section$end:$_var_tab\NOT SET IN CONF\n" )
+							fi
+						else
+							_msg_resume+=( "$nf$_msg_call section:$end$_var_tab\NOT RESET\n" )
+						fi
+					done
+				else
+					_msg_resume+=( "$nf$section_title section :$end\t\t\NOTHING TO DO (MIISING OR NOT SET)\n" )
+				fi
+			done
+			## display a resume window of available reloadable vars before lauching process
+			text="$bf\\Restarting $_edit_bottle Functions$end\\n
+$vb\\The below config setups will be reset at next Winestarter start:$end
+$vb(if they exist and are set in $_edit_bottle conf file)$end\\n
+${_msg_resume[@]}"
+			$zen_bin --width=400 --title="$w_title" --info --no-wrap \
+				--window-icon=$img_wine_desk_ui --text="$text"
 			exit 0 ;;
 		3) _managed=$(printf "${edit_win[@]}"| cut -d';' -f3)
 			unset _action_type _ui_options_0 _ui_options_1
@@ -3708,7 +3831,7 @@ This editor is for quick config edits. All '##' comments are removable if you're
 				;;
 			esac
 			## UI interface
-			select_win=$($yad_bin --width=520 --title "$w_title" --image=$img_wine_opts --borders=15 \
+			select_win=$($yad_bin --width=520 --title "$w_title" --image=$img_bottle_mng --borders=15 \
 				--window-icon=$img_desktop --center --separator=';' --form --item-separator="#" \
 				--align=left --text "$w_text" --field="":LBL '' \
 				"${_ui_options_0[@]}" "${_ui_options_1[@]}" )
@@ -3798,9 +3921,9 @@ $yad_bin --width=520 --title "Winestarter configurator"  --window-icon=$img_wine
 --field="$vb New Wine prefix $end"!$img_wine_add!"Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \
 --field="$main_text4":LBL '' \
 --field="$vb Edit a Wine bottle$end"!$img_wine_mod!"Add or change features, options, etc in an existing Wine bottle":FBTN "$main_cmd_1" \
---field="$vb Manage Wine bottles$end"!$img_tricks_bt!"Remove,rename, clone an existing Wine bottle":FBTN "$main_cmd_5" \
+--field="$vb Manage Wine bottles$end"!$img_wine_mng!"Remove,rename, clone an existing Wine bottle":FBTN "$main_cmd_5" \
 --field="$vb Edit or create a Desktop file$end"!$img_wine_desk_bt!"Create a new or modify an existing Wine bottle Desktop file":FBTN "$main_cmd_2" \
 --field="$vb Change fonts colors$end"!$img_wine_colors!"If you occur issues with default fonts colors, you can change them here":FBTN "$main_cmd_3" \
---field="$vb Restart features$end"!$img_wine_restart!"You can restart here some functions at next launch, ex: winecfg":FBTN "$main_cmd_4"
+--field="$vb Restart and quick functions setup$end"!$img_wine_restart!"You can here restart or quick setup some functions at next Winestarter launch, ex: winecfg":FBTN "$main_cmd_4"
 
 exit 0

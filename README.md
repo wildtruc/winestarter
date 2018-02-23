@@ -5,7 +5,7 @@ A not very simple, but very cool script to start and install wine emulated appli
 
 -------
 
-**NEWS**: It important for us to get feedback and bug reports from you. Don't leave us in darkness.
+**NOTICE**: It important for us to get feedback and bug reports from you. Don't leave us in darkness.
 
 -------
 
@@ -33,6 +33,7 @@ Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards
 
 ## OS Depencies
  - Yad (zenity fork, usualy by default in distros, for Debian look **[here](https://packages.debian.org/sid/amd64/yad/download)**)
+ - zenity (for winetarter script popups, usualy by default in all distros)
  - wget (for PoL and WineHQ packages download, usualy by default in all distros)
  - ImageMagick (for image convertion, usualy by default in all distros)
  - strings (for Wine/Ms lnk file reading, usualy by default in all distros)
@@ -40,6 +41,7 @@ Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards
  - Winetricks (send with the git clone and updated)
  - cabextract ( for MS cabinet extraction, usualy by default in all distros)
  - rpm (for rpm2cpio helping extracting rpm package, usualy available in all distros repos)
+ - libnotify (for winestarter notification, usualy by default in all distros. Debian: add libnotify-bin )
  
  and obviously, Wine :)
  
@@ -117,7 +119,7 @@ The `winestarter` conf file template is only a model for those wanting to use th
 
 If don't use `winestarter_conf`, you can edit the config file as you wish. It is a per game/app file, so you can create many conf files as you want. I will add a few other example in the repository ( You could contribute by adding yours, if you like)
 
-This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example with full parts added for user learning purpose and it will be updated when changes will be made: This one goes with 0.99.6 update.
+This is a working example for *Final Fantasy XIV* (march 2017), but keep in mind this is only an example with full parts added for user learning purpose and it will be updated when changes will be made: This one goes with v1.02 update.
 
 ```sh
 #! /bin/bash
@@ -147,11 +149,19 @@ special_cmd=0
 ## wine can use "start" command to launch apps or installer from absolute path
 ## useful on old or recalcitrant buggy app.
 start_cmd=0
+## set a 64 bits bottle: false (0), true (1)
+wine_elf=1
+
+## WineDbg speicals:
+## In some case WineDbg crash dialog popups even if finally the managed app launch correctly.
+## This option prevent the crash dialog to popup on working apps start: on (1), off (0)
+dbg_dialog=0
+## This option let application handles exceptions by itself, then WneDbg only catches exceptions that
+## are not handled by the app and could make debbuging a bit easier: on (1), off (0)
+dbg_handle=0
 ## In some apps, it's possible to send extended options at the end of command line.
 ## It can be some extra DLLs, game map, etc. Add them here.
 wine_opts="-opengl -whatmore and so on" # <- this is an example ->
-## set a 64 bits bottle: false (0), true (1)
-wine_elf=1
 
 ## to lauch winecfg at first launch
 w_config=0

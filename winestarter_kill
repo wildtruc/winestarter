@@ -1,0 +1,74 @@
+#! /bin/bash
+
+## License:
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU Lesser General Public
+#   License as published by the Free Software Foundation; either
+#   version 2.1 of the License, or (at your option) any later
+#   version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Lesser General Public License for more details.
+#
+#   You should have received a copy of the GNU Lesser General Public
+#   License along with this program.  If not, see
+#   <https://www.gnu.org/licenses/>.
+#
+## You can redistribute it as you wish : GPL v3
+## author : wildtruc@noneltd.net
+
+## You can place the script everywhere, but /usr/local/bin is still the best
+## You can rename the script as you wish
+## usage : winestart_kill
+
+## load fonts and fonts color conf. 
+. $HOME/.winestarter/color.conf
+## fonts colors span schema.
+vb='<span color="'$main'" weight="bold" font="'$font0' '$size0'">'
+vn='<span color="'$main'" weight="normal" font="'$font0' '$size0'">'
+rb='<span color="'$warn'" weight="bold" font="'$font0' '$size0'">'
+gb='<span color="'$freeze'" weight="bold" font="'$font0' '$size0'">'
+bf='<span color="'$main'" weight="bold" font="'$font1' '$size1'">'
+brf='<span color="'$warn'" weight="bold" font="'$font1' '$size1'">'
+nf='<span weight="bold" font="'$font0' '$size0'">'
+end='</span>'
+png_stock=$HOME/.winestarter/png/defaults
+win_icon=$png_stock/'wine48r.png'
+zen_bin=$(find /usr/{bin,local/bin} -name zenity)
+
+wine_grp=$(ps -A -f | grep wineserver | grep -v "pts"| awk '{print $3}')
+wineserver_pid=$(ps --ppid=$wine_grp -o pid,cmd | grep "wineserver"| awk '{print $1}')
+pid_short_name=$(printf "$game_exe_only"| sed -En "s/^(.{3}).*/\1/g;p")
+grp_id_key=$(ps -A -f | grep wineserver | grep -v "pts"| awk '{print $2}'| sed -En "s/^(.{1}).*$/\1/p")
+unset zen_list
+ifs=$IFS
+IFS=$(echo -en "\n\b")
+yad_pid=$(ps -o pid,cmd | grep -c "yad")
+if [ $(ps -o cmd | grep -c "yad") -gt 1 ]; then kill -15 $(pidof -s yad) ; fi
+		_pid_list=( $(ps --ppid=$wine_grp -o pid,cmd | sed -En "s/^[ ]?($grp_id_key[0-9]{3,4}) ((\w*\.exe .*)|(C:.*)|(.*wineserver.*))$/\1 \2/p") )
+		echo "${_pid_list[*]}"
+		for pid_line in "${_pid_list[@]}"; do
+			zen_list+=("false")
+			zen_list+=( $(echo "$pid_line"| sed -En "s/^[ ]?([0-9]{4,5}) (.*)$/\1/g;p") )
+			zen_list+=( $(echo "$pid_line"| sed -En "s/^[ ]?([0-9]{4,5}) (.*)$/\2/g;p") )
+			((n++))
+		done
+		text="$bf\\Winestarter Rescue Application Killer$end\\n
+$vb\\Application is crashed or unrespondsive.\n
+Select below the command to be killed (single or multple) and clean all Wine process.$end\n
+$nf\\Note:$end$vn Start by application pid if existing, if it do not work then restart the killer
+and use safe mode by selecting all Wine processes and kill them all at once.$end"
+		_pid_to_kill=$($zen_bin --width=600 --height=400 --title="winestarter rescue" --text "$text" \
+			--window-icon=$win_icon --list --checklist --multiple --column "select" --column "pid" 
+			--column "command" --separator="," "${zen_list[@]}" )
+		pid_to_kill=( $(echo "$_pid_to_kill"|sed -n "s/,/\n/g;p") )
+		if [ $? -eq 0 ]; then
+			if [[ $_pid_to_kill ]]; then
+				for kills in "${pid_to_kill[@]}"; do
+					kill -9 $kills
+				done
+			fi
+		fi
+exit 0
