@@ -23,7 +23,7 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
-*( 01/01/18 ) v1.02.1*
+*( 03/03/18 ) v1.02.1*
  - wt/wtk: Fixed regex pid detection that didn't manage apps gone to Zombie (lucky to got one :)). Changed text display as appropriate.
  - wtc: Fixed IFS and file syntax mistake in desktop file creation part.
  - wt: Fix. Window app in WoW64 are install whereever they want and became hard to find them when looking the exe file to link. this is hopefuly fixed.
