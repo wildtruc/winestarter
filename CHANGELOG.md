@@ -23,7 +23,13 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
-*( 19/02/18 ) v1.02*
+*( 01/01/18 ) v1.02.1*
+ - wt/wtk: Fixed regex pid detection that didn't manage apps gone to Zombie (lucky to got one :)). Changed text display as appropriate.
+ - wtc: Fixed IFS and file syntax mistake in desktop file creation part.
+ - wt: Fix. Window app in WoW64 are install whereever they want and became hard to find them when looking the exe file to link. this is hopefuly fixed.
+ - wt: desktop file detection and conversion wasn't fully update to new fixes and rewrites. This is fixed with better automation. It will normally take all type of install and only add not existing desktop files or to convert (original desktop file is still backup in user winestarter directory). If icon file is not found, default winestarter white png will be set in replacement.
+ 
+*( 22/02/18 ) v1.02*
  - wtc: Added Wipe memory cache options allow/disallow to Wine prefix config options sets.
  - note: it is mandatory to update your config files first to include this new option. 
  - wtc: Added more options to restart features section. This is now more a quick setup features allowing to fast restart some actions. I could add more, will figure out.

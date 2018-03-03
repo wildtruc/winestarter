@@ -41,13 +41,16 @@ zen_bin=$(find /usr/{bin,local/bin} -name zenity)
 wine_grp=$(ps -A -f | grep wineserver | grep -v "pts"| awk '{print $3}')
 wineserver_pid=$(ps --ppid=$wine_grp -o pid,cmd | grep "wineserver"| awk '{print $1}')
 pid_short_name=$(printf "$game_exe_only"| sed -En "s/^(.{3}).*/\1/g;p")
-grp_id_key=$(ps -A -f | grep wineserver | grep -v "pts"| awk '{print $2}'| sed -En "s/^(.{1}).*$/\1/p")
+#grp_id_key=$(ps -A -f | grep wineserver | grep -v "pts"| awk '{print $2}'| sed -En "s/^(.{1}).*$/\1/p")
 unset zen_list
 ifs=$IFS
 IFS=$(echo -en "\n\b")
 yad_pid=$(ps -o pid,cmd | grep -c "yad")
 if [ $(ps -o cmd | grep -c "yad") -gt 1 ]; then kill -15 $(pidof -s yad) ; fi
-		_pid_list=( $(ps --ppid=$wine_grp -o pid,cmd | sed -En "s/^[ ]?($grp_id_key[0-9]{3,4}) ((\w*\.exe .*)|(C:.*)|(.*wineserver.*))$/\1 \2/p") )
+#		_pid_list=( $(ps --ppid=$wine_grp -o pid,cmd | sed -En "s/^[ ]?($grp_id_key[0-9]{3,4}) ((\w*\.exe .*)|(C:.*)|(.*wineserver.*))$/\1 \2/p") )
+		_pid_list=( $(ps --ppid=$wine_grp -o pid,cmd | \
+		sed -En "s/^[ ]?([0-9]{4,5}) ((.*\.exe[]]? .*)|(C:.*)|(.*wineserver.*))$/\1 \2/p") )
+#		sed -En "s/^[ ]?($[0-9]{4,5}) ((.*\.exe[]]? .*)|(C:.*)|(.*wineserver.*))$/\1 \2/p") )
 		echo "${_pid_list[*]}"
 		for pid_line in "${_pid_list[@]}"; do
 			zen_list+=("false")
@@ -59,10 +62,10 @@ if [ $(ps -o cmd | grep -c "yad") -gt 1 ]; then kill -15 $(pidof -s yad) ; fi
 $vb\\Application is crashed or unrespondsive.\n
 Select below the command to be killed (single or multple) and clean all Wine process.$end\n
 $nf\\Note:$end$vn Start by application pid if existing, if it do not work then restart the killer
-and use safe mode by selecting all Wine processes and kill them all at once.$end"
+and use safe mode by selecting Wine processes and kill them all at once.$end"
 
 		text="$bf\\$text$end"
-		_pid_to_kill=$($zen_bin --width=600 --height=400 --title="winestarter rescue" --text "$text" \
+		_pid_to_kill=$($zen_bin --width=600 --height=420 --title="winestarter rescue" --text "$text" \
 			--window-icon=$win_icon --list --checklist --multiple --column "select" --column "pid" \
 			--column "command" --separator="," "${zen_list[@]}" )
 		pid_to_kill=( $(echo "$_pid_to_kill"|sed -n "s/,/\n/g;p") )
