@@ -28,6 +28,7 @@ wtc => winestarter_conf, wt => winestarter
  - wtc: Fixed IFS and file syntax mistake in desktop file creation part.
  - wt: Fix. Window app in WoW64 are install whereever they want and became hard to find them when looking the exe file to link. this is hopefuly fixed.
  - wt: desktop file detection and conversion wasn't fully update to new fixes and rewrites. This is fixed with better automation. It will normally take all type of install and only add not existing desktop files or to convert (original desktop file is still backup in user winestarter directory). If icon file is not found, default winestarter white png will be set in replacement.
+ - updater notif: fix bad regex preventing winetricks 'update only' to be displayed and sets wine env settings if system have no default wine installed that cause tricks listq to be erase.
  
 *( 22/02/18 ) v1.02*
  - wtc: Added Wipe memory cache options allow/disallow to Wine prefix config options sets.

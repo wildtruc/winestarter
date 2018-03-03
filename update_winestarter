@@ -17,18 +17,52 @@ cd $wine_data
 git fetch --dry-run &>$temp_data
 ## if the word master appears in log, then process, otherwise exit.
 if [ $(cat $temp_data| grep -c "master") -eq 1 ]; then
-	## control if update is winetricks
-#	tricks_check=$(git log --oneline| sed -En '1s/^.* winetricks ([0-9]{8}).*$/\1/p')
-	tricks_check=$(git log --oneline| sed -En '1s/^.*([0-9]{8}).*$/\1/p')
+	## control if update is winetricks.
 	wget -q -O $temp_http $wine_git
-#	tricks_version=$(sed -En "s/^.*<a href=.*commit.*winetricks git ([0-9]*).*$/\1/p" $temp_http)
 	tricks_version=$(cat $temp_http| sed -En "s/^.*<a href=.*commit.* git ([0-9]*).*$/\1/p"| uniq)
-	if [[ -n $tricks_check && $tricks_version -ne $tricks_check ]]; then
-		more_msg="\n\\(Winetricks update $tricks_version)"
-		if [ -x $w_bin ]; then
-			$w_tricks settings list|sed -n "/^---/,/---$/d;p"| egrep -v "^Using.*$"|awk '{print $1}' \
-			>$w_tricks_reserve
-			$w_tricks dlls list| grep "downloadable" >$w_tricks_dlls
+	## web page date format 2018-03-02T00:50:09Z
+	tricks_page_date=$(cat $temp_http| sed -En "s|^.*winetricks git.* \((.*)\).*$|\1|p"| uniq)
+	## if first track fail, try a more ugly.
+	if ! [[ $tricks_date ]]; then
+		tricks_page_date=$(cat $temp_http| sed -n "/<td class=\"message\"/,/<\/time-ago>/p"| \
+		sed -En "/winetricks(.*)/,/<\/time-ago>/p"| sed -En "s/^.*<time-ago.*=\"(.*)\">.*<\/time-ago>.*/\1/p")
+	fi
+	## check actual git log repo date.
+	tricks_git_date=$(git log -n1 --grep=winetricks| sed -En "s|^.*\((.*)\)$|\1|p")
+	page_date=$(printf "$tricks_page_date"| cut -d'T' -f1| sed -n "s/-//g;p")
+	git_date=$(printf "$tricks_git_date"| sed -n "s/-//g;p")
+	if [[ $git_date ]]; then
+		if [ $page_date -gt $git_date ]; then
+			more_msg="\n\\(Winetricks update $tricks_version $tricks_date)"
+			## in wine has no default install, check if winestarter have one or exit winetricks check.
+			if ! [[ -x $w_bin ]]; then
+				if [[ -s $wine_data/default-wine ]]; then
+					_wine_ver=$(cat $wine_data/default-wine| cut -d';' -f1)
+					_wine_dir=$(cat $wine_data/default-wine| cut -d';' -f2)
+					if [[ $(uname -p) =~ .*64 ]]; then _elf='amd64'; libs='lib64'; else _elf='x86'; fi
+					wine_elf_path=$_wine_dir/$_elf/$_wine_ver
+					export WINEVERPATH=$wine_elf_path
+					export PATH=$wine_elf_path/bin:$PATH
+					export WINESERVER=$wine_elf_path/bin/wineserver
+					export WINELOADER=$wine_elf_path/bin/wine
+					if [[ $_elf =~ .*64 ]]; then
+						export WINEDLLPATH=$wine_elf_path/$libs/wine/fakedlls
+						export LD_LIBRARY_PATH=$wine_elf_path/lib:$wine_elf_path/$libs:$LD_LIBRARY_PATH
+					else
+						export WINEDLLPATH=$wine_elf_path/lib/wine
+						export LD_LIBRARY_PATH="$wine_elf_path/lib:$LD_LIBRARY_PATH"
+					fi
+					wine_bin_path=$wine_elf_path/bin/
+					w_bin=$WINELOADER
+				fi
+			fi
+			if [[ -x $w_bin ]]; then
+				$w_tricks settings list|sed -n "/^---/,/---$/d;p"| egrep -v "^Using.*$"|awk '{print $1}' \
+				>$w_tricks_reserve
+				$w_tricks dlls list| grep "downloadable" >$w_tricks_dlls
+			else
+				exit 0
+			fi
 		fi
 	fi
 	## send a notification to user desktop.
