@@ -667,7 +667,7 @@ fn_game_dir_exist(){
 		## FIXME ?? manage the double link by mistake?
 		if [[ -L $_link_target_dir ]]; then
 			if_install=0
-			if ! [[ -x $_link_target_path/$game_dir/$game_exe ]]; then
+			if ! [[ -x $_link_target_path$game_dir/$game_exe ]]; then
 				fn_extract_lnk_file
 			else
 				## control target path and desktop file. If none, create, else, pass.
