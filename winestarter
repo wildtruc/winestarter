@@ -657,26 +657,44 @@ fn_game_dir_exist(){
 	## search if there any app path in "Program Files" or root. If none, link the predifine app dir if any.
 	if [[ $game_path != '' ]]; then
 		link=$(printf "$game_path"| sed -n "s/^.*\///g;p")
-		_link_target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"$link
-		_link_target_path=$user_prefix/$bottle_prefix/drive_c/"$root_key"
-		if ! [[ -d $_link_target_dir ]]; then
+#		_link_target_dir="$user_prefix/$bottle_prefix/drive_c/"$root_key"$link"
+#		_link_target_path=$user_prefix/$bottle_prefix/drive_c/"$root_key"
+		_link_target_dir="$user_prefix/$bottle_prefix/drive_c/$root_key$link"
+		_link_target_path="$user_prefix/$bottle_prefix/drive_c/$root_key"
+		if ! [[ -d "$_link_target_dir" ]]; then
+#		if ! [[ -d "p_mon cul" ]]; then
 			ln -sf $game_path $_link_target_path
 		fi
 		## if target app exe path is not find or doesn't exist at this point, search and define.
 		## and create a desktop file if needed.
 		## FIXME ?? manage the double link by mistake?
-		if [[ -L $_link_target_dir ]]; then
+		if [[ -h "$_link_target_dir" ]]; then
 			if_install=0
-			if ! [[ -x $_link_target_path$game_dir/$game_exe ]]; then
+			if [[ "$bin_dir_target" ]]; then
+				_link_target_exe=$bin_dir_target
+			else
+				_link_target_exe="$_link_target_path$game_dir/$game_exe"
+			fi
+			if ! [[ -s "$_link_target_exe" ]]; then
 				fn_extract_lnk_file
 			else
 				## control target path and desktop file. If none, create, else, pass.
-				_target_exe=$game_exe
-				_target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"/$game_dir
+				_target_exe=$(printf "$game_exe"| sed -n "s/^.*\///g;p")
+				_target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir
 				_target_path=$(printf "$_target_dir"| sed -En "s|^(.*)/(drive_c)/(.*)$|\1/dosdevices/c:/\3|p")
-				_unix_path=$_target_dir/$_target_exe
+				_unix_path=$_target_dir/$game_exe
 				fn_convert_desktop_file
 			fi
+#			if [[ -x "$_link_target_exe" ]]; then
+#				## control target path and desktop file. If none, create, else, pass.
+#				_target_exe=$game_exe
+#				_target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"/$game_dir
+#				_target_path=$(printf "$_target_dir"| sed -En "s|^(.*)/(drive_c)/(.*)$|\1/dosdevices/c:/\3|p")
+#				_unix_path=$_target_dir/$_target_exe
+#				fn_convert_desktop_file
+#			else
+#				fn_extract_lnk_file
+#			fi
 		fi
 	fi
 }
@@ -707,7 +725,15 @@ fn_root_key(){
 				fi
 			fi
 		else
-			bin_dir_target=$(find -L $user_prefix/$bottle_prefix/drive_c/ -wholename "*$game_exe")
+			## build an exe list with windowws system exclusion list.
+			exclude_dir='users'
+			exclude_list='[Ww]indows|Explorer'
+			## if app data come from fn_game_dir_exist, change app exe seek as appropriate.
+			## to restrict search, look in where exe could be, not where it could'nt.
+			bin_dir_target=$(find -L $user_prefix/$bottle_prefix/drive_c/ \
+			-not \( -path $user_prefix/$bottle_prefix/drive_c/$exclude_dir -prune \) -wholename "*$game_exe" | \
+			egrep -v "$exclude_list")
+#			bin_dir_target=$(find -L $user_prefix/$bottle_prefix/drive_c -wholename "*$game_exe")
 			root_key=''; sed_key=''
 		fi
 	else
@@ -725,7 +751,7 @@ fn_convert_desktop_file(){
 		l_icon_dir=$HOME/.local/share/icons/hicolor	
 		## check if _desk var is set, no matter it is, it mean that a desktop file was search & found,
 		## and tell also that a png file exist in default local icons path.
-		if ! [[ -d $XDG_DESKTOP_DIR/$_desk ]]; then
+		if ! [[ -d "$XDG_DESKTOP_DIR/$_desk" ]]; then
 			## list all app available icons and convert 256px one to usable format.
 			_path_icons_list=( $(find $l_icon_dir -iname "$d_icon*") )
 			for _png in ${_path_icons_list[@]}; do
@@ -798,9 +824,9 @@ Icon=$d_icon\nCategories=Applications;"
 	if [[ -x $convert_bin ]]; then
 #		if [ -x $_unix_path ]; then
 #		test -x $_unix_path
-		if [[ -x $_unix_path ]] ; then
+		if [[ -s $_unix_path ]] ; then
 			_desktop_file_list=( $(ls -1 $XDG_DESKTOP_DIR| egrep "(\s*.desktop$)") )
-			_dsk_key=$(printf "$_target_exe"| sed -En "s|^(\w*.{5,15})(.*).exe|\1|;s|[ ]?$||p")
+			_dsk_key=$(printf "$_target_exe"| sed -En "s|^(\w*.{3,15})(.*).exe|\1|;s|[ ]?$||p")
 			_config=$(printf "$config_file"| sed -n "s/^.*\///g;p")
 			## check if _dsk_key match something in desktop files path
 			## if yes, check if path var is a wine cmdline or a winestarter one.
@@ -829,10 +855,10 @@ Icon=$d_icon\nCategories=Applications;"
 				done
 			else
 			## if no match create a desktop file from scratch, with a set appropriate vars.
-				d_name=$(printf "$game_exe"| sed -En "s/^(.*).(exe|EXE)/\1/p")
-				d_exec=$game_exe
+				d_name=$(printf "$_target_exe"| sed -En "s/^(.*).(exe|EXE)/\1/p")
+				d_exec=$_target_exe
 				d_path="$_target_path"
-				d_icon=$scpt_dir/png/$game_exe.png
+				d_icon=$_target_exe.png
 				dsk_name=$d_name.desktop
 				echo "×××××× create desktop from raw"
 				_sub_convert_desk
@@ -943,7 +969,7 @@ fn_wine_dbg(){
 				((_updating++))
 			fi
 		done
-		## if value are updated or sipmly sets, start regedit.
+		## if value are updated or simply sets, start regedit.
 		if [ $_updating -gt 0 ]; then
 			$wine_bin regedit $user_prefix/$bottle_prefix/dbg_reg.reg
 			notify-send -t 2800 "Reloading WineDbg with new settings"

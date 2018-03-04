@@ -27,6 +27,7 @@ wtc => winestarter_conf, wt => winestarter
  - wt: Urgent fix, syntax error in wrestool orthograph preventing wrestool to convert desktop icons (don't say it, I know ...).
  - wtc: fix. fn_xrandr_config wasn't properly rewrite and cause inversion of setted definitions.
  - wtc: fix, bad IFS restore and exit status.
+ - wt: fix bad link and dir recognition when app is install on a external drive with a long dir name.
  - Note: Please v1.02.1 changelog for earlier fixes :S. I hope there wont be more stupid mistakes.
    
 *( 03/03/18 ) v1.02.1*
