@@ -1118,8 +1118,6 @@ because Wineserver doesn't always receive the app term signal.$end"
 	## if app crash, wineserver is usally still running. Detect winserver pid to check that anything goes 
 	## wrong. If it is the case, display a pid list to kill proberly the buggy app.
 	app_name=$(printf "$game_exe_only"| sed -n "s/\.exe//g;p")
-	ifs=$IFS
-	IFS=$(echo -en "\n\b")
 	until [[ $(pidof -s winedgb) ]]; do
 		## count 10 second then exit to next step.
 		_dbg_pid=$(ps --ppid=$wine_grp -o cmd| grep -c "winedbg")
@@ -1151,6 +1149,8 @@ because Wineserver doesn't always receive the app term signal.$end"
 		$default_desktop --replace &
 	fi
 	if [ $auto_set -gt 0 ]; then ${bck_xrandr}; fi
+	## restore linux regex
+	IFS=$ifs
 	exit 0
 }
 fn_replace_env(){
@@ -1287,6 +1287,7 @@ fi
 #sleep 10
 ## if script is launched from winestarter configurator, get Yad pid and kill it
 if [[ $(pidof yad) ]]; then killall -15 yad ; fi
+if [[ $bck_xrandr ]]; then export bck_xrandr=$bck_xrandr; fi
 ## Script wont send started app îd to system before bash code exit.
 ## To prevent this launch pid manager and tester out of the box. 
 fn_wine_kill &

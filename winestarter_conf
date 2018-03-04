@@ -1120,9 +1120,11 @@ _nvidia_2=$_nvidia_2"
 			_var=$(printf "$_list"|cut -d'=' -f1)
 			_val=$(printf "$_list"|cut -d'=' -f2)
 			if [ $_val != unset ]; then
+#					'bck_mode') set_xrandr="xrandr --output $monitor --mode $_val --rate 60"; auto_set=1 ;;
+#					'set_mode') bck_xrandr="xrandr --output $monitor --mode $_val --rate 60";;
 				case $_var in
-					'bck_mode') set_xrandr="xrandr --output $monitor --mode $_val --rate 60"; auto_set=1 ;;
-					'set_mode') bck_xrandr="xrandr --output $monitor --mode $_val --rate 60";;
+					'bck_mode') bck_xrandr="xrandr --output $monitor --mode $_val --rate 60"; auto_set=1 ;;
+					'set_mode') set_xrandr="xrandr --output $monitor --mode $_val --rate 60";;
 					'default_desktop'|'secondary_desktop')
 						if [[ $_val == mate ]]; then local $_var='marco'; fi
 						if [[ $_val == compiz ]]; then local $_var='compiz ccp'; fi
@@ -1142,8 +1144,9 @@ _nvidia_2=$_nvidia_2"
 				esac
 				((M++))
 			else
-				case $_var in
-					'bck_mode') local $_var=''; auto_set=0 ;;
+#					'bck_mode') local $_var=''; auto_set=0 ;;
+				case $_var in				
+					'set_mode') local $_var=''; auto_set=0 ;;
 					'default_desktop'|'secondary_desktop') local $_var=''; set_desktop_env=0 ;;
 					mouse_dev) local $_var='' ; mouse_set=0 ;;
 					*) local $_var='';;
@@ -2795,7 +2798,6 @@ $set_mode,$reso_list;set_mode;;$field_msg1;CB;;$monitor"
 					'auto_set'|'set_desktop_env'|'mouse_set') local $_vars=0 ;;
 					*) local $_vars='unset' ;;
 				esac
-				echo 'beeep'
 			fi
 		done
 
@@ -2810,7 +2812,7 @@ $set_mode,$reso_list;set_mode;;$field_msg1;CB;;$monitor"
 		w_xrandr_tip="$vb\\In some cases, older game could occur issues when set in fullscreen, the options below allow to set the resolution before the start and then back to default when stop. (also useful for Optimus display behaviour).$end"
 #		w_text="$bf Configure XRandr Wine app resolution$end"
 		w_xrandr_tip0="$vb\\Desktop main monitor resolution is currently set to$end $nf$current_res$end"
-		w_xrandr_def_dsp="$vb\\Select the output to switch to and resolution to switch back$end"
+		w_xrandr_def_dsp="$vb\\Select the output to switch to $vn(second line)$end and resolution to switch back $vn(first line)$end$end"
 		w_xrandr_tip1="$nf Note:$end Configure connected display only. Primary doesn't necessary mean current connected monitor."
 	
 		w_xrandr_res_to="Choose app resolution"
@@ -3712,18 +3714,20 @@ Editor is for quick config edits. Don't remove '##' comments they're essential f
 		2) 
 			## load config file first
 			. $config_file
-			_case_list=( '_wine,Wine Basics' '_tricks,Winetricks' '_install,Install' '_wbin,Wine binary' '_xrandr,Display options' )
+			_case_list=( '_wine,Wine Basics' '_tricks,Winetricks' '_install,Install package' '_wbin,Wine binary pack' '_xrandr,Display options' )
 			for section_def in "${_case_list[@]}"; do
 				section=$(printf "$section_def"| cut -d',' -f1)
 				section_title=$(printf "$section_def"| cut -d',' -f2)
 				eval _section='$'$section
+				## work-around to get 0 value if not in conf.
+				if [[ $_section == '' ]]; then _section=0; fi
 				if [ $_section -gt 0 ]; then
 					case $section in
 						'_wine') _vars_list=( 'w_config, Winecfg,3,\t\t' );;
 						'_tricks') _vars_list=( 'w_install_tricks,Winetricks,4,\t\t' );;
-						'_install') _vars_list=( 'w_install_exe,Install package,5,\t' );;
+						'_install') _vars_list=( 'w_install_exe,Install package,5,\t\t' );;
 						'_wbin') _vars_list=( 'use_winepath,Wine binary pack,6,\t' );;
-						'_xrandr') _vars_list=( 'set_desktop_env,End user desktop,7,\t' 'mouse_set,Mouse devise,8,\t' 'auto_set,Display variable,9,\t' );;
+						'_xrandr') _vars_list=( 'set_desktop_env,End user desktop,7,\t' 'mouse_set,Mouse devise,8,\t\t' 'auto_set,Display variable,9,\t\t' );;
 					esac
 					for _list in "${_vars_list[@]}"; do
 						_var_call=$(printf "$_list"| cut -d',' -f1)
@@ -3756,14 +3760,15 @@ Editor is for quick config edits. Don't remove '##' comments they're essential f
 								sed -Eni "s/^($_var_call)=([0-9])$/\1=1/g;p" $config_file
 								_msg_resume+=( "$nf$_msg_call section:$end$_var_tab\RESET\n" )
 							else
-								_msg_resume+=( "$nf$_msg_call section$end:$_var_tab\NOT SET IN CONF\n" )
+								_msg_resume+=( "$nf$_msg_call section:$end$_var_tab\NOT SET IN CONF\n" )
 							fi
 						else
 							_msg_resume+=( "$nf$_msg_call section:$end$_var_tab\NOT RESET\n" )
 						fi
 					done
 				else
-					_msg_resume+=( "$nf$section_title section :$end\t\t\NOTHING TO DO (MIISING OR NOT SET)\n" )
+					_var_tab='\t\t'
+					_msg_resume+=( "$nf$section_title section:$end$_var_tab\NOTHING TO DO (MISSING OR NOT SET)\n" )
 				fi
 			done
 			## display a resume window of available reloadable vars before lauching process
@@ -3771,7 +3776,7 @@ Editor is for quick config edits. Don't remove '##' comments they're essential f
 $vb\\The below config setups will be reset at next Winestarter start:$end
 $vb(if they exist and are set in $_edit_bottle conf file)$end\\n
 ${_msg_resume[@]}"
-			$zen_bin --width=400 --title="$w_title" --info --no-wrap \
+			$zen_bin --width=500 --title="$w_title" --info --no-wrap \
 				--window-icon=$img_wine_desk_ui --text="$text"
 			exit 0 ;;
 		3) _managed=$(printf "${edit_win[@]}"| cut -d';' -f3)
