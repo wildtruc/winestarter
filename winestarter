@@ -667,7 +667,7 @@ fn_game_dir_exist(){
 		## FIXME ?? manage the double link by mistake?
 		if [[ -L $_link_target_dir ]]; then
 			if_install=0
-			if ! [[ -x $_link_target_path$game_dir/$game_exe ]]; then
+			if ! [[ -x $_link_target_path/$game_dir/$game_exe ]]; then
 				fn_extract_lnk_file
 			else
 				## control target path and desktop file. If none, create, else, pass.
@@ -1287,7 +1287,7 @@ fi
 #sleep 10
 ## if script is launched from winestarter configurator, get Yad pid and kill it
 if [[ $(pidof yad) ]]; then killall -15 yad ; fi
-if [[ $bck_xrandr ]]; then export bck_xrandr=$bck_xrandr; fi
+#if [[ $bck_xrandr ]]; then export bck_xrandr=$bck_xrandr; fi
 ## Script wont send started app îd to system before bash code exit.
 ## To prevent this launch pid manager and tester out of the box. 
 fn_wine_kill &
