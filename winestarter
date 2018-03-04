@@ -672,7 +672,7 @@ fn_game_dir_exist(){
 			else
 				## control target path and desktop file. If none, create, else, pass.
 				_target_exe=$game_exe
-				_target_dir=$user_prefix/$bottle_prefix//drive_c/"$root_key"/$game_dir
+				_target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"/$game_dir
 				_target_path=$(printf "$_target_dir"| sed -En "s|^(.*)/(drive_c)/(.*)$|\1/dosdevices/c:/\3|p")
 				_unix_path=$_target_dir/$_target_exe
 				fn_convert_desktop_file
