@@ -23,6 +23,10 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 04/03/18 ) v1.02.2*
+ - wt: Urgent fix, syntax error in wrestool orthograph preventing wrestool to convert desktop icons (don't say it, I know ...).
+ - Note: Please v1.02.1 changelog for all yesterday fixes :S. I hope there wont be more stupid mistakes.
+   
 *( 03/03/18 ) v1.02.1*
  - wt/wtk: Fixed regex pid detection that didn't manage apps gone to Zombie (lucky to got one :)). Changed text display as appropriate.
  - wtc: Fixed IFS and file syntax mistake in desktop file creation part.

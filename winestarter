@@ -28,7 +28,8 @@ scpt_dir=$HOME/.winestarter
 w_tricks=$(find /usr/{bin,local/bin} -name winetricks)
 zen_bin=$(find /usr/{bin,local/bin} -name zenity)
 convert_bin=$(find /usr/{bin,local/bin} -name convert)
-wrestool_bin=$(find /usr/{bin,local/bin} -name wrestool)
+wres_bin=$(find /usr/{bin,local/bin} -name wrestool)
+icot_bin=$(find /usr/{bin,local/bin} -name icotool)
 strings_bin=$(find /usr/{bin,local/bin} -name strings)
 rpm_bin=$(find /usr/{bin,local/bin} -name rpm2cpio)
 cab_bin=$(find /usr/{bin,local/bin} -name cabextract)
@@ -656,17 +657,17 @@ fn_game_dir_exist(){
 	## search if there any app path in "Program Files" or root. If none, link the predifine app dir if any.
 	if [[ $game_path != '' ]]; then
 		link=$(printf "$game_path"| sed -n "s/^.*\///g;p")
-		target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"$link/
-		target_app=$user_prefix/$bottle_prefix/drive_c/"$root_key"
-		if ! [[ -d $target_dir ]]; then
-			ln -sf $game_path $target_app
+		_link_target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"$link
+		_link_target_path=$user_prefix/$bottle_prefix/drive_c/"$root_key"
+		if ! [[ -d $_link_target_dir ]]; then
+			ln -sf $game_path $_link_target_path
 		fi
 		## if target app exe path is not find or doesn't exist at this point, search and define.
 		## and create a desktop file if needed.
 		## FIXME ?? manage the double link by mistake?
-		if [[ -h $target_dir ]]; then
+		if [[ -L $_link_target_dir ]]; then
 			if_install=0
-			if ! [[ -x $target_app$game_dir/$game_exe ]]; then
+			if ! [[ -x $_link_target_path$game_dir/$game_exe ]]; then
 				fn_extract_lnk_file
 			else
 				## control target path and desktop file. If none, create, else, pass.
@@ -868,7 +869,7 @@ fn_extract_lnk_file(){
 			exclude_list='[Ww]indows|Explorer'
 			## if app data come from fn_game_dir_exist, change app exe seek as appropriate.
 			if [ $if_install -gt 0 ]; then
-				app_exe_list=$(find -L $target_app$game_dir -iname "*.exe")
+				app_exe_list=$(find -L $_link_target_path$game_dir -iname "*.exe")
 			else
 				## to restrict search, look in where exe could be, not where it could'nt.
 				app_exe_list=$(find -L $user_prefix/$bottle_prefix/drive_c/ \
