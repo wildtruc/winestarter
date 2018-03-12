@@ -1,7 +1,7 @@
 #! /bin/bash
 
 ## let some time to desktop interface to start up. 
-#sleep 30
+sleep 30
 ## define winestarter git source
 wine_data=$HOME/.winestarter
 wt_src=$(find -P $HOME -maxdepth 3 -mount -wholename "*/winestart")
