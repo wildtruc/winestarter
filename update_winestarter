@@ -27,8 +27,10 @@ if [ $(cat $temp_data| grep -c "master") -eq 1 ]; then
 	site_ver=$(cat $temp_http| sed -n "/<td class=\"message\"/,/<\/time-ago>/p"| egrep -o "$git_ver_main.$(($git_ver_up+1))"| uniq)
 	remote_ver_up=$(printf "$site_ver"|sed -n "s/^.*\.//g;p")
 	## print message if site version is greater only. 
-	if [ $remote_ver_up -gt $git_ver_up ]; then
-		main_msg="$git_ver_main.$(($git_ver_up+1))\n"
+	if [[ $remote_ver_up ]]; then
+		if [ $remote_ver_up -gt $git_ver_up ]; then
+			main_msg="$git_ver_main.$(($git_ver_up+1))\n"
+		fi
 	fi
 	## eval local winetricks version and date
 	tricks_git=$(git log --date=iso -n1 --grep=winetricks)
