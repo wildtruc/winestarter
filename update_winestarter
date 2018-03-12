@@ -1,10 +1,11 @@
 #! /bin/bash
 
 ## let some time to desktop interface to start up. 
-sleep 30
+#sleep 30
 ## define winestarter git source
 wine_data=$HOME/.winestarter
-wine_src=$wine_data/.git
+wt_src=$(find -P $HOME -maxdepth 3 -mount -wholename "*/winestart")
+#wt_src=$HOME/Devel/WINE/winestart
 wine_git='https://github.com/wildtruc/winestart'
 w_tricks=$(find /usr/{bin,local/bin} -name winetricks)
 w_bin=$(find /usr/{bin,local/bin} -name wine)
@@ -13,27 +14,43 @@ w_tricks_dlls=$wine_data/resources/tricks_dlls.txt
 ## make a temp file for git fetch output and execute
 temp_data=$(mktemp --tmpdir git.XXXXXXXX)
 temp_http=$(mktemp --tmpdir http.XXXXXXXX)
-cd $wine_data
+cd $wt_src
 git fetch --dry-run &>$temp_data
 ## if the word master appears in log, then process, otherwise exit.
 if [ $(cat $temp_data| grep -c "master") -eq 1 ]; then
 	## control if update is winetricks.
 	wget -q -O $temp_http $wine_git
+	## eval local repo winestarter version and date
+	git_ver=$(git log --date=iso -n1 --grep=\ v[0-9].*$)
+	git_ver_main=$(printf "$git_ver"| sed -En "s|^.*[\ ](v[0-9].*).([0-9]{1,2}).*$|\1|p")
+	git_ver_up=$(echo "$git_ver"| sed -En "s|^.*[\ ](v[0-9].*).([0-9]{1,2}).*$|\2|p")
+	site_ver=$(cat $temp_http| sed -n "/<td class=\"message\"/,/<\/time-ago>/p"| egrep -o "$git_ver_main.$(($git_ver_up+1))"| uniq)
+	remote_ver_up=$(printf "$site_ver"|sed -n "s/^.*\.//g;p")
+	## print message if site version is greater only. 
+	if [ $remote_ver_up -gt $git_ver_up ]; then
+		main_msg="$git_ver_main.$(($git_ver_up+1))\n"
+	fi
+	## eval local winetricks version and date
+	tricks_git=$(git log --date=iso -n1 --grep=winetricks)
+	tricks_git_ver=$(echo "$tricks_git"| sed -En "s|^.*[\(]?([0-9]{8})[\)]?.*$|\1|p")
+	tricks_git_date=$(echo "$tricks_git"| sed -En "s|^Date:.*([0-9]{4}-[0-9]{2}-[0-9]{2}).*$|\1|p")
+	 # extract site date
 	tricks_version=$(cat $temp_http| sed -En "s/^.*<a href=.*commit.* git ([0-9]*).*$/\1/p"| uniq)
-	## web page date format 2018-03-02T00:50:09Z
+	 # web page date format 2018-03-02T00:50:09Z
 	tricks_page_date=$(cat $temp_http| sed -En "s|^.*winetricks git.* \((.*)\).*$|\1|p"| uniq)
-	## if first track fail, try a more ugly.
-	if ! [[ $tricks_date ]]; then
+	 # if first track fail, try a more ugly.
+	if ! [[ $tricks_page_date ]]; then
 		tricks_page_date=$(cat $temp_http| sed -n "/<td class=\"message\"/,/<\/time-ago>/p"| \
 		sed -En "/winetricks(.*)/,/<\/time-ago>/p"| sed -En "s/^.*<time-ago.*=\"(.*)\">.*<\/time-ago>.*/\1/p")
 	fi
-	## check actual git log repo date.
-	tricks_git_date=$(git log -n1 --grep=winetricks| sed -En "s|^.*\((.*)\)$|\1|p")
+	## rewrite date to usable format.
 	page_date=$(printf "$tricks_page_date"| cut -d'T' -f1| sed -n "s/-//g;p")
+	msg_date=$(printf "$tricks_page_date"| cut -d'T' -f1)
 	git_date=$(printf "$tricks_git_date"| sed -n "s/-//g;p")
+	## show update message only if date exist and is newer.
 	if [[ $git_date ]]; then
 		if [ $page_date -gt $git_date ]; then
-			more_msg="\n\\(Winetricks update $tricks_version $tricks_date)"
+			more_msg="\n\\Winetricks update $tricks_version ($msg_date)"
 			## in wine has no default install, check if winestarter have one or exit winetricks check.
 			if ! [[ -x $w_bin ]]; then
 				if [[ -s $wine_data/default-wine ]]; then
@@ -67,8 +84,8 @@ if [ $(cat $temp_data| grep -c "master") -eq 1 ]; then
 	fi
 	## send a notification to user desktop.
 	win_icon=$wine_data/png/defaults/wine48r.png
-	msg="Winestarter GIT repo update.$more_msg"
-	zenity --timeout=10 --notification --window-icon=$win_icon --text="$msg"
+	msg="Winestarter GIT repo update."
+	notify-send -t 5000 -u low -i $win_icon "$msg" "$(echo -e "$main_msg$more_msg")"
 fi
 ## got out of there
 exit 0

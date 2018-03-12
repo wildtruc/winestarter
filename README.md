@@ -7,13 +7,13 @@ A not very simple, but very cool script to start and install wine emulated appli
 
 **NOTICE**: It important for us to get feedback and bug reports from you. Don't leave us in darkness.
 
-**WARNING v1.02**: This update need a `make install` after `make update` or `git pull`, only way for new pngs to take place.
+**WARNING v1.02**: This update need a `git pull` before `make update`, only way for new pngs to take place. This is the default method when new content comes out.
 
 -------
 
 Consider this like a Wine graphical extension more than a new Wine environment like PoL or CodeWeavers's CrossOver. The goal for end user is to simplify Wine usual command line with a graphical user interface with the most explantions as possible, and for advanced user, a Wine execution script with extended config file that could be modified as the way he want.
 
-The project use winetricks for DLLs and everything winetrciks can do, and take standalone Wine independant packages (optional or standalone) from WineHQ or PlayOnLinux repositories.
+The project use winetricks for DLLs and everything winetricks can do, and take standalone Wine independant packages (optional or standalone) from WineHQ or PlayOnLinux repositories.
 
 Config file and configuration UI are completly independent and script can work without the UI, but UI can do a lot of thing to help you during your journey to install your apps under Wine layer.
 

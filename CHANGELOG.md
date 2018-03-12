@@ -23,6 +23,9 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
+*( 12/03/18 ) v1.02.3*
+ - updater: fix messages display. Will now check correctly diff between local git repo and web site page. 
+ 
 *( 04/03/18 ) v1.02.2*
  - wt: Urgent fix, syntax error in wrestool orthograph preventing wrestool to convert desktop icons (don't say it, I know ...).
  - wtc: fix. fn_xrandr_config wasn't properly rewrite and cause inversion of setted definitions.
