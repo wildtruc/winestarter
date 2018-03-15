@@ -642,13 +642,14 @@ _wine=$_wine"
 						wine_path=$user_prefix/$_def_val
 					fi
 				;;
-				_hq_stb0|_hq_stg0|_hq_stg1|_hq_dev0| _pol_pkg )
+				_hq_stb0|_hq_stg0|_hq_stg1|_hq_stg2|_hq_dev0| _pol_pkg )
 					if [[ $_val != 'unset' ]]; then
 						if [[ $_var == _pol_pkg ]]; then wine_ver=$_pol_pkg; wine_pack=0 ;fi
 						if [[ $_var == _hq_dev0 ]]; then wine_ver=$_hq_dev0; wine_pack=1 ;fi
 						if [[ $_var == _hq_stb0 ]]; then wine_ver=$_hq_stb0; wine_pack=1 ;fi
 						if [[ $_var == _hq_stg0 ]]; then wine_ver=$_hq_stg0; wine_pack=1 ;fi
 						if [[ $_var == _hq_stg1 ]]; then wine_ver=$_hq_stg1; wine_pack=2 ;fi
+						if [[ $_var == _hq_stg2 ]]; then wine_ver=$_hq_stg2; wine_pack=3 ;fi
 						wine_ver=$(printf "$wine_ver"| sed -n "s/*$//g;p")
 						w_config=1
 					fi
@@ -680,7 +681,8 @@ wine_path=\"$wine_path\"
 ## custom Wine binary name
 wine_ver='$wine_ver'
 ## Which kind of packages do you want to use: (leave empty if already in bin directory)
-## PlayOnLinux (0), WineHQ stable/staging/development > 2.4 (1), WineHQ old staging < 2.4 (2).
+## PlayOnLinux (0), WineHQ stable/staging/development > 2.4 (1), WineHQ old staging < 2.4 (2),
+## Wine third party staging > 3.3 (3)
 wine_pack=$wine_pack
 ## Do not remove or edit below except if you don't use winestarter configurator.
 _wbin=$_wbin"
@@ -2030,6 +2032,7 @@ $wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;
 '';;;$w_wine_dl_info;LBL;;
 '';;;$w_wine_dl_warn;LBL;;
 unset#$_hq_stb0_list;_hq_stb0;;$vb WineHQ stable from 2.4 $end;CB;;
+unset#$_hq_stg2_list;_hq_stg2;;$vb WineHQ staging from 3.3 $end;CB;;
 unset#$_hq_stg0_list;_hq_stg0;;$vb WineHQ staging from 2.4 $end;CB;;
 unset#$_hq_stg1_list;_hq_stg1;;$vb WineHQ staging to 2.4 $end;CB;;
 unset#$_hq_dev0_list;_hq_dev0;;$vb WineHQ devel from 2.4 $end;CB;;
@@ -2914,7 +2917,7 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 		else
 			ct_msg=0
 		fi
-		file_list=( _pol32 _pol64 _hq_stb0 _hq_stg0 _hq_dev0 _hq_stg1 )
+		file_list=( _pol32 _pol64 _hq_stb0 _hq_stg0 _hq_dev0 _hq_stg1 _hq_stg2 )
 		for hint in ${file_list[@]}; do
 			if [ $ct_msg -gt 0 ]; then
 				_last=( $hint=$(cat $HOME/.winestarter/resources/ftp$hint.\[list\] | sed -n 's/*$//g;1p') )
@@ -3036,6 +3039,11 @@ export wres_bin=$(find /usr/{bin,local/bin} -name wrestool)
 export lpci_bin=$(find /{bin,sbin} /usr/{bin,sbin} -name lspci)
 export rpm_bin=$(find /usr/{bin,local/bin} -name rpm2cpio)
 export cab_bin=$(find /usr/{bin,local/bin} -name cabextract)
+## control yad presence and exit if none.
+if ! [[ $yad_bin ]]; then
+	echo -e "## !!! No Yad binary found.\n## !!! Install it first !"
+	exit 0
+fi
 # PlayOnLinux packages download window
 # select_win_bin(){ colors ; icons_set ; select_wine_bin; }
 edit_reg_bin(){ colors ; icons_set ; edit_regfile; }
@@ -3137,11 +3145,13 @@ control_last(){
 		http_elf=$(printf "${tags[1]}"| cut -d',' -f2)
 		http_class=$(printf "${tags[1]}"| cut -d',' -f3)
 		wget -O $file_temp $dl_address/
-		os_v=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
-		sed -En "s/^.*([0-9]{2}).*$/\1/;1p")
+#		os_v=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
+#		sed -En "s/^.*([0-9]{2}).*$/\1/;1p")
+		os_version=$(tac $file_temp | sed -En "s|^.*href=\"([0-9]{2})\/\".*$|\1|p")
 		wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
 		last_bin_date=$(tac $file_temp.[$os_v] | egrep "wine-$hq_stage$elf-[0-9]+"| sed -En "s/^.*indexcollastmod\">([0-9]{4}-[0-9]{2}-[0-9]{2}) [0-9]+:[0-9]+.*$/\1/;1p")
 		last_bin_date=$(printf "$last_bin_date"| sed -n "s/-//g;p")
+		
 		if [[ -s $HOME/.winestarter/last-update ]]; then
 			previous_bin_date=$(cat $HOME/.winestarter/last-update|sed -n "s/-//g;p")
 			if [ $last_bin_date -gt $previous_bin_date ]; then
@@ -3156,27 +3166,33 @@ control_last(){
 		fi
 	}
 	download_list(){
-#	wget -O $file_temp $dl_address
 	if [ $bin_class -gt 0 ]; then
 	wget -O $file_temp $dl_address
 	## WineHQ give multiple repos for fedora project. To get all availables, we take in all fedora
 	## version and put them in a single var.
-		os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
-		sed -En "s/^.*([0-9]{2}).*$/\1/p")
+		os_version=$(tac $file_temp | sed -En "s|^.*href=\"([0-9]{2})\/\".*$|\1|p")
+#		os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
+#		sed -En "s/^.*([0-9]{2}).*$/\1/p")
 		for os_v in ${os_version[@]}; do
 			wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
 			dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-$hq_stage$elf-[0-9]+"|\
 			sed -En "s/^.*$elf-([0-9]\.[0-9]{1,2}(\.[0-9]{1,2})?)-([0-9](.rc[0-9])?).$http_elf.*$/\1-\3-$hq_stage,$os_v/p")
+			echo "${dl_bin_list[$os_v]}"| grep -c .
 		## merge only if Wine version is different.
 			if [ $os_v_p ]; then
 				if [ $os_v -ne $os_v_p ]; then
 					new_output=$(echo "${dl_bin_list[$os_v]}"|cut -d',' -f1)
 					prev_output=$(echo "${dl_bin_list[$os_v_p]}"|cut -d',' -f1)
 					_diff=$(echo "$new_output"| grep -vc "$prev_output")
+					[[ $_diff ]]|| _diff=0
 					if [ $_diff -gt 0 ]; then
-						_added=$(echo "${dl_bin_list[$os_v]}"| grep -v "$prev_output")
-						dl_bin_list[$os_v]=$(echo -e "${dl_bin_list[$os_v_p]}\n$_added")
+						_added='\n'$(echo "${dl_bin_list[$os_v]}"| grep -v "$prev_output")
+						dl_bin_list[$os_v]=$(echo -e "${dl_bin_list[$os_v_p]}$_added")
 						dl_bin_list=${dl_bin_list[$os_v]}
+					else
+						if [[ $_diff -eq 0 && $(echo "${dl_bin_list[$os_v]}"| grep -c .) -eq 1 ]]; then
+							if [[ $new_output != $prev_output ]]; then dl_bin_list=${dl_bin_list[$os_v]}; fi
+						fi
 					fi
 					os_v_p=$os_v
 				fi
@@ -3184,14 +3200,12 @@ control_last(){
 				os_v_p=$os_v
 			fi
 		done
-		
 	else
 		wget -O $file_temp $dl_address
 		## limit PoL Wine version list from 1.4 to 1.8.6
 		dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.8\.6.*$/,/^1\.4$/p')" )
 	fi
 	eval local_bin_list='$'{local_bin_$http_class[@]}
-#	echo "$local_bin_list"
 	if [ ${#local_bin_list[@]} -gt 0 ]; then
 		for existing in ${local_bin_list[@]}; do
 			if [ $bin_class -gt 0 ]; then
@@ -3205,8 +3219,8 @@ control_last(){
 			fi
 		done
 	fi
-#	echo "$dl_bin_list" > $file_temp.[list]
 	echo "$dl_bin_list" > $HOME/.winestarter/resources/ftp$tmp_list.[list]
+	unset dl_bin_list
 	}
 	## stable wine versions
 	select_stb0(){ hq_stage='stable'; tmp_list='_hq_stb0'; dir_ver='wine-builds'; select_hq; }
@@ -3215,12 +3229,20 @@ control_last(){
 	select_dev0(){ hq_stage='development'; tmp_list='_hq_dev0'; dir_ver='wine-builds'; select_hq; }
 	## version older than 2.4 from 1.9.16
 	select_stg1(){ hq_stage='staging'; tmp_list='_hq_stg1'; dir_ver='wine-builds.old'; select_hq; }
+	select_stg2(){ hq_stage='staging'; tmp_list='_hq_stg2'; dir_ver=''; select_hq; }
 #	select_dev1(){ hq_stage='development'; tmp_list='_hq_dev'; dir_ver='wine-builds.old'; select_hq; }
 	select_hq(){
 		bin_class=1
-		dl_address="https://dl.winehq.org/$dir_ver/fedora"
+		if [[ $dir_ver ]]; then
+			web_src='dl.winehq.org/'$dir_ver
+		else
+			## TODO < to remove in case merge between WineHQ staging repo and third party.
+			web_src='repos.wine-staging.com/alesliehughes'
+		fi
+		dl_address="https://$web_src/fedora"
 		site='WineHQ'
-		tags=(',i686,x86' '64,x86_64,amd64')
+#		tags=(',i686,x86' '64,x86_64,amd64')
+		tags=('64,x86_64,amd64')
 	}
 	## version older than 1.9.16
 	select_pol_32(){ list_elf='32'; tags='32,x86,x86'; select_pol; }
@@ -3234,8 +3256,9 @@ control_last(){
 	}
 	download_section(){	
 		# ls already insbtalled packages if any
-		tag_cmd=('select_pol_32' 'select_pol_64' 'select_stb0' 'select_stg0' 'select_dev0' 'select_stg1')
-		
+		tag_cmd=('select_pol_32' 'select_pol_64' 'select_stb0' 'select_stg0' 'select_dev0' 'select_stg1' 'select_stg2')
+#		tag_cmd=('select_stb0' 'select_stg0' 'select_dev0' 'select_stg1' 'select_stg2')
+#		tag_cmd=('select_dev0' 'select_stg1' 'select_stg2')
 		for tag_list in ${tag_cmd[@]}; do
 			${tag_list}
 			file_temp=$(mktemp --tmpdir ftp$tmp_list.XXXX)
@@ -3248,12 +3271,12 @@ control_last(){
 		done
 	}
 	date_stamp
+	update=1
 	if [ $line = 0 ]; then
 		ct_msg=1
 	else
 		ct_msg=0
 	fi
-#	exit 0
 	export ct_msg=$ct_msg
 	export BASH_PID='null'
 	if [ $ct_msg -gt 0 ]; then
@@ -3269,7 +3292,6 @@ control_last(){
 		
 		fi
 	fi
-#	exit 0
 }
 ### main ui buttons functions
 ## manage configs and bottles

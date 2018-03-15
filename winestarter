@@ -181,9 +181,11 @@ fn_use_winepath(){
 	pkg_rel=$(printf $wine_ver| cut -d'-' -f2)
 	download_list(){
 		if [ $wine_pack -gt 0 ]; then
+			## check and detect fedora repo version to download from, ex : 22,23,24,etc.
 			wget -O $file_temp $dl_address/
-			os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
-			sed -En "s/^.*([0-9]{2}).*$/\1/p")
+#			os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
+#			sed -En "s/^.*([0-9]{2}).*$/\1/p")
+			os_version=$(tac $file_temp | sed -En "s|^.*href=\"([0-9]{2})\/\".*$|\1|p")
 			for os_v in ${os_version[@]}; do
 				wget --read-timeout=10 -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
 				dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-$hq_stage$b_elf-[0-9]+"|\
@@ -193,14 +195,16 @@ fn_use_winepath(){
 						new_output=$(echo "${dl_bin_list[$os_v]}"| cut -d',' -f1)
 						prev_output=$(echo "${dl_bin_list[$os_v_p]}"| cut -d',' -f1)
 						_diff=$(echo "$new_output"| grep -vc "$prev_output")
+						[[ $_diff ]]|| _diff=0
 						if [ $_diff -gt 0 ]; then
-							_added=$(echo "${dl_bin_list[$os_v]}"| grep -v "$prev_output")
-							dl_bin_list[$os_v]=$(echo -e "${dl_bin_list[$os_v_p]}\n$_added")
+							_added='\n'$(echo "${dl_bin_list[$os_v]}"| grep -v "$prev_output")
+							dl_bin_list[$os_v]=$(echo -e "${dl_bin_list[$os_v_p]}$_added")
 							dl_final_list=${dl_bin_list[$os_v]}
 						fi
 						os_v_p=$os_v
 					fi
 				else
+					dl_final_list=${dl_bin_list[$os_v]}
 					os_v_p=$os_v
 				fi
 			done
@@ -209,7 +213,7 @@ fn_use_winepath(){
 			## limit PoL Wine version list from 1.4 to 1.8.6
 			dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.8\.6.*$/,/^1\.4$/p')" )
 		fi
-		echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2 > $file_temp.[stamp]
+		echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2 > $file_temp.[fedostamp]
 	}
 	## set Wine binary environment arch.
 	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; b_elf='64'; else ftp_elf='x86'; b_elf=''; fi
@@ -241,21 +245,36 @@ fn_use_winepath(){
 			fi
 			file_temp=$(mktemp --tmpdir ftp.XXXX)
 			## identify Wine repo type.
-			if [ $wine_pack = 2 ]; then dir_ver='wine-builds.old'; else dir_ver='wine-builds'; fi
+			if [ $wine_pack = 2 ]; then 
+				dir_ver='wine-builds.old'
+			elif [ $wine_pack = 3 ]; then
+				dir_ver=''
+			else
+				dir_ver='wine-builds'
+			fi
 			## tag to identify already download lists.
 			case $hq_stage in
 				'staging')
-					if [ "$dir_ver" = 'wine-builds.old' ]]; then hq_ver='hq_stg1'; hq_ver='hq_stg0'; fi
+					case $dir_ver in
+						'wine-builds') hq_ver='hq_stg0';;
+						'wine-builds.old') hq_ver='hq_stg1';;
+						'') hq_ver='hq_stg2';;
+					esac
 				;;
 				'stable') hq_ver='hq_stb0' ;;
 				'development') hq_ver='hq_dev0' ;;
 			esac
-			
-			dl_address="https://dl.winehq.org/$dir_ver/fedora"
+			if [[ $dir_ver ]]; then
+				web_src='dl.winehq.org/'$dir_ver
+			else
+				## TODO < to remove in case merge between WineHQ staging repo and third party.
+				web_src='repos.wine-staging.com/alesliehughes'
+			fi
+			dl_address="https://$web_src/fedora"
 			dl_text="$vb\\Building WineHQ packages repository list.$end"		
 			download_list | $zen_bin --width=550 --title "$w_title" --text="$dl_text" \
 			--window-icon=filesave --progress --pulsate --auto-close --no-cancel
-			dist_dl_ver=$(cat $file_temp.[stamp])
+			dist_dl_ver=$(cat $file_temp.[fedostamp])
 			dl_address_0="$dl_address/$dist_dl_ver/$http_elf"
 			dl_address_1="$dl_address/$dist_dl_ver/i686"
 			dl_list=(
@@ -274,6 +293,7 @@ fn_use_winepath(){
 			if [ $b_elf -ne 64 ]; then h_elf='32'; fi
 			hq_ver='pol'$h_elf
 		fi
+		## download packege from web source.
 		kill $WAIT_UI
 		cd $dl_dir
 		for pkgs in ${dl_list[@]}; do
@@ -281,7 +301,7 @@ fn_use_winepath(){
 			pack_name=$wine_ver
 			fn_download_ui
 		done
-
+		## extract package with rmp cpio.
 		for dwld in ${unpack_list[@]}; do
 			if [ $wine_pack = 0 ]; then 
 				un_tar(){ tar -xf $dwld; }
@@ -307,26 +327,30 @@ fn_use_winepath(){
 					text="$bf\\Downloaded package missing$end$vb.\nUsing system default Wine instead if any.$end"
 					dialog_list="gtk-close;$warning;4;4"; zen_warning
 				fi
+				if [[ -d $wine_path/$ftp_elf/$wine_ver ]]; then
+					rm -f $wine_path/$ftp_elf/$wine_ver $wine_path/x86/$wine_ver
+				fi
+				_use_winepath_env=0
 			fi
 		done
-		
-		if [ $wine_pack = 0 ]; then
-			cp -Rf wineversion/$wine_ver/ $wine_path/$ftp_elf
-			if [[ -s $HOME/.winestarter/resources/ftp_$hq_ver.\[list\] ]]; then
-				sed -ni "s/^\($wine_ver\)$/\1*/i;p" $HOME/.winestarter/resources/ftp_$hq_ver.[list]
+		if [ $_use_winepath_env = 1 ]; then
+			if [ $wine_pack = 0 ]; then
+				cp -Rf wineversion/$wine_ver/ $wine_path/$ftp_elf
+				if [[ -s $HOME/.winestarter/resources/ftp_$hq_ver.\[list\] ]]; then
+					sed -ni "s/^\($wine_ver\)$/\1*/i;p" $HOME/.winestarter/resources/ftp_$hq_ver.[list]
+				fi
+			else
+				mkdir -p $wine_path/$ftp_elf/$wine_ver/
+				cp -Rf opt/wine-$hq_short/* $wine_path/$ftp_elf/$wine_ver/
+				if [ $b_elf = 64 ]; then cd $wine_path/x86; ln -sf ../$ftp_elf/$wine_ver ; fi
+				if [[ -s $HOME/.winestarter/resources/ftp_$hq_ver.\[list\] ]]; then
+					sed -ni "s/^\($wine_ver\),\(.*\)$/\1*,\2/i;p" \
+					$HOME/.winestarter/resources/ftp_$hq_ver.[list]
+				fi
 			fi
-		else
-			mkdir -p $wine_path/$ftp_elf/$wine_ver/
-			cp -Rf opt/wine-$hq_short/* $wine_path/$ftp_elf/$wine_ver/
-			if [ $b_elf = 64 ]; then cd $wine_path/x86; ln -sf ../$ftp_elf/$wine_ver ; fi
-			if [[ -s $HOME/.winestarter/resources/ftp_$hq_ver.\[list\] ]]; then
-				sed -ni "s/^\($wine_ver\),\(.*\)$/\1*,\2/i;p" \
-				$HOME/.winestarter/resources/ftp_$hq_ver.[list]
-			fi
+			cd $WINEVERPATH/bin
 		fi
-		cd $WINEVERPATH/bin
 	fi
-	
 }
 ## environment settings (3)
 fn_wine_binary(){
@@ -685,26 +709,12 @@ fn_game_dir_exist(){
 				_unix_path=$_target_dir/$game_exe
 				fn_convert_desktop_file
 			fi
-#			if [[ -x "$_link_target_exe" ]]; then
-#				## control target path and desktop file. If none, create, else, pass.
-#				_target_exe=$game_exe
-#				_target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"/$game_dir
-#				_target_path=$(printf "$_target_dir"| sed -En "s|^(.*)/(drive_c)/(.*)$|\1/dosdevices/c:/\3|p")
-#				_unix_path=$_target_dir/$_target_exe
-#				fn_convert_desktop_file
-#			else
-#				fn_extract_lnk_file
-#			fi
 		fi
 	fi
 }
 ## pre process step for fn_game_dir_exist (6pre) 
 fn_root_key(){
 	## search where is the "Prgram Files" dir and type.
-#	fn_root_key
-#	if [[ $game_dir == '' && $game_exe == '' ]]; then
-#		mkdir -p $user_prefix/$bottle_prefix/drive_c/Program\ Files"$elf_ext"
-#	fi
 	## find where is the exe file to define first application root key.
 	if [[ $game_exe ]]; then
 		bin_dir_target=$(find -L \
@@ -972,7 +982,7 @@ fn_wine_dbg(){
 		## if value are updated or simply sets, start regedit.
 		if [ $_updating -gt 0 ]; then
 			$wine_bin regedit $user_prefix/$bottle_prefix/dbg_reg.reg
-			notify-send -t 2800 "Reloading WineDbg with new settings"
+			notify-send -t 2800 -u low  "Reloading WineDbg with new settings"
 			$wineboot_bin -r
 			$wineserver_bin -k
 		fi
