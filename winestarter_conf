@@ -3271,7 +3271,6 @@ control_last(){
 		done
 	}
 	date_stamp
-	update=1
 	if [ $line = 0 ]; then
 		ct_msg=1
 	else
