@@ -1,11 +1,30 @@
 #! /bin/bash
 
-## let some time to desktop interface to start up. 
+## License:
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU Lesser General Public
+#   License as published by the Free Software Foundation; either
+#   version 2.1 of the License, or (at your option) any later
+#   version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Lesser General Public License for more details.
+#
+#   You should have received a copy of the GNU Lesser General Public
+#   License along with this program.  If not, see
+#   <https://www.gnu.org/licenses/>.
+#
+## You can redistribute it as you wish : GPL v3
+## author : wildtruc@noneltd.net
+
+## let some time to desktop interface for starting up. 
 sleep 30
 ## define winestarter git source
 wine_data=$HOME/.winestarter
-wt_src=$(find -P $HOME -maxdepth 3 -mount -wholename "*/winestart")
-#wt_src=$HOME/Devel/WINE/winestart
+#wt_src=$(find -P $HOME -maxdepth 3 -mount -wholename "*/winestart")
+wt_src=$HOME/Devel/WINE/test/winestart
 wine_git='https://github.com/wildtruc/winestart'
 w_tricks=$(find /usr/{bin,local/bin} -name winetricks)
 w_bin=$(find /usr/{bin,local/bin} -name wine)
@@ -20,16 +39,30 @@ git fetch --dry-run &>$temp_data
 if [ $(cat $temp_data| grep -c "master") -eq 1 ]; then
 	## control if update is winetricks.
 	wget -q -O $temp_http $wine_git
-	## eval local repo winestarter version and date
-	git_ver=$(git log --date=iso -n1 --grep=\ v[0-9].*$)
-	git_ver_main=$(printf "$git_ver"| sed -En "s|^.*[\ ](v[0-9].*).([0-9]{1,2}).*$|\1|p")
-	git_ver_up=$(echo "$git_ver"| sed -En "s|^.*[\ ](v[0-9].*).([0-9]{1,2}).*$|\2|p")
-	site_ver=$(cat $temp_http| sed -n "/<td class=\"message\"/,/<\/time-ago>/p"| egrep -o "$git_ver_main.$(($git_ver_up+1))"| uniq)
-	remote_ver_up=$(printf "$site_ver"|sed -n "s/^.*\.//g;p")
-	## print message if site version is greater only. 
-	if [[ $remote_ver_up ]]; then
-		if [ $remote_ver_up -gt $git_ver_up ]; then
-			main_msg="$git_ver_main.$(($git_ver_up+1))\n"
+	## eval local repo winestarter version, commit and date
+	_git_ver=$(git log --date=iso -n1 --grep=\ v[0-9].*$)
+	git_commit=$(printf "$_git_ver"| sed -En "s|^commit[\ ](.*).*$|\1|p")
+	git_commit_date=$(printf "$_git_ver"| sed -En "s|^Date:.*[\ ]([0-9]{4}.*-[0-9]{2})[\ ].*$|\1|p")
+	## convert date at usable format.
+	commit_date_key=$(printf "$git_commit_date"| sed -n "s/-//g;p")
+	## eval remote page last versio, commit and date.
+	site_section=$(cat $temp_http| sed -n "/<td class=\"message\"/,/<\/time-ago>/p")
+	site_date_list=$(echo -e "$site_section"| sed -En "s|^.*datetime=\"(.*)T.*\".*$|\1|p"| \
+		sort -nr| sed -n '1p')
+	site_date_key=$(printf "$site_date_list"|	sed -n "s/-//g;p")
+	## if local date is lower than site date, implies new commit,
+	## look up date, commit and version and display last.
+	if [ $site_date_key -gt $commit_date_key ]; then
+		site_ver=$(echo -e "$site_section"| egrep -e "^.*<a.*\/a>" -e "<time-ago.*\/time-ago>"| \
+			sed -En "s/[\ ]{2,}/#/g;p"|tr "\n" "#"| \
+			sed -n "s|#<a|\n|g;p"| \
+			sed -En "s|^.*title=\".*c.*commit/(.*)\">.*(v[0-9].*)</a.*ago datetime=\"(.*)T.*\".*$|\3 \1 \2|p")
+		last_site_commit=$(echo -e "$site_ver"| sort -n| uniq| sed -n '$p')
+		date_key=$(printf "$last_site_commit"| cut -d' ' -f1)
+		site_last_commit=$(printf "$last_site_commit"| cut -d' ' -f2)
+		site_last_ver=$(printf "$last_site_commit"| cut -d' ' -f3)
+		if [[ $site_last_commit != $git_commit ]]; then
+			main_msg="$site_last_ver\n"
 		fi
 	fi
 	## eval local winetricks version and date
@@ -43,7 +76,8 @@ if [ $(cat $temp_data| grep -c "master") -eq 1 ]; then
 	 # if first track fail, try a more ugly.
 	if ! [[ $tricks_page_date ]]; then
 		tricks_page_date=$(cat $temp_http| sed -n "/<td class=\"message\"/,/<\/time-ago>/p"| \
-		sed -En "/winetricks(.*)/,/<\/time-ago>/p"| sed -En "s/^.*<time-ago.*=\"(.*)\">.*<\/time-ago>.*/\1/p")
+			sed -En "/winetricks(.*)/,/<\/time-ago>/p"| \
+			sed -En "s/^.*<time-ago.*=\"(.*)\">.*<\/time-ago>.*/\1/p")
 	fi
 	## rewrite date to usable format.
 	page_date=$(printf "$tricks_page_date"| cut -d'T' -f1| sed -n "s/-//g;p")
@@ -52,7 +86,7 @@ if [ $(cat $temp_data| grep -c "master") -eq 1 ]; then
 	## show update message only if date exist and is newer.
 	if [[ $git_date ]]; then
 		if [ $page_date -gt $git_date ]; then
-			more_msg="\n\\Winetricks update $tricks_version ($msg_date)"
+			more_msg="Winetricks update $tricks_version ($msg_date)"
 			## in wine has no default install, check if winestarter have one or exit winetricks check.
 			if ! [[ -x $w_bin ]]; then
 				if [[ -s $wine_data/default-wine ]]; then

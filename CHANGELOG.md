@@ -23,10 +23,13 @@ wtc => winestarter_conf, wt => winestarter
 
 -----------
 ### Change Log
-*( 15/03/18 ) v1.03*
+*( 18/03/18 ) v1.3.1*
+ - update_winestarter: fixed local/remote regex anaylisis that making confusion between vX.X and vX.X.X.
+ 
+*( 15/03/18 ) v1.3*
  - wt/wtc: update Wine package download sources list for new staging repository (https://repos.wine-staging.com/alesliehughes). Could be remove in near future if merging with WineHQ staging repo.
  
-*( 12/03/18 ) v1.02.3*
+*( 12/03/18 ) v1.2.3*
  - updater: fix messages display. Will now check correctly diff between local git repo and web site page. 
  
 *( 04/03/18 ) v1.02.2*
