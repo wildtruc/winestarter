@@ -7589,6 +7589,7 @@ w_metadata dxdiagn dlls \
     publisher="Microsoft" \
     year="2011" \
     media="download" \
+    conflicts="dxdiagn_feb2010" \
     file1="../win7sp1/windows6.1-KB976932-X86.exe" \
     installed_file1="$W_SYSTEM32_DLLS_WIN/dxdiagn.dll"
 
@@ -7603,6 +7604,26 @@ load_dxdiagn()
     fi
 
     w_override_dlls native,builtin dxdiagn
+}
+
+#----------------------------------------------------------------
+
+w_metadata dxdiagn_feb2010 dlls \
+    title="DirectX Diagnostic Library (February 2010)" \
+    publisher="Microsoft" \
+    year="2010" \
+    media="download" \
+    conflicts="dxdiagn" \
+    file1="../directx9/directx_feb2010_redist.exe" \
+    installed_file1="$W_SYSTEM32_DLLS_WIN/dxdiagn.dll"
+
+load_dxdiagn_feb2010()
+{
+    helper_directx_dl
+
+    w_try_cabextract -d "$W_TMP" -L -F dxnt.cab "$W_CACHE"/directx9/$DIRECTX_NAME
+    w_try_cabextract -d "$W_SYSTEM32_DLLS" -L -F 'dxdiagn.dll' "$W_TMP/dxnt.cab"
+    w_override_dlls native dxdiagn
 }
 
 #----------------------------------------------------------------
@@ -11435,10 +11456,14 @@ load_dxdiag()
     w_override_dlls native dxdiag.exe
 
     if w_workaround_wine_bug 1429; then
-        w_call dxdiagn
+        w_call dxdiagn_feb2010
     fi
     if w_workaround_wine_bug 9027; then
-        w_call directmusic
+        w_call dmband
+        w_call dmime
+        w_call dmstyle
+        w_call dmsynth
+        w_call dmusic
     fi
 }
 
@@ -12811,7 +12836,7 @@ load_vc2010express()
     # Originally at: https://download.microsoft.com/download/1/E/5/1E5F1C0A-0D5B-426A-A603-1798B951DDAE/VS2010Express1.iso
     # Mirror list at: http://www.filewatcher.com/_/?q=VS2010Express1.iso
     # Formerly at: ftp://www.daba.lv/pub/Programmeeshana/VisualStudio/VS2010Express1.iso a9d5dcdf55e539a06547a8ebbc63d55dc167113e09ee9e42096ab9098313039b
-    w_download https://web.archive.org/web/20140227220734/download.microsoft.com/download/1/E/5/1E5F1C0A-0D5B-426A-A603-1798B951DDAE/VS2010Express1.iso a9d5dcdf55e539a06547a8ebbc63d55dc167113e09ee9e42096ab9098313039b
+    w_download https://debian.fmi.uni-sofia.bg/~aangelov/VS2010Express1.iso a9d5dcdf55e539a06547a8ebbc63d55dc167113e09ee9e42096ab9098313039b
 
     # Unpack ISO
     w_try_7z "$W_TMP" "$W_CACHE"/vc2010express/VS2010Express1.iso
