@@ -4951,6 +4951,11 @@ winetricks_init()
     WINETRICKS_CONFIG="${XDG_CONFIG_HOME}/winetricks"
     #test -d "$WINETRICKS_CONFIG" || mkdir -p "$WINETRICKS_CONFIG"
 
+    # Load country code from config file only when "--country=" option is not specified
+    if test -z "$W_COUNTRY" -a -f "${WINETRICKS_CONFIG}"/country; then
+        W_COUNTRY="$(cat "${WINETRICKS_CONFIG}"/country)"
+    fi
+
     # Pin a task to a single cpu. Helps prevent race conditions.
     #
     # Linux/FreeBSD: supported
@@ -5129,6 +5134,7 @@ Usage: $0 [options] [command|verb|path-to-verb] ...
 Executes given verbs.  Each verb installs an application or changes a setting.
 
 Options:
+    --country=CC      Set country code to CC and don't detect your IP address
     --force           Don't check whether packages were already installed
     --gui             Show gui diagnostics even when driven by commandline
     --isolate         Install each app or game in its own bottle (WINEPREFIX)
@@ -5166,6 +5172,7 @@ _EOF_
 winetricks_handle_option()
 {
     case "$1" in
+        --country=*) W_COUNTRY="${1##--country=}" ;;
         --force) WINETRICKS_FORCE=1;;
         --gui) winetricks_detect_gui;;
         -h|--help) winetricks_usage ; exit 0 ;;
@@ -12246,6 +12253,69 @@ __EOF__
     else
         w_try "$WINE" ${W_ISO_MOUNT_LETTER}:setup.exe
     fi
+}
+
+#----------------------------------------------------------------
+
+w_metadata office2013pro apps \
+    title="Microsoft Office 2013 Professional" \
+    publisher="Microsoft" \
+    year="2013" \
+    media="download" \
+    file1="setup.exe" \
+    installed_file1="$W_PROGRAMS_X86_WIN/Microsoft Office/Office15/WINWORD.EXE"
+
+load_office2013pro()
+{
+    w_package_unsupported_win64
+
+    if [ ! -x "$(which ntlm_auth 2>/dev/null)" ]; then
+        w_die "winbind (part of samba) is required for the installation"
+    fi
+
+    # link from https://www.askvg.com/direct-download-link-microsoft-office-2013-professional-plus-free-trial/
+    w_download http://care.dlservice.microsoft.com/dl/download/2/9/C/29CC45EF-4CDA-4710-9FB3-1489786570A1/OfficeProfessionalPlus_x86_en-us.img 236f8faae3f979ec72592a63784bba2f0d614916350c44631221b88ae9dae206 "OFFICE15.iso"
+
+    w_set_winver win7
+
+    w_call corefonts
+    w_call tahoma
+
+    w_call riched20
+
+
+    if w_workaround_wine_bug 43581 "Wine has problems parsing some regex strings during installation"; then
+        w_call msxml6
+    fi
+
+    if w_workaround_wine_bug 38648 "DirectX < 11 has problems with black window after installation" ,3.0; then
+        cat > "$W_TMP"/MaxVersionGL.reg <<_EOF_
+REGEDIT4
+
+[HKEY_CURRENT_USER\\Software\\Wine\\Direct3D]
+"MaxVersionGL"=dword:00030002
+
+_EOF_
+        w_try_regedit "$W_TMP_WIN"\\MaxVersionGL.reg
+    fi
+
+    w_mount OFFICE15
+
+    if test $W_OPT_UNATTENDED; then
+        cat > "$W_TMP"/config.xml <<_EOF_
+<Configuration Product="ProPlus">
+<Display Level="none" CompletionNotice="no" SuppressModal="yes" AcceptEula="yes" />
+</Configuration>
+_EOF_
+        w_try "$WINE" "${W_ISO_MOUNT_LETTER}:${file1}" /config "$W_TMP_WIN"\\config.xml
+    else
+        w_try "$WINE" "${W_ISO_MOUNT_LETTER}:${file1}"
+    fi
+
+    w_wineserver -w
+    w_umount
+
+    w_warn "Microsoft Office 2013 is far away from running stable under wine 3.3. It should not be used in a productive environment."
 }
 
 #----------------------------------------------------------------
