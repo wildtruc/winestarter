@@ -20,7 +20,7 @@
 ## author : wildtruc@noneltd.net
 
 ## let some time to desktop interface for starting up. 
-if [ $1 -gt 0 ]; then
+if [ $1 -ge 0 ]; then
 	sleep $1
 else
 	sleep 30
