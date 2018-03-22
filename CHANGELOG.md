@@ -1,28 +1,13 @@
 # Change log & reports
-wtc => winestarter_conf, wt => winestarter
-
-### Issues
- - [x] ~~remove PlayOnLinux wine pakages installation because they're often not exploitable.~~
- - [x] winestarter yad popups don't looking very nice and need improvement.
- - [x] *v0.98.2* - wtc
- 	- #1 Bad images export in WineHQ, PoL download selectors.
- - [x] *v0.98.1* - wt & wtc
-   - #1 PlayOnLinux binbaries packages seems to not be always functionnal. Need an alternative.
-   - #2 Since Wine 2.11, there some mouse glitches in some D3D game (FFXIV), need an alternative to fall back to previous version.
- - [x] *v0.98* - winestarter_conf
-   - #1 Error in Display Xrandr mode, desktop ui line are not numbered correctly.	
- - [x] *v0.97.5* - winestarter_conf
-   - It seems in some case when willing to set an already existing app path, winestarter fail to auto set the link to C drive root because it dosen't enough data to define the link 'rootkey' var properly and then link it inside Program Files folder.
- - [ ] *v0.97.4* - winestarter_conf
-   - mime-type is now added in wine regeistry, but it didn't resolve the way of some app (like captvty) manage the bottle system to launch some file for reading. 
- - [x] *v0.97.3* - winestarter_conf
-   - #1 ( 11/05/17 ) - new extended feature for local mime-type launch display uncorrectly (add a unwanted horiz scrollbar).
-   - #2 ( 12/05/17 ) - other distro than mine (fedora) seems to have difficulties to find mandatory binaries (yad, nvidia, wintricks, etc). Need to replace by a short 'find' command.
- - [x] *v0.97.2* - winestarter_conf
-   - #1 ( 11/05/17 ) - Discovered with helping hand that Debian grep can't read some regex when a point (.) is not mark with a backslash (and also prefer egrep in place grep).
+wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => winestart_kill, up => update.sh
 
 -----------
 ### Change Log
+*( 22/03/18 ) v1.3.2*
+ - wk: Added a desktop file (too minor to be consider as real update).
+ - up_w: fix, remove forgotten dev line (don't tell, it's so sad).
+ - up_w: by the way, add timer option at the end of command line. Default is still 30s, but you can change it by add a different timer in autostart desktop file exec line (ex: update_winestarter 5)
+ 
 *( 18/03/18 ) v1.3.1*
  - update_winestarter: fixed local/remote regex anaylisis that making confusion between vX.X and vX.X.X.
  
@@ -245,6 +230,27 @@ wtc => winestarter_conf, wt => winestarter
  - Add 64bits start feature.
  - Put Wine custom binary in a separate tab.
  - A few fixes.
+
+-----------
+### Issues
+ - [x] ~~remove PlayOnLinux wine pakages installation because they're often not exploitable.~~
+ - [x] winestarter yad popups don't looking very nice and need improvement.
+ - [x] *v0.98.2* - wtc
+ 	- #1 Bad images export in WineHQ, PoL download selectors.
+ - [x] *v0.98.1* - wt & wtc
+   - #1 PlayOnLinux binbaries packages seems to not be always functionnal. Need an alternative.
+   - #2 Since Wine 2.11, there some mouse glitches in some D3D game (FFXIV), need an alternative to fall back to previous version.
+ - [x] *v0.98* - winestarter_conf
+   - #1 Error in Display Xrandr mode, desktop ui line are not numbered correctly.	
+ - [x] *v0.97.5* - winestarter_conf
+   - It seems in some case when willing to set an already existing app path, winestarter fail to auto set the link to C drive root because it dosen't enough data to define the link 'rootkey' var properly and then link it inside Program Files folder.
+ - [ ] *v0.97.4* - winestarter_conf
+   - mime-type is now added in wine regeistry, but it didn't resolve the way of some app (like captvty) manage the bottle system to launch some file for reading. 
+ - [x] *v0.97.3* - winestarter_conf
+   - #1 ( 11/05/17 ) - new extended feature for local mime-type launch display uncorrectly (add a unwanted horiz scrollbar).
+   - #2 ( 12/05/17 ) - other distro than mine (fedora) seems to have difficulties to find mandatory binaries (yad, nvidia, wintricks, etc). Need to replace by a short 'find' command.
+ - [x] *v0.97.2* - winestarter_conf
+   - #1 ( 11/05/17 ) - Discovered with helping hand that Debian grep can't read some regex when a point (.) is not mark with a backslash (and also prefer egrep in place grep).
 
 -----------
 ### Experienced

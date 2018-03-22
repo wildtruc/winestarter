@@ -20,11 +20,15 @@
 ## author : wildtruc@noneltd.net
 
 ## let some time to desktop interface for starting up. 
-sleep 30
+if [ $1 -gt 0 ]; then
+	sleep $1
+else
+	sleep 30
+fi
 ## define winestarter git source
 wine_data=$HOME/.winestarter
-#wt_src=$(find -P $HOME -maxdepth 3 -mount -wholename "*/winestart")
-wt_src=$HOME/Devel/WINE/test/winestart
+wt_src=$(find -P $HOME -maxdepth 3 -mount -wholename "*/winestart")
+#wt_src=$HOME/Devel/WINE/test/winestart
 wine_git='https://github.com/wildtruc/winestart'
 w_tricks=$(find /usr/{bin,local/bin} -name winetricks)
 w_bin=$(find /usr/{bin,local/bin} -name wine)

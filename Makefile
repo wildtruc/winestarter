@@ -29,12 +29,14 @@ install:
 	install -Dm755 -t $(PREFIX)/bin/ winetricks
 	install -Dm755 -t $(PREFIX)/bin/ update_winestarter
 	install -Dm644 -t $(PREFIX)/share/applications/ winestarter.desktop
+	install -Dm644 -t $(PREFIX)/share/applications/ winestarter_kill.desktop
 	install -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/winestarter_128.png
+	install -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/winestarter_128k.png
 	install -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/wine48w.png
 	install -Dm644 -t /usr/share/polkit-1/actions/ com.github.pkexec.winestarter_wipe.policy
 	install -Dm644 -t $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	chown $(C_USER):$(C_USER) $(USER_DIR)/.config/autostart/ update_winestarter.desktop
-	sudo -u $(C_USER) cp -Rf ./.git $(CONF_DIR)/
+#	sudo -u $(C_USER) cp -Rf ./.git $(CONF_DIR)/
 
 update:
 	sudo -u $(C_USER) git pull
@@ -43,14 +45,16 @@ update:
 	install -Dm755 -t $(PREFIX)/bin/ winestarter_kill
 	install -Dm755 -t $(PREFIX)/bin/ winetricks
 	install -Dm755 -t $(PREFIX)/bin/ update_winestarter
-	install -Dm644 -t $(PREFIX)/share/applications/ winestarter.desktop 
+	install -Dm644 -t $(PREFIX)/share/applications/ winestarter.desktop
+	install -Dm644 -t $(PREFIX)/share/applications/ winestarter_kill.desktop
 	install -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/winestarter_128.png
+	install -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/winestarter_128k.png
 	install -Dm644 -t $(PREFIX)/share/pixmaps/ png/defaults/wine48w.png
 	install -Dm644 -t /usr/share/polkit-1/actions/ com.github.pkexec.winestarter_wipe.policy
 	install -Dm644 -t $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 	cp -Ru ./png/defaults/* $(CONF_DIR)/png/defaults/
 	chown $(C_USER):$(C_USER) $(USER_DIR)/.config/autostart/ update_winestarter.desktop
-	sudo -u $(C_USER) cp -Rf ./.git $(CONF_DIR)/
+#	sudo -u $(C_USER) cp -Rf ./.git $(CONF_DIR)/
 	sh ./changelog.sh
 		
 uninstall:
@@ -59,7 +63,8 @@ uninstall:
 	rm -f $(PREFIX)/bin/winestarter_conf
 	rm -f $(PREFIX)/bin/update_winestarter
 	rm -f $(PREFIX)/share/applications/winestarter.desktop
-	rm -f $(PREFIX)/share/pixmaps/winestarter_128.png
+	rm -f $(PREFIX)/share/applications/winestarter_kill.desktop
+	rm -f $(PREFIX)/share/pixmaps/winestarter_128*
 	rm -f $(PREFIX)/share/pixmaps/wine48w.png
 	rm -f /usr/share/polkit-1/actions/com.github.pkexec.winestarter_wipe.policy
 	rm -f $(USER_DIR)/.config/autostart/update_winestarter.desktop
@@ -69,6 +74,7 @@ safeuninstall:
 	rm -f $(PREFIX)/bin/winestarter_conf
 	rm -f $(PREFIX)/bin/update_winestarter
 	rm -f $(PREFIX)/share/applications/winestarter.desktop
-	rm -f $(PREFIX)/share/pixmaps/winestarter_128.png
+	rm -f $(PREFIX)/share/applications/winestarter_kill.desktop
+	rm -f $(PREFIX)/share/pixmaps/winestarter_128*
 	rm -f /usr/share/polkit-1/actions/com.github.pkexec.winestarter_cache.policy
 	rm -f $(USER_DIR)/.config/autostart/update_winestarter.desktop
