@@ -8219,13 +8219,17 @@ w_metadata kindle apps \
     publisher="Amazon" \
     year="2017" \
     media="download" \
-    file1="KindleForPC-installer-1.20.47037.exe" \
+    file1="KindleForPC-installer-1.16.44025.exe" \
     installed_exe1="$W_PROGRAMS_WIN/Amazon/Kindle/Kindle.exe" \
     homepage="https://www.amazon.com/kindle-dbs/fd/kcp"
 
 load_kindle()
 {
-    w_download https://s3.amazonaws.com/kindleforpc/47037/KindleForPC-installer-1.20.47037.exe cb20581d3455d458c7ac4bafa5c67dcfc5186c7b35951168efcf5a8263706b47
+    if w_workaround_wine_bug 43508; then
+        w_warn "Using an older version of Kindle (1.16.44025) to work around https://bugs.winehq.org/show_bug.cgi?id=43508"
+    fi
+
+    w_download https://s3.amazonaws.com/kindleforpc/44025/KindleForPC-installer-1.16.44025.exe
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" "$file1" ${W_OPT_UNATTENDED:+ /S}
 
@@ -10096,10 +10100,10 @@ load_windowscodecs()
     fi
 
     # Avoid a file existence check.
-    w_try rm -f "$W_SYSTEM32_DLLS"/windowscodecs.dll "$W_SYSTEM32_DLLS"/windowscodecsext.dll "$W_SYSTEM32_DLLS"/photometadatahandler.dll
+    w_try rm -f "$W_SYSTEM32_DLLS"/windowscodecs.dll "$W_SYSTEM32_DLLS"/windowscodecsext.dll "$W_SYSTEM32_DLLS"/wmphoto.dll "$W_SYSTEM32_DLLS"/photometadatahandler.dll
 
     if [ "$W_ARCH" = "win64" ]; then
-         w_try rm -f "$W_SYSTEM64_DLLS"/windowscodecs.dll "$W_SYSTEM64_DLLS"/windowscodecsext.dll "$W_SYSTEM64_DLLS"/photometadatahandler.dll
+         w_try rm -f "$W_SYSTEM64_DLLS"/windowscodecs.dll "$W_SYSTEM64_DLLS"/windowscodecsext.dll "$W_SYSTEM64_DLLS"/wmphoto.dll "$W_SYSTEM64_DLLS"/photometadatahandler.dll
     fi
 
     # AF says in AppDB entry for .NET 3.0 that windowscodecs has to be native only
@@ -18616,11 +18620,11 @@ load_cfc()
 # CSMT settings
 
 w_metadata csmt=on settings \
-    title_uk="Увімкнути Command Stream Multithreading" \
-    title="Enable Command Stream Multithreading"
+    title_uk="Увімкнути Command Stream Multithreading (за замовчуванням)" \
+    title="Enable Command Stream Multithreading (default)"
 w_metadata csmt=off settings \
-    title_uk="Вимкнути Command Stream Multithreading (за замовчуванням)" \
-    title="Disable Command Stream Multithreading (default)"
+    title_uk="Вимкнути Command Stream Multithreading"\
+    title="Disable Command Stream Multithreading"
 
 load_csmt()
 {
