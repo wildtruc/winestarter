@@ -3141,15 +3141,17 @@ control_last(){
 	date_stamp(){
 		file_temp=$(mktemp --tmpdir ftp_date.XXXX)
 		select_dev0
-		elf=$(printf "${tags[1]}"| cut -d',' -f1)
-		http_elf=$(printf "${tags[1]}"| cut -d',' -f2)
-		http_class=$(printf "${tags[1]}"| cut -d',' -f3)
+		elf=$(printf "${tags}"| cut -d',' -f1)
+		http_elf=$(printf "${tags}"| cut -d',' -f2)
+		http_class=$(printf "${tags}"| cut -d',' -f3)
 		wget -O $file_temp $dl_address/
 #		os_v=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
 #		sed -En "s/^.*([0-9]{2}).*$/\1/;1p")
 		os_version=$(tac $file_temp | sed -En "s|^.*href=\"([0-9]{2})\/\".*$|\1|p")
-		wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
-		last_bin_date=$(tac $file_temp.[$os_v] | egrep "wine-$hq_stage$elf-[0-9]+"| sed -En "s/^.*indexcollastmod\">([0-9]{4}-[0-9]{2}-[0-9]{2}) [0-9]+:[0-9]+.*$/\1/;1p")
+		os_v=$(echo "$os_version"| sed -n '1p')
+		wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf
+		last_bin_date=$(tac $file_temp.[$os_v] | egrep "wine-$hq_stage$elf-[0-9]+"| \
+		sed -En "s/^.*indexcollastmod\">([0-9]{4}-[0-9]{2}-[0-9]{2}) [0-9]+:[0-9]+.*$/\1/;1p")
 		last_bin_date=$(printf "$last_bin_date"| sed -n "s/-//g;p")
 		
 		if [[ -s $HOME/.winestarter/last-update ]]; then

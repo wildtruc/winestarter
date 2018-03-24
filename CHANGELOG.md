@@ -3,6 +3,9 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
+*( 24/03/18 ) v1.3.3*
+ - wtc: fix not updated var in date_stamp function after v1.3 update reventing to get last website date.
+ 
 *( 22/03/18 ) v1.3.2*
  - wk: Added a desktop file (too minor to be consider as real update).
  - up_w: fix, remove forgotten dev line (don't tell, it's so sad).
