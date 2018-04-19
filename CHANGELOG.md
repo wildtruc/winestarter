@@ -3,8 +3,11 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
+*( 19/04/18 ) v1.3.4*
+ - up_w: micro fix in option syntax.
+ 
 *( 24/03/18 ) v1.3.3*
- - wtc: fix not updated var in date_stamp function after v1.3 update reventing to get last website date.
+ - wtc: fix not updated var in date_stamp function after v1.3 update preventing to get last website date.
  
 *( 22/03/18 ) v1.3.2*
  - wk: Added a desktop file (too minor to be consider as real update).
@@ -12,7 +15,7 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
  - up_w: by the way, add timer option at the end of command line. Default is still 30s, but you can change it by add a different timer in autostart desktop file exec line (ex: update_winestarter 5)
  
 *( 18/03/18 ) v1.3.1*
- - update_winestarter: fixed local/remote regex anaylisis that making confusion between vX.X and vX.X.X.
+ - update_winestarter: fixed local/remote regex analysis that making confusion between vX.X and vX.X.X.
  
 *( 15/03/18 ) v1.3*
  - wt/wtc: update Wine package download sources list for new staging repository (https://repos.wine-staging.com/alesliehughes). Could be remove in near future if merging with WineHQ staging repo.
