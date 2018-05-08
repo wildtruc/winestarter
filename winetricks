@@ -195,7 +195,15 @@ w_askpermission()
     case $WINETRICKS_GUI in
         zenity) $WINETRICKS_GUI "$_W_timeout" --question --title=winetricks --text="$(echo "$@" | sed 's,\\\\,\\\\\\\\,g')" --no-wrap;;
         kdialog) $WINETRICKS_GUI --title winetricks --warningcontinuecancel "$@" ;;
-        none) printf %s "Press Y or N, then Enter: " ; read -r response ; test "$response" = Y || test "$response" = y;;
+        none)
+            if [ -n "$_W_timeout" ]; then
+                # -t / TMOUT don't seem to be portable, so just assume yes in unattended mode
+                w_info "Unattended mode, not prompting for confirmation"
+            else
+                printf %s "Press Y or N, then Enter: "
+                read -r response
+                test "$response" = Y || test "$response" = y
+            fi
     esac
 
     if test $? -ne 0; then
@@ -3148,17 +3156,23 @@ winetricks_detect_gui()
 {
     if test -x "$(which zenity 2>/dev/null)"; then
         WINETRICKS_GUI=zenity
-
+        WINETRICKS_GUI_VERSION="$(zenity --version)"
         WINETRICKS_MENU_HEIGHT=500
         WINETRICKS_MENU_WIDTH=1010
     elif test -x "$(which kdialog 2>/dev/null)"; then
         echo "Zenity not found!  Using kdialog as poor substitute."
         WINETRICKS_GUI=kdialog
+        WINETRICKS_GUI_VERSION="$(kdialog --version)"
     else
         echo "No arguments given, so tried to start GUI, but zenity not found."
         echo "Please install zenity if you want a graphical interface, or "
         echo "run with --help for more options."
         exit 1
+    fi
+
+    # Print zenity/dialog version info for debugging:
+    if [ ! "$WINETRICKS_SUPER_QUIET" ] ; then
+       echo "winetricks GUI enabled, using $WINETRICKS_GUI $WINETRICKS_GUI_VERSION"
     fi
 }
 
@@ -3990,6 +4004,7 @@ winetricks_metadata_exists()
 winetricks_is_cached()
 {
     # FIXME: also check file2... if given
+    # https://github.com/Winetricks/winetricks/issues/989
     # shellcheck disable=SC2154
     _W_path="$W_CACHE/$1/$file1"
     case "$_W_path" in
@@ -4812,10 +4827,14 @@ winetricks_set_wineprefix()
         W_32BIT_DLLS="$W_WINDIR_UNIX/syswow64"
 
         # Probably need fancier handling/checking, but for a basic start:
+        # Note 'wine' may be named 'wine-stable'/'wine-staging'/etc.):
         # WINE64 = wine64, available on 64-bit prefixes
         # WINE_ARCH = the native wine for the prefix (wine for 32-bit, wine64 for 64-bit)
         # WINE_MULTI = generic wine, new name
-        WINE64="${WINE}64"
+        case "$WINE" in
+            *64) WINE64="${WINE}" ;;
+            *) WINE64="${WINE}64" ;;
+        esac
         WINE_ARCH="${WINE64}"
         WINE_MULTI="${WINE}"
 
@@ -5093,6 +5112,7 @@ list-cached: vis en liste over verber for allerede-hentede installationsprogramm
 list-download: vis en liste over verber for programmer der kan hentes
 list-manual-download: list applications which can be downloaded with some help from the user
 list-installed: list already-installed applications
+annihilate            Delete ALL DATA AND APPLICATIONS INSIDE THIS WINEPREFIX
 _EOF_
             ;;
         de*)
@@ -5129,6 +5149,7 @@ list-download         Verben für automatisch herunterladbare Anwendungen auflis
 list-manual-download  Verben für vom Benutzer herunterladbare Anwendungen auflisten
 list-installed        Bereits installierte Verben auflisten
 prefix=foobar         WINEPREFIX=$W_PREFIXES_ROOT/foobar auswählen
+annihilate            ALLE DATEIEN UND PROGRAMME IN DIESEM WINEPREFIX Löschen
 _EOF_
             ;;
         *)
@@ -5167,6 +5188,7 @@ list-download         list verbs which download automatically
 list-manual-download  list verbs which download with some help from the user
 list-installed        list already-installed verbs
 prefix=foobar         select WINEPREFIX=$W_PREFIXES_ROOT/foobar
+annihilate            Delete ALL DATA AND APPLICATIONS INSIDE THIS WINEPREFIX
 _EOF_
             ;;
     esac
@@ -7683,6 +7705,7 @@ load_esent()
 #----------------------------------------------------------------
 
 # FIXME: update winetricks_is_installed to look at installed_file2..n
+# https://github.com/Winetricks/winetricks/issues/988
 w_metadata flash dlls \
     title="Flash Player 14" \
     publisher="Adobe" \
@@ -8140,7 +8163,12 @@ w_metadata jet40 dlls \
 
 load_jet40()
 {
-    w_call mdac27
+    # mdac27 is 32-bit only, so use mdac28 for win64:
+    if [ "$W_ARCH" = "win64" ] ; then
+        w_call mdac28
+    else
+        w_call mdac27
+    fi
     w_call wsh57
 
     # https://support.microsoft.com/kb/239114
@@ -9135,6 +9163,9 @@ load_remove_mono()
     "${WINE_ARCH}" reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f || true
 
     w_try rm -f "$W_WINDIR_UNIX/system32/mscoree.dll"
+    if [ "$W_ARCH" = "win64" ]; then
+        w_try rm -f "$W_WINDIR_UNIX/syswow64/mscoree.dll"
+    fi
 }
 
 #----------------------------------------------------------------
@@ -11036,7 +11067,7 @@ w_metadata opensymbol fonts \
     publisher="OpenOffice.org" \
     year="2017" \
     media="download" \
-    file1="fonts-opensymbol_102.2+LibO3.5.4+dfsg2-0+deb7u10_all.deb" \
+    file1="fonts-opensymbol_102.2+LibO3.5.4+dfsg2-0+deb7u11_all.deb" \
     installed_file1="$W_FONTSDIR_WIN/opens___.ttf"
 
 load_opensymbol()
@@ -11044,7 +11075,7 @@ load_opensymbol()
     # The OpenSymbol fonts are a replacement for the Windows Wingdings font from OpenOffice.org.
     # Need to w_download Debian since I can't find a standalone download from OpenOffice
     # Note: The source download package on debian is for _all_ of OpenOffice, which is 266 MB.
-    w_download "http://security.debian.org/debian-security/pool/updates/main/libr/libreoffice/fonts-opensymbol_102.2+LibO3.5.4+dfsg2-0+deb7u10_all.deb" 33fe227786ae6dd89d265199bf3c03f09e540a5d2b96a38d7a581b4a039db696
+    w_download "http://security.debian.org/debian-security/pool/updates/main/libr/libreoffice/fonts-opensymbol_102.2+LibO3.5.4+dfsg2-0+deb7u11_all.deb" b105ec27c738f92bd9801962f10fd05125c38224c92e702f84b00cbb482dfce7
 
     w_try_cd "$W_TMP"
     w_try_ar "$W_CACHE/$W_PACKAGE/$file1" data.tar.xz
@@ -11356,6 +11387,30 @@ load_autohotkey()
     w_download https://www.autohotkey.com/download/AutoHotkey104805_Install.exe 4311c3e7c29ed2d67f415138360210bc2f55ff78758b20b003b91d775ee207b9
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" AutoHotkey104805_Install.exe $W_UNATTENDED_SLASH_S
+}
+
+#----------------------------------------------------------------
+
+w_metadata busybox apps \
+    title="BusyBox FRP-2121" \
+    publisher="Ron Yorston / Busybox authors" \
+    year="2015" \
+    media="download" \
+    file1="busybox-w32-FRP-2121-ga316078ad.exe" \
+    installed_exe1=""
+
+load_busybox()
+{
+    # Could use https://frippery.org/files/busybox/busybox.exe, but it hasn't updated in last 3 years..
+    w_download https://frippery.org/files/busybox/busybox-w32-FRP-2121-ga316078ad.exe 1bab530f2fd2a9d69528bc2b35ba1f9f75481ae053443b47cb23ad2c2740d887
+
+    if test "$W_ARCH" = "win64"; then
+        w_download https://frippery.org/files/busybox/busybox-w64-FRP-2121-ga316078ad.exe dcb2faf17f996fda8d273d513bc195aec615ef468e3d55b8b4dc9c089b22e035
+        w_try cp "${W_CACHE}/${W_PACKAGE}/${file1}" "$W_SYSTEM32_DLLS/busybox.exe"
+        w_try cp "${W_CACHE}/${W_PACKAGE}/busybox-w64-FRP-2121-ga316078ad.exe" "$W_SYSTEM64_DLLS/busybox.exe"
+    else
+        w_try cp "${W_CACHE}/${W_PACKAGE}/${file1}" "$W_SYSTEM32_DLLS/busybox.exe"
+    fi
 }
 
 #----------------------------------------------------------------
