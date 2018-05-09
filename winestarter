@@ -373,6 +373,13 @@ fn_wine_binary(){
 	## sandoxing wine by exec in WINELOADER directory
 	cd $WINEVERPATH/bin
 	fi
+	## in case wine prefix is missing, but it is really and app dir with exe to launch,
+	## (re-)create prefix.
+	if ! [[ -d $user_prefix/$bottle_prefix ]]; then
+		if [ $(find -L $game_path -wholename "*$game_exe"| grep -c .) -gt 0 ]; then
+			$wineboot_bin -i
+		fi
+	fi
 }
 ## winetricks dlls install module. (4)
 fn_install_tricks(){
@@ -1101,6 +1108,7 @@ fn_wineconf(){
 	perl -ni -pe "s|(w_config)=[0-9]|\1=0|i" $config_file
 	notify-send -t 2800 "Reloading Wine with new winecfg settings"
 	$wineboot_bin -r
+	$wineserver_bin -k
 }
 ## managed app and wine pids discovering. (12)
 fn_wine_kill(){
@@ -1232,6 +1240,7 @@ export WINEPREFIX=$user_prefix/$bottle_prefix
 _use_winepath_env=0
 if [ $use_optimus = 1 ]; then fn_optimus; fi
 if [ $use_winepath = 1 ]; then fn_use_winepath; fi
+## control standalone wine binary and bottle_prefix existence.
 fn_wine_binary
 #if [ $w_install_tricks = 1 ]; then fn_install_tricks; fi
 fn_install_tricks
