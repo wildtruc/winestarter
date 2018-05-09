@@ -3,6 +3,9 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
+*( 09/05/18 ) v1.3.4*
+ - wt: added an auto prefix creation in case there's none in 'launch app from dir' mode.
+
 *( 19/04/18 ) v1.3.4*
  - up_w: micro fix in option syntax.
  
