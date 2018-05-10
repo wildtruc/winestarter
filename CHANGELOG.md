@@ -3,7 +3,10 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
-*( 09/05/18 ) v1.3.4*
+*( 10/05/18 ) v1.3.6*
+ - wt: fix, added more filters to previous addition and a question dialog if prefix doesn't exist.
+ 
+*( 09/05/18 ) v1.3.5*
  - wt: added an auto prefix creation in case there's none in 'launch app from dir' mode.
 
 *( 19/04/18 ) v1.3.4*

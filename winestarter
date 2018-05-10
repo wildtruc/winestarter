@@ -107,7 +107,9 @@ zen_question(){
 	d_img=$(printf "$dialog_list"|cut -d';' -f2)
 	bt_do=$(printf "$dialog_list"|cut -d';' -f3)
 	bt_undo=$(printf "$dialog_list"|cut -d';' -f4)
-	w_width=500
+	d_width=$(printf "$dialog_list"|cut -d';' -f5)
+	if [[ $d_width != '' ]]; then w_width=$d_width; else w_width=500; fi
+#	w_width=400
 	$zen_bin --width=$w_width --title='' --question --window-icon=$d_img --ok-label="$bt_do" \
 	--cancel-label="$bt_undo" --text="$text"
 }
@@ -134,7 +136,7 @@ if [ $_m_free -le $critical ]; then
 		if [ $_cc_used -le $critical ]; then
 			echo -e "»»»» Memory cache used over $_cc_cache% (left:$_m_free%)"
 			text="$vb\\Memory cache is using $_m_cache% of RAM. You can wipe it or leave it as it is. Some apps are known to use a lot of cache memory, so be careful and know what you're doing.$end\\n\\n$brf\\WARNING$end$vb Do not use if your system is a production server, it may wipe all servers cached data.$end"
-			dialog_list="gtk-close;$warning;Wipe;Cancel"; zen_question
+			dialog_list="gtk-close;$warning;Wipe;Cancel;"; zen_question
 			if [ $? = 0 ]; then
 				if [[ $EUID -ne 0 ]]; then
 #					pkexec /usr/local/sbin/winestarter_cache
@@ -376,8 +378,16 @@ fn_wine_binary(){
 	## in case wine prefix is missing, but it is really and app dir with exe to launch,
 	## (re-)create prefix.
 	if ! [[ -d $user_prefix/$bottle_prefix ]]; then
-		if [ $(find -L $game_path -wholename "*$game_exe"| grep -c .) -gt 0 ]; then
-			$wineboot_bin -i
+		if [[ -d $game_path ]]; then
+			if [ $(find -L $game_path -wholename "*$game_exe"| grep -c .) -gt 0 ]; then
+				text="$vb\\Prefix $rb$(echo -e "$bottle_prefix"| sed -n "s/^\.//p")$end doesn't exist.\nDo you really want to create a new one for $rb$game_exe$end ?$end"
+				dialog_list="gtk-close;$warning;Yes, create;Cancel;400";zen_question
+				if [ $? -eq 0 ]; then
+					$wineboot_bin -i
+					w_install_tricks=1
+					w_config=1
+				fi
+			fi
 		fi
 	fi
 }
@@ -561,7 +571,7 @@ fn_install_exe(){
 			echo -e "»»»» WARNING: Archive looks like an installation dir only.\nExtracting in default download dir.\nThen, set up extra packages install."
 			if [ $zen_bin ]; then
 				text="$brf\\Archive seems to be an install dir only.$end$vb\nYou can choose between :\n - Extract and Install as an extra package\n - Cancel, package will be extrated in default downlaod dir under $w_install_dir name, but wont be install.$end"
-				dialog_list="gtk-close;$warning;Extract & Install;Cancel"; zen_question
+				dialog_list="gtk-close;$warning;Extract & Install;Cancel;"; zen_question
 			fi
 			if [ $? = 0 ]; then go_on=1; else go_on=0; fi
 		}
