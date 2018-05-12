@@ -392,7 +392,7 @@ main_code(){
 		fi
 		w_text="$bf\All change are saved to the prefix configuration.$end\\n
 $vb\\You can launch the script now by clicking validation button or from a terminal window with the command line below:$end\\n
-winetstarter $conf_target.conf\\n"
+winestarter $conf_target.conf\\n"
 		w_text1="\\n$nf\\Note$end$vn : Desktop file entry doesn't exist at this step, but will available after the prefix's program installation.$end"
 		w_text2="$nf\\Special warning$end$vn : When using this tool, you can occur window crash or freeze. This is a Yad issue that will be hopefuly fix in a near futur.$end"
 #		basic_sets="'';;;;LBL;;
@@ -559,7 +559,7 @@ user_prefix=$user_prefix
 bottle_prefix=\"$bottle_prefix\"
 ## default system path of the game/appli if not in the chosen Wine prefix
 game_path=\"$game_path\"
-## Full game dir name in Program Files
+## Full game dir name in Program Files or C: root.
 game_dir=\"$game_dir\"
 game_exe=\"$game_exe\"
 ## By default Winestarter set full screen Wine windowed that improve game stability.
@@ -648,8 +648,9 @@ _wine=$_wine"
 						if [[ $_var == _hq_dev0 ]]; then wine_ver=$_hq_dev0; wine_pack=1 ;fi
 						if [[ $_var == _hq_stb0 ]]; then wine_ver=$_hq_stb0; wine_pack=1 ;fi
 						if [[ $_var == _hq_stg0 ]]; then wine_ver=$_hq_stg0; wine_pack=1 ;fi
-						if [[ $_var == _hq_stg1 ]]; then wine_ver=$_hq_stg1; wine_pack=2 ;fi
-						if [[ $_var == _hq_stg2 ]]; then wine_ver=$_hq_stg2; wine_pack=3 ;fi
+						## don't display comments for unexisting listing.
+						if [[ $_var == _hq_stg1 ]]; then wine_ver=$_hq_stg1; wine_pack=3; cmt1='\n## WineHQ old staging < 2.4 (3)';fi
+						if [[ $_var == _hq_stg2 ]]; then wine_ver=$_hq_stg2; wine_pack=2; cmt2=', Wine third party staging > 3.6 (2)';fi
 						wine_ver=$(printf "$wine_ver"| sed -n "s/*$//g;p")
 						w_config=1
 					fi
@@ -681,11 +682,22 @@ wine_path=\"$wine_path\"
 ## custom Wine binary name
 wine_ver='$wine_ver'
 ## Which kind of packages do you want to use: (leave empty if already in bin directory)
-## PlayOnLinux (0), WineHQ stable/staging/development > 2.4 (1), WineHQ old staging < 2.4 (2),
-## Wine third party staging > 3.3 (3)
+## PlayOnLinux (0), WineHQ stable/staging/development > 2.4 (1)$cmt1$cmt2
 wine_pack=$wine_pack
 ## Do not remove or edit below except if you don't use winestarter configurator.
 _wbin=$_wbin"
+#		_section="## Use a specific Wine path: yes (1), no (0).
+#use_winepath=$use_winepath
+### where is your custom Wine binary, if any
+#wine_path=\"$wine_path\"
+### custom Wine binary name
+#wine_ver='$wine_ver'
+### Which kind of packages do you want to use: (leave empty if already in bin directory)
+### PlayOnLinux (0), WineHQ stable/staging/development > 2.4 (1), WineHQ old staging < 2.4 (2),
+### Wine third party staging > 3.3 (3)
+#wine_pack=$wine_pack
+### Do not remove or edit below except if you don't use winestarter configurator.
+#_wbin=$_wbin"
 	}
 	reconf_install(){
 		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_install $e_notif"
@@ -2017,6 +2029,16 @@ ${misc_sets[@]}"
 			fi			
 		fi
 		eval _pol_list='$'_pol$elf'_list'
+		## Since March 2018 WineHQ build.old has benn remove. Nevertheless, is better to keep
+		## dedicated combo box in case they fially change theri mind.
+		pol_ver='1.9.24'
+		if [ $(echo -e "$_hq_stg1_list"| grep -c .) -gt 0 ]; then
+			_hq_old_stg="unset#$_hq_stg1_list;_hq_stg1;;$vb WineHQ staging to 2.4 $end;CB;;"
+			pol_ver='1.8.6'
+		fi
+		if [ $(echo -e "$_hq_stg2_list"| grep -c .) -gt 0 ]; then
+			_hq_alt_stg="unset#$_hq_stg2_list;_hq_stg2;;$vb WineHQ alternative staging $end;CB;;"
+		fi
 		export wine_path=$wine_path
 		export wine_elf=$wine_elf
 		ifs=$IFS
@@ -2032,14 +2054,33 @@ $wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;
 '';;;$w_wine_dl_info;LBL;;
 '';;;$w_wine_dl_warn;LBL;;
 unset#$_hq_stb0_list;_hq_stb0;;$vb WineHQ stable from 2.4 $end;CB;;
-unset#$_hq_stg2_list;_hq_stg2;;$vb WineHQ staging from 3.3 $end;CB;;
+$_hq_alt_stg
 unset#$_hq_stg0_list;_hq_stg0;;$vb WineHQ staging from 2.4 $end;CB;;
-unset#$_hq_stg1_list;_hq_stg1;;$vb WineHQ staging to 2.4 $end;CB;;
+$_hq_old_stg
 unset#$_hq_dev0_list;_hq_dev0;;$vb WineHQ devel from 2.4 $end;CB;;
-unset#$_pol_list;_pol_pkg;;$vb PoL Wine package to 1.8.6 $end;CB;;
+unset#$_pol_list;_pol_pkg;;$vb PoL Wine package to $pol_ver $end;CB;;
 '';;;;LBL;;
 '';;;$w_wine_wconfig;LBL;;
 $w_config;w_config;;Start Winecfg at app launch;CHK;;"
+#		basic_sets="'';;;;LBL;;
+#'';;;$w_wine_binary_title;LBL;;
+#$use_winepath;use_winepath;;use Wine binaries path (default:$HOME/.winebin);CHK;;
+#'';;;$w_wine_wine_path;LBL;;
+#$wine_path;wine_path;;$nf Wine binaries dir\t\t$end;DIR;;
+#'';;;$w_wine_wine_ver;LBL;;
+#$wine_ver;wine_ver;;$nf Wine bin name$end;DIR;;
+#'';;;;LBL;;
+#'';;;$w_wine_dl_info;LBL;;
+#'';;;$w_wine_dl_warn;LBL;;
+#unset#$_hq_stb0_list;_hq_stb0;;$vb WineHQ stable from 2.4 $end;CB;;
+#unset#$_hq_stg2_list;_hq_stg2;;$vb WineHQ staging from 3.3 $end;CB;;
+#unset#$_hq_stg0_list;_hq_stg0;;$vb WineHQ staging from 2.4 $end;CB;;
+#unset#$_hq_stg1_list;_hq_stg1;;$vb WineHQ staging to 2.4 $end;CB;;
+#unset#$_hq_dev0_list;_hq_dev0;;$vb WineHQ devel from 2.4 $end;CB;;
+#unset#$_pol_list;_pol_pkg;;$vb PoL Wine package to 1.8.6 $end;CB;;
+#'';;;;LBL;;
+#'';;;$w_wine_wconfig;LBL;;
+#$w_config;w_config;;Start Winecfg at app launch;CHK;;"
 		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_wine_binary ####\n$e_notif"
 		IFS=$ifs
 		item_sep="#"
@@ -3205,7 +3246,10 @@ control_last(){
 	else
 		wget -O $file_temp $dl_address
 		## limit PoL Wine version list from 1.4 to 1.8.6
-		dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.8\.6.*$/,/^1\.4$/p')" )
+#		dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.8\.6.*$/,/^1\.4$/p')" )
+		## Since march 2018 WineHQ old-builds has been remove for an unkwonw reason,
+		## then PoL versio has been update accordingly from 1.4 to 1.9.24.
+		dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.9\.24.*$/,/^1\.4$/p')" )
 	fi
 	eval local_bin_list='$'{local_bin_$http_class[@]}
 	if [ ${#local_bin_list[@]} -gt 0 ]; then
@@ -3259,6 +3303,7 @@ control_last(){
 	download_section(){	
 		# ls already insbtalled packages if any
 		tag_cmd=('select_pol_32' 'select_pol_64' 'select_stb0' 'select_stg0' 'select_dev0' 'select_stg1' 'select_stg2')
+#		tag_cmd=('select_pol_32' 'select_pol_64' 'select_stb0' 'select_stg0' 'select_dev0' 'select_stg1')
 #		tag_cmd=('select_stb0' 'select_stg0' 'select_dev0' 'select_stg1' 'select_stg2')
 #		tag_cmd=('select_dev0' 'select_stg1' 'select_stg2')
 		for tag_list in ${tag_cmd[@]}; do
@@ -3273,6 +3318,7 @@ control_last(){
 		done
 	}
 	date_stamp
+#	update=1
 	if [ $line = 0 ]; then
 		ct_msg=1
 	else
@@ -3293,6 +3339,7 @@ control_last(){
 		
 		fi
 	fi
+#	exit 0
 }
 ### main ui buttons functions
 ## manage configs and bottles

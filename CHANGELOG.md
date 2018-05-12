@@ -3,6 +3,10 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
+*( 11orne/05/18 ) v1.3.7*
+ - wt/wtc: fix. WineHQ has removed build.old repository for a hodd and unkknown reason. Scripts have been adapted to this new behoviour and release from 1.9.24 fallback to PoL packages (still not tested them).
+ - Note: Previous method has been kept and will auto detect if build.old is back, in case WineHQ change is mind. 
+  
 *( 10/05/18 ) v1.3.6*
  - wt: fix, added more filters to previous addition and a question dialog if prefix doesn't exist.
  

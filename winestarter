@@ -213,7 +213,10 @@ fn_use_winepath(){
 		else
 			wget -O $file_temp $dl_address
 			## limit PoL Wine version list from 1.4 to 1.8.6
-			dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.8\.6.*$/,/^1\.4$/p')" )
+#			dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.8\.6.*$/,/^1\.4$/p')" )
+			## Since march 2018 WineHQ old-builds has been remove for an unkwonw reason,
+			## then PoL versio has been update accordingly from 1.4 to 1.9.24.
+			dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.9\.24.*$/,/^1\.4$/p')" )
 		fi
 		echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2 > $file_temp.[fedostamp]
 	}
@@ -247,9 +250,9 @@ fn_use_winepath(){
 			fi
 			file_temp=$(mktemp --tmpdir ftp.XXXX)
 			## identify Wine repo type.
-			if [ $wine_pack = 2 ]; then 
+			if [ $wine_pack = 3 ]; then 
 				dir_ver='wine-builds.old'
-			elif [ $wine_pack = 3 ]; then
+			elif [ $wine_pack = 2 ]; then
 				dir_ver=''
 			else
 				dir_ver='wine-builds'
