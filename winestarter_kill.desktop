@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Winestarter Killer
 Comment=Winestarter Wine app killer
-Exec=winestarter_kill
+Exec=/usr/local/bin/winestarter_kill
 Icon=winestarter_128k.png
 Terminal=false
 Type=Application

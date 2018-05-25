@@ -48,8 +48,7 @@ IFS=$(echo -en "\n\b")
 yad_pid=$(ps -o pid,cmd | grep -c "yad")
 if [ $(ps -o cmd | grep -c "yad") -gt 1 ]; then kill -15 $(pidof -s yad) ; fi
 #		_pid_list=( $(ps --ppid=$wine_grp -o pid,cmd | sed -En "s/^[ ]?($grp_id_key[0-9]{3,4}) ((\w*\.exe .*)|(C:.*)|(.*wineserver.*))$/\1 \2/p") )
-		_pid_list=( $(ps --ppid=$wine_grp -o pid,cmd | \
-		sed -En "s/^[ ]?([0-9]{4,5}) ((.*\.exe[]]? .*)|(C:.*)|(.*wineserver.*))$/\1 \2/p") )
+		_pid_list=( $(ps --ppid=$wine_grp -o pid,cmd | sed -En "s/^[ ]?([0-9]{4,5}) ((.*\.exe[]]? .*)|(C:.*)|(.*wineserver.*))$/\1 \2/p") )
 #		sed -En "s/^[ ]?($[0-9]{4,5}) ((.*\.exe[]]? .*)|(C:.*)|(.*wineserver.*))$/\1 \2/p") )
 		echo "${_pid_list[*]}"
 		for pid_line in "${_pid_list[@]}"; do

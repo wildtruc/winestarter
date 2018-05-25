@@ -3,6 +3,9 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
+*( 25/05/18 ) v1.3.8*
+ - wk: for an unknown reason winestart_kill doesn't display pid list when launch from desktop file, but does when launch from the command line. Desktop file will now launch through a terminal window to fix this the time I really understand what is wrong.
+ 
 *( 11/05/18 ) v1.3.7*
  - wt/wtc: fix. WineHQ has removed build.old repository for a hodd and unkknown reason. Scripts have been adapted to this new behoviour and release from 1.9.24 fallback to PoL packages (still not tested them).
  - Note: Previous method has been kept and will auto detect if build.old is back, in case WineHQ change is mind. 
