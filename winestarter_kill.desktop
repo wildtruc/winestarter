@@ -3,7 +3,7 @@ Name=Winestarter Killer
 Comment=Winestarter Wine app killer
 Exec=/usr/local/bin/winestarter_kill
 Icon=winestarter_128k.png
-Terminal=false
+Terminal=true
 Type=Application
 Categories=X-Wine;Application;Settings;
 
