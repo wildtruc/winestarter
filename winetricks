@@ -6726,6 +6726,25 @@ load_dxvk63()
     helper_dxvk "$file1" "3.10" "1.0.76"
 }
 
+<<<<<<< HEAD
+=======
+w_metadata dxvk64 dlls \
+    title="Vulkan-based D3D11 implementation for Linux / Wine (0.64)" \
+    publisher="Philip Rebohle" \
+    year="2018" \
+    media="download" \
+    file1="dxvk-0.64.tar.gz" \
+    installed_file1="$W_SYSTEM32_DLLS_WIN/d3d11.dll" \
+    installed_file2="$W_SYSTEM32_DLLS_WIN/dxgi.dll"
+
+load_dxvk64()
+{
+    # https://github.com/doitsujin/dxvk
+    w_download "https://github.com/doitsujin/dxvk/releases/download/v0.64/dxvk-0.64.tar.gz" 2e03e40ff0a9d36f96a06137f3fa9110ebaea230d0bf6c22cf6399e16e97fb9c
+    helper_dxvk "$file1" "3.10" "1.0.76"
+}
+
+>>>>>>> fa1e6da052304ff70858f0f906a09ec376057c2c
 
 #----------------------------------------------------------------
 
@@ -10307,7 +10326,8 @@ load_windowscodecs()
     # AF says in AppDB entry for .NET 3.0 that windowscodecs has to be native only
     w_override_dlls native windowscodecs windowscodecsext
 
-    w_set_winver winxp
+    # Previously this was winxp, but that didn't work for 64-bit, see https://github.com/Winetricks/winetricks/issues/970
+    w_set_winver win2k3
 
     # Always run the WIC installer in passive mode.
     # See https://bugs.winehq.org/show_bug.cgi?id=16876 and
@@ -11252,8 +11272,8 @@ w_metadata tahoma fonts \
 
 load_tahoma()
 {
-    # Formerly at http://download.microsoft.com:80/download/ie55sp2/Install/5.5_SP2/WIN98Me/EN-US/IELPKTH.CAB
-    w_download http://downloads.sourceforge.net/corefonts/OldFiles/IELPKTH.CAB c1be3fb8f0042570be76ec6daa03a99142c88367c1bc810240b85827c715961a
+    # Formerly at http://download.microsoft.com/download/ie55sp2/Install/5.5_SP2/WIN98Me/EN-US/IELPKTH.CAB
+    w_download https://downloads.sourceforge.net/corefonts/OldFiles/IELPKTH.CAB c1be3fb8f0042570be76ec6daa03a99142c88367c1bc810240b85827c715961a
 
     w_try_cabextract -d "$W_TMP" "$W_CACHE/$W_PACKAGE/$file1"
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "*.TTF"
@@ -11432,11 +11452,15 @@ w_metadata 3m_library apps \
     media="download" \
     file1="cloudLibrary-2.1.1702011951-Setup.exe" \
     installed_exe1="$W_PROGRAMS_X86_WIN/cloudLibrary/cloudLibrary.exe" \
+<<<<<<< HEAD
     homepage="https://www.yourcloudlibrary.com/index.php/en-us/"
+=======
+    homepage="https://www.yourcloudlibrary.com/"
+>>>>>>> fa1e6da052304ff70858f0f906a09ec376057c2c
 
 load_3m_library()
 {
-    w_download http://download.yourcloudlibrary.com/apps/pc/cloudLibrary-2.1.1702011951-Setup.exe bb3d854cc525c065e7298423bf0019309f4b65497c1d8bc6af09460cd6fcb57f
+    w_download https://usestrwebaccess.blob.core.windows.net/apps/pc/cloudLibrary-2.1.1702011951-Setup.exe bb3d854cc525c065e7298423bf0019309f4b65497c1d8bc6af09460cd6fcb57f
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" "${file1}" $W_UNATTENDED_SLASH_S
 }
@@ -11453,7 +11477,7 @@ w_metadata 7zip apps \
 
 load_7zip()
 {
-    w_download http://www.7-zip.org/a/7z1602.exe 629ce3c424bd884e74aed6b7d87d8f0d75274fb87143b8d6360c5eec41d5f865
+    w_download https://downloads.sourceforge.net/sevenzip/7z1602.exe 629ce3c424bd884e74aed6b7d87d8f0d75274fb87143b8d6360c5eec41d5f865
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" "${file1}" $W_UNATTENDED_SLASH_S
 }
