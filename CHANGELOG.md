@@ -3,7 +3,7 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
-*( 22/10/18 ) v1.3.9*
+*( 12/12/18 ) v1.3.9*
  - dev message: I have severe heals issue and I don't really know if I could still manage my project alive. I will try to continue to fix bugs, but i can't tell about the future. It's strongly recommanded to fork.
  - info: WineHQ packages have upgrade to GLIB 2.27 since Wine 3.10 (update GLIB or upgrade your distro to get standalone wine binaries above 3.10)
  - changelog.sh changed to get last change messages even if zenity is not installed.

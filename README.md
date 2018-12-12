@@ -5,6 +5,8 @@ A not very simple, but very cool script to start and install wine emulated appli
 
 -------
 
+**IMPORTANT MESSAGE** (12/12/2018): I have severe heals issue and I don't really know if I could still manage my project alive. I will try to continue to fix bugs and answer to issues and questions, but I can't tell about the future. It's strongly recommanded to fork to an active dev structure.
+
 **NOTICE**: It important for us to get feedback and bug reports from you. Don't leave us in darkness.
 
 **WARNING v1.02**: This update need a `git pull` before `make update`, only way for new pngs to take place. This is the default method when new content comes out.
