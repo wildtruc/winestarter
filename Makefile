@@ -55,8 +55,8 @@ update:
 	cp -Ru ./png/defaults/* $(CONF_DIR)/png/defaults/
 	chown $(C_USER):$(C_USER) $(USER_DIR)/.config/autostart/ update_winestarter.desktop
 #	sudo -u $(C_USER) cp -Rf ./.git $(CONF_DIR)/
-	sh ./changelog.sh
-		
+	bash ./changelog.sh
+	
 uninstall:
 	rm -Rf $(CONF_DIR)
 	rm -f $(PREFIX)/bin/winestarter

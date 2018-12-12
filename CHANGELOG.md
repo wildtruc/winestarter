@@ -1,8 +1,19 @@
 # Change log & reports
-wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => winestart_kill, up => update.sh
+wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => winestart_kill, up => update.sh, we => winestarter_extract
 
 -----------
 ### Change Log
+*( 22/10/18 ) v1.3.9*
+ - dev message: I have severe heals issue and I don't really know if I could still manage my project alive. I will try to continue to fix bugs, but i can't tell about the future. It's strongly recommanded to fork.
+ - info: WineHQ packages have upgrade to GLIB 2.27 since Wine 3.10 (update GLIB or upgrade your distro to get standalone wine binaries above 3.10)
+ - changelog.sh changed to get last change messages even if zenity is not installed.
+ - wtc: fixed unproperly wine_conf tab options set (gave TRUE/FALSE in place of 1/0 when place in conf file at first start).
+ - wt: fixed auto desktop file creation bad behaviour that could delete all winestarter dedicated desktop files.
+ - wt: added a resolution selector for Wine windowed mode if more than one display is detected.
+ - wt: added missing executable file detection at first application start.
+ - wtc: added wine's distro package installer to resolve first start wine's dependencies. Function can also backup distro's package for winestarter future uses.
+ - added a standalone script: winestarter_extract in relation with above addition. Launching it in a terminal save distro's wine package in winestarter's format to binaries directory.
+ 
 *( 25/05/18 ) v1.3.8*
  - wk: for an unknown reason winestart_kill doesn't display pid list when launch from desktop file, but does when launch from the command line. Desktop file will now launch through a terminal window to fix this the time I really understand what is wrong.
  

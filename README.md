@@ -50,7 +50,7 @@ Note that all OpenGL environment variables are dedicated to Nvidia Graphic cards
 --------
 ## Features
  - Create and configure a basic Wine bottle (32 or 64)
- - Download and configure a custom Wine binaries directory (PoL & WinHQ-staging)
+ - Download and configure a custom Wine binaries directory (PoL, WinHQ staging, WineHQ stable)
  - Install Winestricks packages
  - Create and configure a Wine registry
  - Install a software from a file or downloaded.

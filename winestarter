@@ -113,6 +113,20 @@ zen_question(){
 	$zen_bin --width=$w_width --title='' --question --window-icon=$d_img --ok-label="$bt_do" \
 	--cancel-label="$bt_undo" --text="$text"
 }
+selector_display(){
+	unset _sel_list
+	for _sel_key in "${select_list[@]}"; do
+		_sel_list+=("false")
+		_sel_list+=("$_sel_key")
+		_sel_list+=( $(printf "$_sel_key"| \
+		sed -En "s|^($user_prefix/$bottle_prefix/drive_c/)(.*)$|\2|p" ) )
+	done
+	## test lnk correspondance to present application
+	_sel_path=$($zen_bin --width=600 --height=380 --title "$w_title" --list --radiolist \
+	--window-icon=$filesave --ok-label='Select a file' --cancel-label='Cancel' \
+	--text="$sel_text" --column "select" --column='full path' --column "$list_word" \
+	--hide-column=2 "${_sel_list[@]}")
+}
 fn_wipe_cache(){
 ## Control system cache memory. If too high, display an admin window and ask to clear it with warnings.
 ## use /proc/meminfo MemTotal / Buffers / Cached+Slab (critical avaluate on 60% Buffers+Cached+Slab)
@@ -140,7 +154,7 @@ if [ $_m_free -le $critical ]; then
 			if [ $? = 0 ]; then
 				if [[ $EUID -ne 0 ]]; then
 #					pkexec /usr/local/sbin/winestarter_cache
-					pkexec sh -c "echo -e \"»»»» Cleaning memory cache.\"; sync; echo 3 > /proc/sys/vm/drop_caches"
+					pkexec bash -c "echo -e \"»»»» Cleaning memory cache.\"; sync; echo 3 > /proc/sys/vm/drop_caches"
 				fi
 			fi
 		fi
@@ -692,7 +706,8 @@ fn_install_exe(){
 		fi
 		exit 0
 	else
-		perl -ni -pe "s|(w_install_exe)=[0-9]|\1=0|i" $config_file
+		sed -Eni "s/^(w_install_exe)=[0-9]$/\1=0/i;p" $config_file
+#		perl -ni - pe "s|(w_install_exe)=[0-9]|\1=0|i" $config_file
 	fi
 }
 ## target dir existence and desktop file sub process (6)
@@ -728,6 +743,38 @@ fn_game_dir_exist(){
 				_target_path=$(printf "$_target_dir"| sed -En "s|^(.*)/(drive_c)/(.*)$|\1/dosdevices/c:/\3|p")
 				_unix_path=$_target_dir/$game_exe
 				fn_convert_desktop_file
+			fi
+		fi
+	else
+		## in some cases, game_path and game_exe could not be found and a manually search is needed.
+		if [[ $game_exe == 'null' ]]; then
+			unset select_list
+			exclude_dir='users'
+			exclude_list='[Ww]indows|Explorer'
+			bin_dir_target=$(find -L $user_prefix/$bottle_prefix/drive_c/ \
+			-not \( -path $user_prefix/$bottle_prefix/drive_c/$exclude_dir -prune \) -iname "*.exe" | \
+			egrep -v "$exclude_list")
+			select_list=( $bin_dir_target )
+			list_word='executables'
+			sel_text="$bf\\Application executable and path not found$end\n
+$vb\\Select the appropriate executable file in the list below. Choose wisely, it would define the app
+executable and dirrectory for config file, and moreover, allowing to create the dedicate desktop file.$end
+\n$nf\\CAUTION:$end$vn Be aware that some apps have their executables in some boot directory,
+but have to chroot in the main directory to start (the preivous usualy).
+In this case, you have to modify the config file manualy or with Winestarter_conf as needed.$end"
+			selector_display
+			if [ $? = 0 ]; then
+				_dest_path=$_sel_path
+				_target_exe=$(printf "$_dest_path"| sed -n "s|^.*/||g;p")
+				_target_dir=$(printf "$_dest_path"| sed -n "s|/$_target_exe||p")
+				_target_path=$(printf "$_target_dir"| sed -En "s|^(.*)/(drive_c)/(.*)$|\1/dosdevices/c:/\3|p")
+				_unix_path=$_target_dir/$_target_exe
+				game_exe=$_target_exe
+				game_dir=$(printf "$_target_dir"| sed -n "s/^.*\///p")
+				sed -Eni "s|^(game_exe)=.*$|\1=\"$game_exe\"|g;p" $config_file
+				sed -Eni "s|^(game_dir)=.*$|\1=\"$game_dir\"|g;p" $config_file
+				fn_convert_desktop_file
+				fn_root_key
 			fi
 		fi
 	fi
@@ -834,9 +881,10 @@ fn_convert_desktop_file(){
 				
 			fi
 		fi
-		if [[ -s $d_png_dir/$d_exec.png ]]; then
+		if [[ -s $d_png_dir/$d_exec.png && ! -s $d_png_dir/.png ]]; then
 			d_icon=$d_png_dir/$d_exec.png
 		else
+			if [[ -s $d_png_dir/.png ]]; then rm -f $d_png_dir/.png; fi
 			d_icon=$d_png_dir/defaults/wine48w.png
 		fi
 		## 'd_name d_exec d_path d_icon dsk_name'
@@ -849,34 +897,39 @@ Icon=$d_icon\nCategories=Applications;"
 		chmod 755 $XDG_DESKTOP_DIR/$dsk_name
 	}
 	## modify and backup the desktop file
-	## then now main app cariables are define, check is there is an appropriate desktop file to convert
+	## then now main app variables are define, check is there is an appropriate desktop file to convert
 	## or create a new one from scratch.
 	if [[ -x $convert_bin ]]; then
 #		if [ -x $_unix_path ]; then
 #		test -x $_unix_path
 		if [[ -s $_unix_path ]] ; then
 			_desktop_file_list=( $(ls -1 $XDG_DESKTOP_DIR| egrep "(\s*.desktop$)") )
+			## catch first word for desktop/exe key seek.
 			_dsk_key=$(printf "$_target_exe"| sed -En "s|^(\w*.{3,15})(.*).exe|\1|;s|[ ]?$||p")
 			_config=$(printf "$config_file"| sed -n "s/^.*\///g;p")
 			## check if _dsk_key match something in desktop files path
 			## if yes, check if path var is a wine cmdline or a winestarter one.
-			## if winestrater's cmd, check that conf conf file is the good one. If wine's, then convert.
-			if [ $(ls $XDG_DESKTOP_DIR/| egrep -c "$_dsk_key") -gt 0 ]; then
-				for _desk in "${_desktop_file_list[@]}"; do
-					if [ $(echo -e "$_desk"| egrep -c "$_dsk_key") -gt 0 ]; then
+			## if no, check inside desktop file list if executable exist.
+			## if winestrater's cmd, check that conf file is the good one. If wine's, then convert.
+			## _dsk_key is place as the first word of the output.
+			if [[ $(ls $XDG_DESKTOP_DIR/| egrep -c "^$_dsk_key") -gt 0 || \
+			$(cat $XDG_DESKTOP_DIR/$_desk/$_exe_key*.desktop| egrep -c "^Exec=.*$_dsk_key.*exe.*$") -gt 0 ]]; then
+				for _desktar in "${_desktop_file_list[@]}"; do
+					if [ $(echo -e "$_desktar"| egrep -c "$_dsk_key") -gt 0 ] || \
+					[ $(cat $XDG_DESKTOP_DIR/$_desktar| egrep -c "^Exec=.*$_dsk_key.*exe.*$") -gt 0 ]; then
 						## check if desktop file is already configured by winestarter or not.
-						if [[ $(cat $XDG_DESKTOP_DIR/$_desk| \
-						egrep -c "^Exec=.*$_dsk_key.*exe[.*$|$]") -gt 0 || \
-						$(cat $XDG_DESKTOP_DIR/$_desk| egrep -c "^Exec=.*$_config$") -eq 0 ]]; then
+						if [[ $(cat $XDG_DESKTOP_DIR/$_desktar| \
+						egrep -c "^Exec=.*$_dsk_key.*exe.*$") -gt 0 || \
+						$(cat $XDG_DESKTOP_DIR/$_desktar| egrep -c "^Exec=.*$_config$") -eq 0 ]]; then
 							## defines appropriiate vars and convert.
 							## save original desktop file to winestarter conf directory.
-							cp -f $XDG_DESKTOP_DIR/$_desk $scpt_dir/desktop/
+							cp -f $XDG_DESKTOP_DIR/$_desktar $scpt_dir/desktop/
 							## look for avialable data from dktop file.
-							d_name=$(cat $XDG_DESKTOP_DIR/$_desk| sed -En "s|^(Name=)(.*)$|\2|p")
+							d_name=$(cat $XDG_DESKTOP_DIR/$_desktar| sed -En "s|^(Name=)(.*)$|\2|p")
 							d_exec=$game_exe
-							d_path=$(cat $XDG_DESKTOP_DIR/$_desk| sed -En "s|^(Path=)(.*)$|\2|p")
-							d_icon=$(cat $XDG_DESKTOP_DIR/$_desk| sed -En "s|^(Icon=)(.*)$|\2|p")
-							dsk_name=$_desk
+							d_path=$(cat $XDG_DESKTOP_DIR/$_desktar| sed -En "s|^(Path=)(.*)$|\2|p")
+							d_icon=$(cat $XDG_DESKTOP_DIR/$_desktar| sed -En "s|^(Icon=)(.*)$|\2|p")
+							dsk_name=$_desktar
 							if ! [[ $d_path ]]; then d_path="$_target_path" ; fi						
 							echo "→→→→→→ convert existing desktop"
 							_sub_convert_desk
@@ -895,51 +948,62 @@ Icon=$d_icon\nCategories=Applications;"
 			fi
 		fi
 	fi
+#	exit 0
 }
 ## sub step process after install or when usage of usage of extract app path. (5bis)
 fn_extract_lnk_file(){
-	_sub_selector_diplay(){
-		unset _sel_list
-		for _sel_key in "${select_list[@]}"; do
-			_sel_list+=("false")
-			_sel_list+=("$_sel_key")
-			_sel_list+=( $(printf "$_sel_key"| \
-			sed -En "s|^($user_prefix/$bottle_prefix/drive_c/)(.*)$|\2|p") )
-		done
-		## test lnk correspondance to present application
-		_sel_path=$($zen_bin --width=600 --height=380 --title "$w_title" --list --radiolist \
-		--window-icon=$filesave --ok-label='Select a file' --cancel-label='Cancel' \
-		--text="$sel_text" --column "select" --column='full path' --column "executable" \
-		--hide-column=2 "${_sel_list[@]}")
-	}
+#	_sub_selector_display(){
+#		unset _sel_list
+#		for _sel_key in "${select_list[@]}"; do
+#			_sel_list+=("false")
+#			_sel_list+=("$_sel_key")
+#			_sel_list+=( $(printf "$_sel_key"| \
+#			sed -En "s|^($user_prefix/$bottle_prefix/drive_c/)(.*)$|\2|p" ) )
+#		done
+#		## test lnk correspondance to present application
+#		_sel_path=$($zen_bin --width=600 --height=380 --title "$w_title" --list --radiolist \
+#		--window-icon=$filesave --ok-label='Select a file' --cancel-label='Cancel' \
+#		--text="$sel_text" --column "select" --column='full path' --column "$list_word" \
+#		--hide-column=2 "${_sel_list[@]}")
+#	}
 	## file exist. Test to find lnk file first.
 	if [ $if_install -gt 0 ]; then lnk_file=''; fi
 	w_desktop=$(printf "$XDG_DESKTOP_DIR"| sed -n "s/^.*\///g;p")
-	lnk_file=$(find -L $user_prefix/$bottle_prefix/drive_c/users/Public/$w_desktop/ -iname "*.lnk")
-	if [[ -x $zen_bin ]]; then	
+	lnk_file=( $(find -L $user_prefix/$bottle_prefix/drive_c/users/Public/$w_desktop/ -iname "*.lnk") )
+#	lnk_file_1=$(find -L $user_prefix/$bottle_prefix/drive_c/users/Public/$w_desktop/ -iname "*.lnk")
+#	lnk_file_2=$(find -L $user_prefix/$w_desktop/ -iname "*.lnk")
+	## if lnk_file doesn't exist, check first in default linux 'desktop' dir for old fashion link file 
+	## before asking for .exe selector.
+	if ! [ "$lnk_file" ]; then
+		lnk_file=( $(find -P $user_prefix/$w_desktop/ -maxdepth 1 -iname "*.lnk") )
+	fi
+	if [[ -x $zen_bin ]]; then
 		## search and define app dir, path and exe.
-		if ! [ "$lnk_file" ]; then
 		## if lnk file doesn't exist, check for exe file in default install path.
+		if ! [ "$lnk_file" ]; then
+			unset select_list
 			## build an exe list with windowws system exclusion list.
 			exclude_dir='users'
 			exclude_list='[Ww]indows|Explorer'
 			## if app data come from fn_game_dir_exist, change app exe seek as appropriate.
 			if [ $if_install -gt 0 ]; then
-				app_exe_list=$(find -L $_link_target_path$game_dir -iname "*.exe")
-			else
 				## to restrict search, look in where exe could be, not where it could'nt.
 				app_exe_list=$(find -L $user_prefix/$bottle_prefix/drive_c/ \
 				-not \( -path $user_prefix/$bottle_prefix/drive_c/$exclude_dir -prune \) -iname "*.exe" | \
-				egrep -v "$exclude_list")
+				egrep -v "$exclude_list")							
+			else
+				app_exe_list=$(find -L $_link_target_path$game_dir -iname "*.exe")
 			fi
 			select_list=( $app_exe_list )
+			list_word='executables'
 			sel_text="$bf\\Desktop LNK file not found$end\n
 $vb\\Select the appropriate executable file in the list below. Choose wisely, it would define the app
 executable and dirrectory for config file, and moreover, allowing to create the dedicate desktop file.$end
 \n$nf\\CAUTION:$end$vn Be aware that some apps have their executables in some boot directory,
 but have to chroot in the main directory to start (the preivous usualy).
 In this case, you have to modify the config file manualy or with Winestarter_conf as needed.$end"
-			_sub_selector_diplay
+#			_sub_selector_display
+			selector_display
 			if [ $? = 0 ]; then
 				_dest_path=$_sel_path
 				_target_exe=$(printf "$_dest_path"| sed -n "s|^.*/||g;p")
@@ -951,10 +1015,11 @@ In this case, you have to modify the config file manualy or with Winestarter_con
 		else
 			## in case 'find' command return more than one, display a zenity selector.
 			if [ ${#lnk_file[@]} -gt 1 ]; then
-				select_list=( $lnk_file )
+				select_list=( ${lnk_file[@]} )
+				list_word='link file'
 				sel_text="$bf\\More than Desktop LNK found in path$end\n
 $vb\\Select the appropriate LNK file in the list below.$end"
-				_sub_selector_diplay
+				selector_display
 				if [ $? = 0 ]; then
 					lnk_file=$_sel_path
 				fi
@@ -966,12 +1031,21 @@ $vb\\Select the appropriate LNK file in the list below.$end"
 			sed -En "s|^(.*c:/)(.*)/($_target_exe)$|$user_prefix/$bottle_prefix/drive_c/\2|p")
 			_target_path=$($wine_bin winepath -u $_dest_path| sed -En "s|^(.*c:/)(.*)/($_target_exe)$|\1\2|p")
 			_unix_path=$_target_dir/$_target_exe
+#			mv -f $user_prefix/$w_desktop/$sed_key.lnk $user_prefix/$bottle_prefix/drive_c/users/Public/$w_desktop/
+			mv -f $lnk_file $user_prefix/$bottle_prefix/drive_c/users/Public/$w_desktop/
 		fi
+		_exe_key=$(printf "$_target_exe"| sed -En "s|^(.{4}).*\.exe$|\1|p")
 		if [[ $_target_dir =~ ^.*x86.*$ ]]; then
 			sed_key='Files \(x86\)/'; else sed_key='Files/';
 		fi
 		game_dir=$(printf "$_target_dir"| sed -En "s|^.*$sed_key||p")
 		game_exe=$_target_exe
+		if [[ $(cat $config_file| grep -c "game_dir=\"$game_dir\"" ) -eq 0 ]]; then
+			sed -Eni "s/^(game_dir)=.*$/\1=\"$game_dir\"/i;p" $config_file
+		fi
+		if [[ $(cat $config_file| grep -c "game_exe=\"$game_exe\"") -eq 0 ]]; then
+			sed -Eni "s/^(game_exe)=.*$/\1=\"$game_exe\"/i;p" $config_file
+		fi
 	fi
 	fn_convert_desktop_file
 }
@@ -1269,6 +1343,25 @@ if [ $windowed -gt 0 ]; then
 	if [[ $(cat $default_reg| egrep -c "\"Desktop\"=\"Default\"") -eq 0 ]]; then
 		## find primary display res.
 		current_res=$(xrandr --current| fgrep "*"| awk '{print $1}')
+		## if xrandr detect more than one active display, start a selector.
+		if [ $(echo -e "$current_res"| grep -c .) -gt 1 ]; then
+			unset _display_list
+			w_title="windowed mode resolution selector"
+			dsp_text="$brf\WARNING$end$vb : More than one display detected$end$vb\n\nPlease select the right display resolution for Wine windowed mode.$end"
+			_display_list=( $current_res )
+			n=1
+			for _dsp_res in "${_display_list[@]}"; do
+				_dsp_list+=("false")
+				_dsp_list+=("$_dsp_res")
+				_dsp_list+=("$n")
+				((n++))
+			done
+			## test lnk correspondance to present application
+			current_res=$($zen_bin --width=300 --title "$w_title" --list --radiolist \
+			--window-icon=$filesave --ok-label='Choose selected resolution' --cancel-label='Cancel' \
+			--text="$dsp_text" --column "select" --column "resolutions" --column='display n°' \
+			"${_dsp_list[@]}")
+		fi
 		desktop_color='0 0 0'
 		starter_reg="[HKEY_CURRENT_USER\Software\Wine\\\\Explorer]
 \"Desktop\"=\"Default\"

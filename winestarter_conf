@@ -55,6 +55,10 @@ icons_set(){
 	img_wine_desk_bt=$png_stock/'desktop16.png'
 	img_wine_colors=$png_stock/'colors16.png'
 	img_wine_restart=$png_stock/'reload.png'
+	img_wine_tools=$png_stock/'wine_tools16.png'
+	## scripts
+	img_wine_save=$png_stock/'wine_save16.png'
+	img_wine_kill=$png_stock/'wine_kill16.png'
 	## tabs
 	img_wine_ui=$png_stock/'wine-wine48.png'
 	img_wine_cfg1=$png_stock/'wine-winecfg48.png'
@@ -250,7 +254,7 @@ main_code(){
 #		while [[ $(pgrep 'winetricks') ]]; do
 #			sleep 1
 #		done
-		kill $WAIT_UI_1
+			kill $WAIT_UI_1
 			w_width=$((800+$scale))
 			$yad_bin --width=$w_width --title "$w_title" --window-icon=$img_wine_desk_ui --borders=15 \
 			$main_height $main_scroll --notebook --key=$key --tab-pos=right --tab-border=2 \
@@ -432,6 +436,8 @@ winestarter $conf_target.conf\\n"
 			if [[ $_listed =~ ^$HOME[\/]?$ ]]; then
 				if [[ $_var != user_prefix ]]; then local $_var=''; fi
 			fi
+			if [[ $_listed == TRUE ]]; then _val=1; fi
+			if [[ $_listed == FALSE ]]; then _val=0; fi
 			case $_var in
 				'bottle_prefix') bottle_prefix=$(printf "$bottle_prefix"| sed -n "s|^.*/||g;p") ;;
 				'game_path')
@@ -476,6 +482,8 @@ winestarter $conf_target.conf\\n"
 				if [ $_var -gt 0 ]; then
 					_args+=("-$_opt_id")
 				fi
+				if [[ $_listed == TRUE ]]; then _val=1; fi
+				if [[ $_listed == FALSE ]]; then _val=0; fi
 			done
 			if [ $wine_arg_msc ]; then
 				if [[ $wine_arg_msc != unset ]]; then
@@ -575,7 +583,7 @@ start_cmd=$start_cmd
 ## set a 64 bits bottle: false (0), true (1)
 wine_elf=$wine_elf
 
-## WineDbg speicals:
+## WineDbg specials:
 ## In some case WineDbg crash dialog popups even if finally the managed app launch correctly.
 ## This option prevent the crash dialog to popup on working apps start: on (1), off (0)
 dbg_dialog=$dbg_dialog
@@ -663,10 +671,13 @@ _wine=$_wine"
 					fi
 				;;
 				'w_config')
-					if [ $from_config = 1 ]; then
-						if [ $w_config -gt 0 ]; then
-							sed -ni "s/^\(w_config\)=[0-9]$/\1=$w_config/g;p" $TEMP_conf
-						fi
+#					if [ $from_config = 1 ]; then
+#						if [ $w_config -gt 0 ]; then
+#							sed -ni "s/^\(w_config\)=[0-9]$/\1=$w_config/g;p" $TEMP_conf
+#						fi
+#					fi
+					if [[ $w_config -gt 0 || $w_config == 'TRUE' ]]; then
+						sed -Eni "s/^(w_config)=.*$/\1=$w_config/g;p" $TEMP_conf
 					fi
 				;;
 			esac
@@ -1365,21 +1376,205 @@ $_extended;_extended;;$msg_extended;CHK;;
 		# create main window variables
 		default_tab_create
 	}
+	fn_dependencies(){
+		ifs=$IFS
+		IFS=$(echo -en "\n\b")
+		unset DISTRO
+		## TODO convert to os-release: Debian, RedHat, Fedora, Mageia, Arch, opensuse
+		DISTRO=(
+'1;debian_version;Debian/Ubuntu/Mint (apt-get based);apt-get;install;remove;-y;dpkg --add-architecture i386;wine;^.*: ([0-9]+) .*\/.* (\w*[a-z]*) \w*.* \w*.* \[(.*)\].*$/# \2 \1 pkgs (\3 downloaded)'
+'2;redhat-release;Red Hat (rpm based);dnf;install;remove;-y;;wine wine.i686;^\((.*)\): ((.*) (.* .*) \|(.*)) ([0-9]+:[0-9]+).*$/# \3 (\4 \6) \1'
+'3;fedora-release;Fedora (rpm based);dnf;install;remove;-y;;wine wine.i686;^\((.*)\): ((.*) (.* .*) \|(.*)) ([0-9]+:[0-9]+).*$/# \3 (\4 \6) \1'
+'4;mageia_release;Mageia (rpm based);dnf;install;remove;-y;dnf config-manager --set-enabled mageia-i586 updates-i586;wine  wine.i586;^\((.*)\): ((.*) (.* .*) \|(.*)) ([0-9]+:[0-9]+).*$/# \3 (\4 \6) \1'
+'5;arch_release;Arch;pacman;-S;;--noconfirm;;wine;'
+'6;SuSE-release;OpenSuse (rpm based);zypper;in;rm;-n;;wine;'
+'0;;command line entry;;;;;;wine;'
+		)
+		w_title="Distro's Wine and dependencies install"
+		## display a installation type chooser, then process install with auto_inst=1/0
+		auto_text="$vn$bf\Wine is not detected on your system.$end$vb
+To get depencies installed, please select an installation method$end :
+Supported distro are :
+Fedora, RedHat, Mageia, Debian, Ubuntu, Mint, Arch.
+(choose selector if your distro is not listed)$end"
+		auto_inst=$($zen_bin --width=400 --height=200 --title "$w_title" --list --radiolist \
+		--window-icon=$img_desktop --text="$auto_text" --column "select" --column='key' --column "action" \
+		--hide-column=2 TRUE 1 "Autoselect" FALSE 0 "Let me choose" )
+		if [ $? = 0 ]; then
+			## Set distro installation tool and options according to distro release version.
+			for release in ${DISTRO[@]}; do
+				_d_type=$(echo -e "$release"| cut -d';' -f1)
+				## TODO convert to os-release: _d_rel=$(cat /etc/os-release | grep -c "$(echo -e "$release"| cut -d';' -f2)")
+				_d_rel=$(echo -e "$release"| cut -d';' -f2)
+				_d_info=$(echo -e "$release"| cut -d';' -f3)
+				_d_packer=$(echo -e "$release"| cut -d';' -f4)
+				_d_cmd_ins=$(echo -e "$release"| cut -d';' -f5)
+				_d_cmd_rm=$(echo -e "$release"| cut -d';' -f6)
+				_d_opt=$(echo -e "$release"| cut -d';' -f7)
+				_d_src=$(echo -e "$release"| cut -d';' -f8)
+				_d_pack=$(echo -e "$release"| cut -d';' -f9)
+				_d_regex=$(echo -e "$release"| cut -d';' -f10)
+				if [ $auto_inst = 1 ]; then
+					## TODO convert to os-release: if [[ $_d_type -ne 0 && $_d_rel -gt 0 ]]; then
+					if [[ $_d_type -ne 0 && -e /etc/$_d_rel ]]; then
+						## auto
+						if [[ $_d_src != '' ]]; then pre_install="$_d_src"; fi
+						echo -e "## Install Wine packages for $_d_info:"
+						e_text="Install Wine packages for $_d_info"
+						pre_install="$_d_src"
+						pack_install="$_d_packer $_d_opt $_d_cmd_ins $_d_pack"
+						pack_remove="$_d_packer $_d_opt $_d_cmd_rm $_d_pack"
+						regex="$_d_regex"
+					fi
+				else
+					## manual
+					_distro_list+=(
+					'FALSE'
+					"$_d_info;$_d_packer $_d_opt $_d_cmd_ins $_d_pack;$_d_packer $_d_opt $_d_cmd_rm $_d_pack;$_d_src;$_d_regex"
+					"$_d_info" )
+				fi
+			done
+			if [ $auto_inst = 0 ]; then
+				sel_text="$vn$bf\Please select the system distro below.$end
+	If your distribution is not displayed, select$vb Command line$end$end"
+				_select_dist=$($zen_bin --width=600 --height=300 --title "$w_title" --list --radiolist \
+				--window-icon=$img_desktop --ok-label='Select' --cancel-label='Cancel' \
+				--text="$sel_text" --column "select" --column='packer' --column "distro" \
+				--hide-column=2  "${_distro_list[@]}")
+				if [ $? = 0 ]; then
+					abort=$?
+					if ! [[ $_select_dist =~ ^command.*$ ]]; then
+						e_text='Install Wine packages for '$(echo -e "$_select_dist"| cut -d';' -f1)
+						pre_install=$(echo -e "$_select_dist"| cut -d';' -f4)
+						pack_install=$(echo -e "$_select_dist"| cut -d';' -f2)
+						pack_remove=$(echo -e "$_select_dist"| cut -d';' -f3)
+						regex=$(echo -e "$_select_dist"| cut -d';' -f5)
+					else
+						## display an entry text for command line install.
+						cmd_text="Please fill the text entry below with your installer command\n and options."
+						_cmd_line=$($yad_bin --width=370 --title "$w_title" --window-icon="$img_desktop" \
+						--form --text "$cmd_text" --separator=';'\
+						--borders=15 --field="":LBL '' \
+						--field="$vb installer name$end\n(ex\: dnf, pacman, etc)": '' \
+						--field="$vb auto accept option$end\n(cf: -y, -noconfirm, etc)": '' \
+						--field="$vb install command$end\n(cf: install, -S, -in, etc)": '' \
+						--field="$vb remove command$end\n(cf: remove, -R, etc)": '' \
+						--field="$vb pre-install entry$end\n(if any)": '' )
+						if [ $? = 0 ]; then
+							_installer=$(echo -e "$_cmd_line"| cut -d';' -f2)
+							_option=$(echo -e "$_cmd_line"| cut -d';' -f3)
+							_install=$(echo -e "$_cmd_line"| cut -d';' -f4)
+							_remove=$(echo -e "$_cmd_line"| cut -d';' -f5)
+							pre_install=$(echo -e "$_cmd_line"| cut -d';' -f6)
+							pack_install="$_installer $_option $_install wine"
+							pack_remove="$_installer $_option $_remove wine"
+						fi
+					fi
+				else
+					abort=$?
+				fi
+			fi
+			if [[ $abort != '' && $abort = 0 ]]; then
+				cmd_ins(){ pkexec bash -c "$pack_install" 2>&1; echo "# Wine packages and dependencies installed."; sleep 2 ;}
+				cmd_rem(){ pkexec bash -c "$pack_remove" 2>&1; echo "# Wine packages removed."; sleep 3 ;}
+				if [[ $regex != '' ]]; then
+					track(){ perl -pe "$| = 1; s/$regex/"; sleep 3; }
+					cmd_ins | track | zenity --width=550 --title "$w_title" --window-icon=$img_desktop \
+					--text="Prepare distro's Wine installation..." --progress --pulsate --auto-close
+				else
+					( echo "# Installing Wine and dependencies. Please wait ..."; cmd_ins ) | \
+					zenity --width=550 --title "$w_title" --window-icon=$img_desktop \
+					--text="Prepare distro's Wine installation..." --progress --pulsate --auto-close 
+				fi
+				## check and find wine binary to set wine_bin variable after package install.
+				wine_bin=$(find /usr/{bin,local/bin} -name wine)
+				if [ $(echo -e "$wine_bin"| grep -c .) -eq 0 ]; then
+					## detect if wine distro package is installed, if not, ask for new try.
+					dist_install_msg="Wine distro package not detected. Try again ?"
+					echo -e "## Wine distro package not detected."
+					$zen_bin --question --title "$w_title" --icon-name=$img_desktop \
+					--text="$dist_install_msg"	--no-wrap --cancel-label="Yes" --ok-label="No"
+					if [ $? -gt 0 ]; then wine_bin_install; fi
+				else
+					## get installed wine bin version
+					wine_version=$($wine_bin --version| \
+					sed -En "s/^(.*)( [\(]?(\w*)[\)]?)$/\1-\l\3/g;p"| sed -En "s/^.*-([0-9].*)$/\1/p")
+					w_text="$vb$bf\Wine packing has been cancel$end.
+		Installed wine distro package is leave as it is.
+		You can still extract it to Winestarter binaries directory later with the appropriate menu entry
+		or with the standalone winestarter_extract script, but it wont be set as default without further action."
+					if ! [[ $wine_version =~ staging ]]; then wine_version=$wine_version'-stable'; fi
+					## display what to do with newly installed wine package : nothing, packing, packing and remove, remove.
+					sel_text="$vb\Wine has been installed successfuly and dependencies safely resolved.
+		You migh now choose what to do with it :$vn
+		- Packing : Add the current wine distro package to winestarter and set it as default.
+		- Packing and remove : Same as above, but remove distro wine package afterward.
+		- Remove : Remove safely wine distro package (dependencies will remain).
+		- Nothing : Leave wine package as it is until the next distro package update.\n
+		(Distro wine package is usualy the more adapted for you environment,
+		It's still a good idea anyway to save it for winestarter's future needs)$end\n
+		Notice: You can also use the winestarter_extract standalone script or winestarter's dedicated
+		menu entry later to pack distro Wine package in winestarter's Wine binaries directory.$end"
+					_pack_wine=$($zen_bin --width=600 --height=380 --title "$w_title" --list --radiolist \
+					--window-icon=$img_desktop --text="$sel_text" --column "select" --column='key' --column "action" \
+					--hide-column=2 TRUE 1 "Packing" FALSE 2 "Packing and remove" \
+					FALSE 3 "Remove" FALSE 4 "Nothing (I will figure out later)")
+					if [ $? = 0 ]; then
+						case $_pack_wine in
+							1) ( echo "# Extract and save..."; bash -c winestarter_extract; sleep 2; ) | \
+								zenity --width=550 --text="Extract and set wine distro package as default." \
+								 --window-icon=$img_desktop --title "$w_title" --progress --pulsate --auto-close
+								if [ -s $HOME/.winestarter/default-wine ]; then
+									sed -Eni "s/^(.*);(.*)$/$wine_version;\2/g;p" $HOME/.winestarter/default-wine
+								else
+									echo "$wine_version;$HOME/.winebin" > $HOME/.winestarter/default-wine
+								fi
+								w_text="$vn$vb\Wine distro's package has been installed\nand saved in winestarter's directory successfuly.$end
+It is now set as default for all new wine's prefixes.$end"
+							;;
+							2) 
+							( echo "# Extract and save..."; bash -c winestarter_extract; sleep 2; echo "# Removing Wine..."; cmd_rem; ) | \
+								zenity --width=550 --text="Extract and remove wine distro package." \
+								 --window-icon=$img_desktop --title "$w_title" --progress --pulsate --auto-close
+								if [ -s $HOME/.winestarter/default-wine ]; then
+									sed -Eni "s/^(.*);(.*)$/$wine_version;\2/g;p" $HOME/.winestarter/default-wine
+								else
+									echo "$wine_version;$HOME/.winebin" > $HOME/.winestarter/default-wine
+								fi
+								w_text="$vn$vb\Wine distro package has been saved and remove from system.$end
+It is now set as default for all new wine's prefixes.$end"
+							;;
+							3) ( echo "# Removing Wine..."; cmd_rem ) | \
+								zenity --width=550 --text="Remove wine distro package." \
+								--window-icon=$img_desktop --title "$w_title" --progress --pulsate --auto-close
+								w_text="$vb\Wine distro's package has been remove.$end"
+							;;
+							4) w_text="$vn$vb\Wine distro's package leave as it is.$end
+You can still extract it to Winestarter binaries directory with the appropriate menu entry
+or with the standalone winestarter_extract script.$end" ;;
+						esac
+					## end process warns and messages.
+					$zen_bin --warning --title "$w_title" --icon-name=dialog-warning \
+					--window-icon=$img_desktop --text="$w_text" --no-wrap --timeout=3
+					fi
+				fi
+			fi
+		fi
+	IFS=$ifs
+	}
 	fn_binary_env(){
-		if ! [ -s $HOME/.winestarter/default-wine ]; then
-			fn_binary_config
-		fi
-#		else
-		wine_path=$(cat $HOME/.winestarter/default-wine| cut -d';' -f2)
-#		wine_elf=$(cat $HOME/.winestarter/default-wine| cut -d';' -f3)
+		## If no wine package was deteected on the system, the default distro one will be install first to
+		## get correct dependencies.
+#		if [ $wine_bin == '' ]; then
+		if [ $wine_bin == '' ]; then fn_dependencies; fi
+		if ! [ -s $HOME/.winestarter/default-wine ]; then fn_binary_config; fi
 		## detect system master elf type. 
-		if ! [ $wine_elf ]; then
-			if [[ $(uname -m) =~ ^.*64 ]]; then wine_elf=1, else wine_elf=0; fi
-		fi
-		## set .wienbin folder type as appropriate after detect.
+		if ! [ $wine_elf ]; then if [[ $(uname -m) =~ ^.*64 ]]; then wine_elf=1, else wine_elf=0; fi; fi
+		## set .winebin folder type as appropriate after detect.
 		if [ $wine_elf = 1 ]; then	dir_elf='amd64'; else dir_elf='x86'; fi
-		## check out box wine version if any.
+		## check out of the box wine version if any.
 		wine_ver_default=$(cat $HOME/.winestarter/default-wine| cut -d';' -f1)
+		wine_path=$(cat $HOME/.winestarter/default-wine| cut -d';' -f2)
 		## set it as default system version is exist and set. 
 		if [ $wine_ver_default ]; then
 			if ! [ $sys_version ]; then sys_version=$wine_ver_default; fi
@@ -1434,7 +1629,7 @@ packages manager or directly from WineHQ staging below.$end"
 		w_wine_conf_txt1="$nf\\Select package from default Wine path$end"
 		w_wine_conf_txt2=""
 		w_wine_conf_txt3=""
-		w_wine_binary_tip="$vb\\You can choose any version from the selector, bust last is prefered.$end"
+		w_wine_binary_tip="$vb\\You can choose any version from the selector, but last is prefered.$end"
 #		set_as_default_tip="$vb\\When set to default, installed package will be available to all future bottles, until you choose a different one for a specific usage.$end"
 		set_as_default_tip="$vb\\Installed package is set as default and will be available to all future bottles, until you choose a different one for a specific usage.$end"
 #		set_as_default=" Set package as default"
@@ -1859,9 +2054,14 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 			start_cmd='FALSE'
 			windowed='TRUE'
 			cache_wipe='TRUE'
-			dbg_dialog='FALSE'
-			dbg_handle='FALSE'
 			w_config='TRUE'
+			if [ $_extended = 0 ]; then
+				dbg_dialog=0
+				dbg_handle=0
+			else
+				dbg_dialog='FALSE'
+				dbg_handle='FALSE'
+			fi
 			if ! [ -d $game_path ]; then game_path="$user_prefix"; fi
 			if [ $_extended = 1 ]; then chk_arg_opts; fi
 		fi
@@ -2029,8 +2229,8 @@ ${misc_sets[@]}"
 			fi			
 		fi
 		eval _pol_list='$'_pol$elf'_list'
-		## Since March 2018 WineHQ build.old has benn remove. Nevertheless, is better to keep
-		## dedicated combo box in case they fially change theri mind.
+		## Since March 2018 WineHQ build.old has been remove. Nevertheless, is better to keep
+		## dedicated combo box in case they finaly change their mind.
 		pol_ver='1.9.24'
 		if [ $(echo -e "$_hq_stg1_list"| grep -c .) -gt 0 ]; then
 			_hq_old_stg="unset#$_hq_stg1_list;_hq_stg1;;$vb WineHQ staging to 2.4 $end;CB;;"
@@ -3046,9 +3246,11 @@ $opti_VBLK;opti_VBLK;;$w_opti_vblank;CHK;;
 	
 	if [ $(printf "${cl[*]}"| grep -c .) -gt 0 ]; then local "${cl[@]}"; fi
 	get_xrandr_list
+	if [[ $cmd_type != '' && $cmd_type = 4 ]]; then fn_dependencies; exit 0; fi
 	if [ $code = 0 ]; then
 		if ! [ -s $HOME/.winestarter/default-wine ]; then touch $HOME/.winestarter/default-wine; fi
 		if [[ $wine_bin != '' ]]; then
+## test line
 #		if [[ $wine_bin == '' ]]; then
 			if [[ -x $wine_bin ]]; then
 				sys_version=$($wine_bin --version)
@@ -3795,9 +3997,9 @@ Editor is for quick config edits. Don't remove '##' comments they're essential f
 					case $section in
 						'_wine') _vars_list=( 'w_config, Winecfg,3,\t\t' );;
 						'_tricks') _vars_list=( 'w_install_tricks,Winetricks,4,\t\t' );;
-						'_install') _vars_list=( 'w_install_exe,Install package,5,\t\t' );;
+						'_install') _vars_list=( 'w_install_exe,Install package,5,\t' );;
 						'_wbin') _vars_list=( 'use_winepath,Wine binary pack,6,\t' );;
-						'_xrandr') _vars_list=( 'set_desktop_env,End user desktop,7,\t' 'mouse_set,Mouse devise,8,\t\t' 'auto_set,Display variable,9,\t\t' );;
+						'_xrandr') _vars_list=( 'set_desktop_env,End user desktop,7,\t' 'mouse_set,Mouse devise,8,\t' 'auto_set,Display variable,9,\t' );;
 					esac
 					for _list in "${_vars_list[@]}"; do
 						_var_call=$(printf "$_list"| cut -d',' -f1)
@@ -3837,7 +4039,7 @@ Editor is for quick config edits. Don't remove '##' comments they're essential f
 						fi
 					done
 				else
-					_var_tab='\t\t'
+					_var_tab='\t'
 					_msg_resume+=( "$nf$section_title section:$end$_var_tab\NOTHING TO DO (MISSING OR NOT SET)\n" )
 				fi
 			done
@@ -3929,6 +4131,56 @@ ${_msg_resume[@]}"
 		fi
 	fi
 }
+sub_wine_extract(){
+	sleep 1
+	kill $YAD_PID
+	if [[ $wine_bin != '' ]]; then
+		wine_version=$($wine_bin --version| sed -En "s/^(.*)( [\(]?(\w*)[\)]?)$/\1-\l\3/g;p")
+		wine_save=$(echo "$wine_version"| sed -En "s/^.*-([0-9].*)$/\1/p")
+		_extract_tip="$vn\Current $vb$wine_version$end will be saved
+as $vb$wine_save$end in winestarter bianries directories.\n
+Is that correct ?$end"
+		$zen_bin --width=300 --title "Winestarter's Tools" --question --text="$_extract_tip" --window-icon=$img_desktop
+		if [ $? = 0 ]; then
+			bash $bash_opt "winestarter_extract"
+		fi
+	else		
+		_w_text="$vn\Wine isn't current installed on your system. Please install it first
+or use$vb Wine and dependencies installer$end from$vb Tools menu$end.$end"
+		$zen_bin --width=400 --title "Winestarter's Tools" --warning --window-icon=$img_desktop \
+		--text="$_w_text" --timeout=10
+	fi
+}
+script_tools(){
+	sleep 1
+	kill $YAD_PID
+	_tip_install="could be run to just install distro wine package or/and all wine's dependencies like xorg, gecko, etc"
+	_tip_extract="extract and convert distro wine installed package to winestarter Wine binaries directory at usable format"
+	_tip_kill="list all wine's process to quickly kill selected when things went wrong"
+	tools_txt="$vn$brf\Tools$end$vb\nWinetarter is send with some useful script and function that could run be independently :$end
+$vb - Wine and dependencies installer :$end $_tip_install.
+$vb - Wine extractor :$end $_tip_extract.
+$vb - Wine apps killer :$end $_tip_kill.$end"
+	cmd_install_wine="bash $bash_opt \"colors; icons_set; cmd_type=4; from_config=0; main_code\""
+#	cmd_extract="bash $bash_opt \"wine_extract\""
+	cmd_extract="bash $bash_opt \"colors; icons_set; sub_wine_extract\""
+	cmd_kill="bash $bash_opt \"winestarter_kill\""
+	
+	exec_cmd=$($yad_bin --width=520 --title "Winestarter's Tools"  --window-icon=$img_wine_desk_ui \
+	--form --text="$tools_txt" --image=$img_desktop  --borders=15 \
+	--field="":LBL '' \
+	--field="Wine package and dependencies installer"!$img_wine_save!"$_tip_install":FBTN "$cmd_install_wine" \
+	--field="Wine extract and save"!$img_reg_bt!"$_tip_extract":FBTN "$cmd_extract" \
+	--field="Wine applications killer"!$img_wine_kill!"$_tip_kill":FBTN "$cmd_kill" )
+#	--field=""!but!"bubble":FBTN "cmd" \
+	if [ $? = 0 ]; then
+#		if [[ $exec_cmd =~ ^.*extract ]]; then fn_wine_extract; else bash $bash_opt $exec_cmd; fi
+		bash $bash_opt $exec_cmd
+		bash $bash_opt $base_script; exit 0
+	else
+		bash $bash_opt $base_script; exit 0
+	fi
+}
 . $HOME/.config/user-dirs.dirs
 ## Script debug options
 #bash_opt='-x -c'
@@ -3944,12 +4196,14 @@ export line=$?
 ## cmd_type = 1 > desktop file management.
 ## cmd_type = 2 > restart features.
 ## cmd_type = 3 > manage bottle's conf file.
+## cmd_type = 4 > install distro's wine and dependencies.
 main_cmd_0="bash $bash_opt \"colors; icons_set; b_set=1; code=0; from_config=0; main_code\""
 main_cmd_1="bash $bash_opt \"colors; icons_set; b_set=0; from_config=1; cmd_type=0; edit_bottle\""
 main_cmd_2="bash $bash_opt \"colors; icons_set; from_config=1; cmd_type=1; edit_bottle\""
 main_cmd_3="bash $bash_opt \"colors; icons_set; change_fonts_colors\""
 main_cmd_4="bash $bash_opt \"colors; icons_set; from_config=1; cmd_type=2; edit_bottle\""
 main_cmd_5="bash $bash_opt \"colors; icons_set; from_config=1; cmd_type=3; edit_bottle\""
+main_cmd_6="bash $bash_opt \"colors; icons_set; script_tools\""
 
 the_big_button="$HOME/.winestarter/png/defaults/winestarter_128.png"
 
@@ -3958,12 +4212,12 @@ main_text4="$vb\\Modify$end"
 
 list_bottles
 #messages; main_code
-main_text0="$bf\\Stay simple with your Wine bottles$end$vb\\n\
-\"Don't be a clic machine !\"$end\\n\\n\
+main_text0="$bf\\Stay simple with your Wine prefixes$end$vb\\n\
 $vb\\What do you want to do?$end\\n$vn(Hover buttons show tooltips)$end"
+#\"Don't be a clic machine !\"$end\\n\\n\
 
 export -f colors icons_set
-export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors edit_reg_bin edit_regfile edit_wine_options
+export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors script_tools sub_wine_extract edit_reg_bin edit_regfile edit_wine_options
 export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt" code_tag=$code_tag
 control_last
 
@@ -3977,6 +4231,7 @@ $yad_bin --width=520 --title "Winestarter configurator"  --window-icon=$img_wine
 --field="$vb Manage Wine bottles$end"!$img_wine_mng!"Remove,rename, clone an existing Wine bottle":FBTN "$main_cmd_5" \
 --field="$vb Edit or create a Desktop file$end"!$img_wine_desk_bt!"Create a new or modify an existing Wine bottle Desktop file":FBTN "$main_cmd_2" \
 --field="$vb Change fonts colors$end"!$img_wine_colors!"If you occur issues with default fonts colors, you can change them here":FBTN "$main_cmd_3" \
---field="$vb Restart and quick functions setup$end"!$img_wine_restart!"You can here restart or quick setup some functions at next Winestarter launch, ex: winecfg":FBTN "$main_cmd_4"
+--field="$vb Restart and quick functions setup$end"!$img_wine_restart!"You can here restart or quick setup some functions at next Winestarter launch, ex: winecfg":FBTN "$main_cmd_4" \
+--field="$vb Tools$end"!$img_wine_tools!"Usefull scripts (kill, extract, etc)":FBTN "$main_cmd_6"
 
 exit 0

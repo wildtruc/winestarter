@@ -1,0 +1,153 @@
+#! /bin/bash
+
+## License:
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU Lesser General Public
+#   License as published by the Free Software Foundation; either
+#   version 2.1 of the License, or (at your option) any later
+#   version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Lesser General Public License for more details.
+#
+#   You should have received a copy of the GNU Lesser General Public
+#   License along with this program.  If not, see
+#   <https://www.gnu.org/licenses/>.
+#
+## You can redistribute it as you wish : GPL v3
+## author : wildtruc@noneltd.net
+
+set -e
+## comment the line below if using script as wine package extrator only and uncomment the second one.
+	[[ -d $HOME'/.winebin' ]]|| exit 0
+#	[[ -d $HOME'/.winebin' ]]|| mkdir -p $HOME'/.winebin'
+#export wine_version=$(wine --version| sed -En "s/^(.*) [\(]?(\w*)[\)]?$/\1-\l\2/p")
+	export wine_version=$($wine_bin --version| \
+	sed -En "s/^(.*)( [\(]?(\w*)[\)]?)$/\1-\l\3/g;p"| sed -En "s/^.*-([0-9].*)$/\1/p")
+	if ! [[ $wine_version =~ staging ]]; then wine_version=$wine_version'-stable'; fi
+	[[ $wine_version ]]|| ( echo -e "# Wine is not installed. Abort."; exit 0; )
+	bin_dir=$HOME'/.winebin'
+	def_dir=$(pwd)
+	def_elf=$(uname -p)
+	if [[ $def_elf =~ 64 ]]; then _elf='64'; def_sys='amd64'; else _elf=''; def_sys='x86'; fi
+	we_bin=( msidb msiexec notepad regedit regsvr32 widl wine wine$_elf wine-preloader \
+	wine$_elf-preloader wineboot winebuild winecfg wineconsole winedbg winedump winefile winecpp \
+	wineg++ winegcc winemaker winemine winepath wineserver wineserver$_elf wmc wrc )
+	we_lib=( */libwine* */wine )
+	we_share=( */wine/* */wine-gecko/* */applications/wine* */doc/wine-* )
+	
+	## if distro is debian like, add extra search keywords.
+	if [ $(uname -a| grep -c "[Uu]buntu\|[Mm]int\|[Dd]ebian") -gt 0 ]; then
+		alt_bin='bin,local/bin,lib/i386-linux-gnu/wine,lib/x86_64-linux-gnu/wine'
+		alt_lib='lib/i386-linux-gnu/wine/,lib/x86_64-linux-gnu/wine/'
+	## change to an 'elif' if necessary (other distros specifics.)
+	else
+		alt_bin='bin,local/bin'
+		unset e_list
+		for e_type in '32' '64'; do
+			if [[ -d /usr/lib$e_type ]]; then e_list+=','$e_type; fi
+		done
+		echo -e "${e_list[*]}"
+		alt_lib="lib{${e_list[*]}},local/lib{${e_list[*]}}"
+	fi
+	## extract 'bin' dir content.
+	for wordkey in "${we_bin[@]}"; do
+		[ -d $bin_dir/$def_sys/$wine_version/bin/ ]|| mkdir -p $bin_dir/$def_sys/$wine_version/bin/
+		pack_bin=( $(bash -c "find /usr/{$alt_bin} -name $wordkey") )
+		
+		for line in "${pack_bin[@]}"; do
+			if [[ -e $line && ! -d $line ]]; then
+			_bin_key=$(echo -e "$line"| sed -n "s/^.*\///g;p")
+				if [[ -x $line ]]; then
+					if [[ ! -h $line ]]; then
+						_elf_key=$(file $line | cut -d',' -f1| sed -En "s/^.*([0-9]{2}).*$/\1/g;p")
+						if [[ $_elf_key =~ [0-9]{2}|script ]]; then
+							if [[ $_elf_key != 32 ]]; then
+								if [[ $(echo "$_bin_key"| grep -c "wine$\|wine-preloader$") -gt 0 \
+								&& $(echo -e "$_bin_key"| grep -c "64") -eq 0 ]]; then							
+									_suff='64'
+								else
+									_suff=''
+								fi
+								if [ $(echo "$_bin_key"| grep -c "wine-preloader$") -gt 0 ]; then
+									_bin="wine$_suff-preloader"
+								else
+									_bin=$_bin_key$_suff
+								fi
+							else
+							_bin=$_bin_key
+							fi
+							if [[ $prev_key != '' ]] \
+							&& [ $(echo "$_bin_key"| grep -oc "$prev_key") -gt 0 ] \
+							&& [ $(diff -q $prev_path $line| grep -c .) -eq 0 ]; then
+								cd $bin_dir/$def_sys/$wine_version/bin/
+								ln -sf $prev_key $_bin
+								cd $def_dir
+							else
+							 	cp -f $line $bin_dir/$def_sys/$wine_version/bin/$_bin
+							fi
+							prev_path=$bin_dir/$def_sys/$wine_version/bin/$_bin
+						fi
+					else
+						if [ $(file $line | grep -c "link") -gt 0 ]; then
+							link_id=$(file $line | sed -En "s/^.* (.*)$/\1/g;p")
+							if [[ $link_id =~ ^\.\.\/ ]]; then link_id=$(echo "$link_id"| sed -En "s/^\.\./\/usr/p"); fi
+							if [[ $(diff -q $prev_path $link_id | grep -c .) -gt 0 ]]; then
+								if [[ $prev_key != '' \
+								&& $(echo "$_bin_key"| grep -oc "$prev_key") -gt 0 \
+								&& $(diff -q $prev_path $line| grep -c .) -eq 0 ]]; then
+									cd $bin_dir/$def_sys/$wine_version/bin/
+									ln -sf $prev_key $_bin_key
+									cd $def_dir
+								else
+									if ! [[ -x $bin_dir/$def_sys/$wine_version/bin/$_bin_key ]]; then
+										cp -f $line $bin_dir/$def_sys/$wine_version/bin/
+									fi
+								fi
+							else
+								cp -f $line $bin_dir/$def_sys/$wine_version/bin/
+							fi
+							prev_path=$bin_dir/$def_sys/$wine_version/bin/$_bin_key
+						fi
+					fi
+				fi
+				prev_key=$_bin_key
+			 fi
+		done		 
+	done
+	## extract 'lib' dir content.
+	for libkey in "${we_lib[@]}"; do
+		pack_word=( $(bash -c "find /usr/{$alt_lib} -maxdepth 1 -wholename $libkey") )
+		
+		for line in "${pack_word[@]}"; do
+			if [[ "$line" =~ 64 ]]; then dir_to='64'; else dir_to=''; fi
+			[ -d $bin_dir/$def_sys/$wine_version/lib$dir_to/ ]|| mkdir -p $bin_dir/$def_sys/$wine_version/lib$dir_to/
+			cp -Rf $line $bin_dir/$def_sys/$wine_version/lib$dir_to/
+			if [[ $line =~ ^.*/libwine.so.1$ ]]; then
+				cd $bin_dir/$def_sys/$wine_version/lib$dir_to/
+				ln -sf libwine.so.1 libwine.so.0
+				cd $def_dir
+			fi
+		done
+	done
+	## extract 'share' dir content.
+	for sharekey in "${we_share[@]}"; do
+		pack_share=( $(find -P /usr/{share,local/share} -maxdepth 2 -wholename $sharekey) )
+		for line in "${pack_share[@]}"; do
+			for type in 'applications' 'doc' 'wine' 'wine-gecko'; do
+				if [ $(echo -e "$line"| grep -oc "/$type/") -gt 0 ]; then
+					dir_type=$type
+				fi
+			done
+			[ -d $bin_dir/$def_sys/$wine_version/share/$dir_type ]|| mkdir -p $bin_dir/$def_sys/$wine_version/share/$dir_type
+			cp -Rf $line $bin_dir/$def_sys/$wine_version/share/$dir_type/
+		done
+	done
+	if [[ $def_sys == amd64 ]]; then
+		[ -d $bin_dir/x86/ ]|| mkdir -p $bin_dir/x86/
+		cd $bin_dir/x86/
+		ln -sf ../$def_sys/$wine_version $wine_version
+	fi
+exit 0
