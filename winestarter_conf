@@ -1383,9 +1383,9 @@ $_extended;_extended;;$msg_extended;CHK;;
 		## TODO convert to os-release: Debian, RedHat, Fedora, Mageia, Arch, opensuse
 		DISTRO=(
 '1;debian_version;Debian/Ubuntu/Mint (apt-get based);apt-get;install;remove;-y;dpkg --add-architecture i386;wine;^.*: ([0-9]+) .*\/.* (\w*[a-z]*) \w*.* \w*.* \[(.*)\].*$/# \2 \1 pkgs (\3 downloaded)'
-'2;redhat-release;Red Hat (rpm based);dnf;install;remove;-y;;wine wine.i686;^\((.*)\): ((.*) (.* .*) \|(.*)) ([0-9]+:[0-9]+).*$/# \3 (\4 \6) \1'
-'3;fedora-release;Fedora (rpm based);dnf;install;remove;-y;;wine wine.i686;^\((.*)\): ((.*) (.* .*) \|(.*)) ([0-9]+:[0-9]+).*$/# \3 (\4 \6) \1'
-'4;mageia_release;Mageia (rpm based);dnf;install;remove;-y;dnf config-manager --set-enabled mageia-i586 updates-i586;wine  wine.i586;^\((.*)\): ((.*) (.* .*) \|(.*)) ([0-9]+:[0-9]+).*$/# \3 (\4 \6) \1'
+'2;redhat-release;Red Hat (rpm based);dnf;install;remove;-y;;wine wine.i686 wine-core;^\((.*)\): ((.*) (.* .*) \|(.*)) ([0-9]+:[0-9]+).*$/# \3 (\4 \6) \1'
+'3;fedora-release;Fedora (rpm based);dnf;install;remove;-y;;wine wine.i686 wine-core;^\((.*)\): ((.*) (.* .*) \|(.*)) ([0-9]+:[0-9]+).*$/# \3 (\4 \6) \1'
+'4;mageia_release;Mageia (rpm based);dnf;install;remove;-y;dnf config-manager --set-enabled mageia-i586 updates-i586;wine wine.i586 wine-core;^\((.*)\): ((.*) (.* .*) \|(.*)) ([0-9]+:[0-9]+).*$/# \3 (\4 \6) \1'
 '5;arch_release;Arch;pacman;-S;;--noconfirm;;wine;'
 '6;SuSE-release;OpenSuse (rpm based);zypper;in;rm;-n;;wine;'
 '0;;command line entry;;;;;;wine;'
@@ -4152,21 +4152,24 @@ or use$vb Wine and dependencies installer$end from$vb Tools menu$end.$end"
 	fi
 }
 script_tools(){
+#	term=$(echo "$TERM"| awk '{print $1}')
+	term=$(find /usr/{bin,local/bin} -name xterm)
+	[[ -x $term ]]|| ( echo "## xterm not found, install it first."; exit 0; )
 	sleep 1
 	kill $YAD_PID
 	_tip_install="could be run to just install distro wine package or/and all wine's dependencies like xorg, gecko, etc"
 	_tip_extract="extract and convert distro wine installed package to winestarter Wine binaries directory at usable format"
 	_tip_kill="list all wine's process to quickly kill selected when things went wrong"
-	tools_txt="$vn$brf\Tools$end$vb\nWinetarter is send with some useful script and function that could run be independently :$end
+	tools_txt="$vn$brf\Tools$end$vb\nWinetarter is send with some useful script and functions that could be run independently :\n$end
 $vb - Wine and dependencies installer :$end $_tip_install.
 $vb - Wine extractor :$end $_tip_extract.
 $vb - Wine apps killer :$end $_tip_kill.$end"
 	cmd_install_wine="bash $bash_opt \"colors; icons_set; cmd_type=4; from_config=0; main_code\""
 #	cmd_extract="bash $bash_opt \"wine_extract\""
 	cmd_extract="bash $bash_opt \"colors; icons_set; sub_wine_extract\""
-	cmd_kill="bash $bash_opt \"winestarter_kill\""
+	cmd_kill="bash $bash_opt \"$term winestarter_kill\""
 	
-	exec_cmd=$($yad_bin --width=520 --title "Winestarter's Tools"  --window-icon=$img_wine_desk_ui \
+	exec_cmd=$($yad_bin --width=520 --title "Winestarter's Tools" --window-icon=$img_wine_desk_ui \
 	--form --text="$tools_txt" --image=$img_desktop  --borders=15 \
 	--field="":LBL '' \
 	--field="Wine package and dependencies installer"!$img_wine_save!"$_tip_install":FBTN "$cmd_install_wine" \
@@ -4175,7 +4178,7 @@ $vb - Wine apps killer :$end $_tip_kill.$end"
 #	--field=""!but!"bubble":FBTN "cmd" \
 	if [ $? = 0 ]; then
 #		if [[ $exec_cmd =~ ^.*extract ]]; then fn_wine_extract; else bash $bash_opt $exec_cmd; fi
-		bash $bash_opt $exec_cmd
+		bash $bash_opt "$exec_cmd" 2>&1
 		bash $bash_opt $base_script; exit 0
 	else
 		bash $bash_opt $base_script; exit 0
@@ -4183,10 +4186,10 @@ $vb - Wine apps killer :$end $_tip_kill.$end"
 }
 . $HOME/.config/user-dirs.dirs
 ## Script debug options
-#bash_opt='-x -c'
-#code_tag=1
-bash_opt='-c'
-code_tag=0
+bash_opt='-x -c'
+code_tag=1
+#bash_opt='-c'
+#code_tag=0
 ## check internet connection.
 line=$(nc -z 8.8.8.8 53)
 export line=$?
@@ -4212,8 +4215,10 @@ main_text4="$vb\\Modify$end"
 
 list_bottles
 #messages; main_code
-main_text0="$bf\\Stay simple with your Wine prefixes$end$vb\\n\
-$vb\\What do you want to do?$end\\n$vn(Hover buttons show tooltips)$end"
+#main_text0="$bf\\Stay simple with your Wine prefixes$end\\n\
+main_text0="$bf Create and manage Wine prefixes$end$vb
+  What do you want to do?$end\\n
+$vn (Hover buttons show tooltips)$end"
 #\"Don't be a clic machine !\"$end\\n\\n\
 
 export -f colors icons_set
@@ -4221,8 +4226,8 @@ export -f main_code edit_bottle edit_desktop list_bottles change_fonts_colors sc
 export w_title="winestarter configurator" base_script="$0" bash_opt="$bash_opt" code_tag=$code_tag
 control_last
 
-$yad_bin --width=520 --title "Winestarter configurator"  --window-icon=$img_wine_desk_ui --no-buttons \
---form --text="$main_text0" --image=$the_big_button  --borders=15 \
+$yad_bin --width=540 --title "Winestarter configurator" --window-icon=$img_wine_desk_ui --no-buttons \
+--form --text="$main_text0" --image=$the_big_button --borders=15 \
 --field="":LBL '' \
 --field="$main_text3":LBL '' \
 --field="$vb New Wine prefix $end"!$img_wine_add!"Create and config a fresh new Wine prefix":FBTN "$main_cmd_0" \
@@ -4230,7 +4235,7 @@ $yad_bin --width=520 --title "Winestarter configurator"  --window-icon=$img_wine
 --field="$vb Edit a Wine bottle$end"!$img_wine_mod!"Add or change features, options, etc in an existing Wine bottle":FBTN "$main_cmd_1" \
 --field="$vb Manage Wine bottles$end"!$img_wine_mng!"Remove,rename, clone an existing Wine bottle":FBTN "$main_cmd_5" \
 --field="$vb Edit or create a Desktop file$end"!$img_wine_desk_bt!"Create a new or modify an existing Wine bottle Desktop file":FBTN "$main_cmd_2" \
---field="$vb Change fonts colors$end"!$img_wine_colors!"If you occur issues with default fonts colors, you can change them here":FBTN "$main_cmd_3" \
+--field="$vb Change UI fonts colors$end"!$img_wine_colors!"If you occur issues with default fonts colors, you can change them here":FBTN "$main_cmd_3" \
 --field="$vb Restart and quick functions setup$end"!$img_wine_restart!"You can here restart or quick setup some functions at next Winestarter launch, ex: winecfg":FBTN "$main_cmd_4" \
 --field="$vb Tools$end"!$img_wine_tools!"Usefull scripts (kill, extract, etc)":FBTN "$main_cmd_6"
 
