@@ -4186,10 +4186,10 @@ $vb - Wine apps killer :$end $_tip_kill.$end"
 }
 . $HOME/.config/user-dirs.dirs
 ## Script debug options
-bash_opt='-x -c'
-code_tag=1
-#bash_opt='-c'
-#code_tag=0
+#bash_opt='-x -c'
+#code_tag=1
+bash_opt='-c'
+code_tag=0
 ## check internet connection.
 line=$(nc -z 8.8.8.8 53)
 export line=$?
