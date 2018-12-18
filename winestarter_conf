@@ -2631,6 +2631,8 @@ ${misc_sets[@]}"
 		else
 			already_there='none'
 		fi
+		## set default arch
+		if [ $wine_elf = 1 ]; then winearch='win64'; else winearch='win32'; fi
 		# window messages
 		w_text="$bf Winetricks common apps and DLLs$end\\n$vb\\Set the most common Windows packages available in Winetricks needed by your app.$end"
 		w_tricks_alt_dot4_tip="$nf\\Note$end: .NET 4.x need an extra additional packges for clean install. Follow Winetrciks instruction during install without stopping the process."
@@ -2644,7 +2646,9 @@ ${misc_sets[@]}"
 		ifs=$IFS
 		IFS=$(echo -en "\n\b")
 		# var list sets
-		trk_action="bash $bash_opt \"$w_tricks_bin --gui &>/dev/null\""
+		
+#		trk_action="bash $bash_opt \"env WINEPREFIX=$user_prefix/$bottle_prefix $w_tricks_bin &>/dev/null\""
+		trk_action="bash $bash_opt \"env WINEARCH=$winearch WINEPREFIX=$user_prefix/$bottle_prefix $w_tricks_bin\""
 		. $menu_conf
 		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n>>>> end fn_winetricks ####\n$e_notif"
 		IFS=$ifs
@@ -3928,7 +3932,7 @@ Select the bottle you would like for a desktop file$end"
 		;;
 		## 2 > restart features.
 		2) w_text="$bf Restart and quick setup function system$end$vb\\n
-You can here restart/setup some functions like Winecfg, Winetricks,etc at next Winestarter launch.
+You can here restart/setup some functions like Winecfg, Winetricks, etc at next Winestarter launch.
 This feature could be really useful in case of a Wine prefix update, or just to quickly control/manage/setup Wine prefix and other Winestarter options.$end"
 			win_icon=$img_wine_restart
 			edit_win=$($yad_bin --width=420 --title "$w_title" --image=$img_wine_reload --borders=15 \

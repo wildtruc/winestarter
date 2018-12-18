@@ -3,6 +3,11 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
+*( 16/12/18 ) v1.3.10*
+ - wt: add a winestarter dedicated desktop file presence controler that recreate them at application command line launch if they're missing.
+ - wt: add warning text for windowed mode when config files is too old to support it.
+ - wtc: fixed env variable that prevent standalone winetricks to launch and install tricks verbs correctly.
+
 *( 12/12/18 ) v1.3.9*
  - dev message: I have severe heals issue and I don't really know if I could still manage my project alive. I will try to continue to fix bugs, but i can't tell about the future. It's strongly recommanded to fork.
  - info: WineHQ packages have upgrade to GLIB 2.27 since Wine 3.10 (update GLIB or upgrade your distro to get standalone wine binaries above 3.10)

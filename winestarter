@@ -747,7 +747,7 @@ fn_game_dir_exist(){
 		fi
 	else
 		## in some cases, game_path and game_exe could not be found and a manually search is needed.
-		if [[ $game_exe == 'null' ]]; then
+		if [[ $game_exe == '' || $game_exe == 'null' ]]; then
 			unset select_list
 			exclude_dir='users'
 			exclude_list='[Ww]indows|Explorer'
@@ -775,6 +775,24 @@ In this case, you have to modify the config file manualy or with Winestarter_con
 				sed -Eni "s|^(game_dir)=.*$|\1=\"$game_dir\"|g;p" $config_file
 				fn_convert_desktop_file
 				fn_root_key
+			fi
+		else
+			## dedicated winestarter desktop file could be remove by mistake.
+			## So, control their existance and recreate if needed.
+			unset _desktop_list
+			_desktop_list=( $(ls -1 $XDG_DESKTOP_DIR| egrep "(\s*.desktop$)") )
+			_app_name=$(printf "$game_exe"| sed -n "s/\.exe//g;p")
+			if [ $(echo "${_desktop_list[*]}"| grep -c "$_app_name") -eq 0 ]; then
+				for app_dsk in ${_desktop_list[@]}; do
+					_desk_list_keys+=( $(cat $XDG_DESKTOP_DIR/$app_dsk | egrep "\s*Start.*.exe"| sed -n "s/.*=//p") )
+				done
+				if [ $(echo "${_desk_list_keys[*]}"| grep -c "$game_exe") -eq 0 ]; then
+					_target_exe=$game_exe
+					_target_dir=$user_prefix/$bottle_prefix/drive_c/"$root_key"$game_dir
+					_target_path=$(printf "$_target_dir"| sed -En "s|^(.*)/(drive_c)/(.*)$|\1/dosdevices/c:/\3|p")
+					_unix_path=$_target_dir/$game_exe
+					fn_convert_desktop_file
+				fi
 			fi
 		fi
 	fi
@@ -903,6 +921,7 @@ Icon=$d_icon\nCategories=Applications;"
 #		if [ -x $_unix_path ]; then
 #		test -x $_unix_path
 		if [[ -s $_unix_path ]] ; then
+			unset _desktop_file_list
 			_desktop_file_list=( $(ls -1 $XDG_DESKTOP_DIR| egrep "(\s*.desktop$)") )
 			## catch first word for desktop/exe key seek.
 			_dsk_key=$(printf "$_target_exe"| sed -En "s|^(\w*.{3,15})(.*).exe|\1|;s|[ ]?$||p")
@@ -1337,57 +1356,61 @@ fn_game_dir_exist
 ## set windowed mode if checked.
 winestarter_reg=$user_prefix/$bottle_prefix/winestarter.reg
 default_reg=$user_prefix/$bottle_prefix/user.reg
-if [ $windowed -gt 0 ]; then
-#	cd $WINEVERPATH/bin
-#	[[ -s $winestarter_reg ]]|| touch $winestarter_reg	
-	if [[ $(cat $default_reg| egrep -c "\"Desktop\"=\"Default\"") -eq 0 ]]; then
-		## find primary display res.
-		current_res=$(xrandr --current| fgrep "*"| awk '{print $1}')
-		## if xrandr detect more than one active display, start a selector.
-		if [ $(echo -e "$current_res"| grep -c .) -gt 1 ]; then
-			unset _display_list
-			w_title="windowed mode resolution selector"
-			dsp_text="$brf\WARNING$end$vb : More than one display detected$end$vb\n\nPlease select the right display resolution for Wine windowed mode.$end"
-			_display_list=( $current_res )
-			n=1
-			for _dsp_res in "${_display_list[@]}"; do
-				_dsp_list+=("false")
-				_dsp_list+=("$_dsp_res")
-				_dsp_list+=("$n")
-				((n++))
-			done
-			## test lnk correspondance to present application
-			current_res=$($zen_bin --width=300 --title "$w_title" --list --radiolist \
-			--window-icon=$filesave --ok-label='Choose selected resolution' --cancel-label='Cancel' \
-			--text="$dsp_text" --column "select" --column "resolutions" --column='display n°' \
-			"${_dsp_list[@]}")
+if [[ $windowed != '' ]]; then
+	if [ $windowed -gt 0 ]; then
+	#	cd $WINEVERPATH/bin
+	#	[[ -s $winestarter_reg ]]|| touch $winestarter_reg	
+		if [[ $(cat $default_reg| egrep -c "\"Desktop\"=\"Default\"") -eq 0 ]]; then
+			## find primary display res.
+			current_res=$(xrandr --current| fgrep "*"| awk '{print $1}')
+			## if xrandr detect more than one active display, start a selector.
+			if [ $(echo -e "$current_res"| grep -c .) -gt 1 ]; then
+				unset _display_list
+				w_title="windowed mode resolution selector"
+				dsp_text="$brf\WARNING$end$vb : More than one display detected$end$vb\n\nPlease select the right display resolution for Wine windowed mode.$end"
+				_display_list=( $current_res )
+				n=1
+				for _dsp_res in "${_display_list[@]}"; do
+					_dsp_list+=("false")
+					_dsp_list+=("$_dsp_res")
+					_dsp_list+=("$n")
+					((n++))
+				done
+				## test lnk correspondance to present application
+				current_res=$($zen_bin --width=300 --title "$w_title" --list --radiolist \
+				--window-icon=$filesave --ok-label='Choose selected resolution' --cancel-label='Cancel' \
+				--text="$dsp_text" --column "select" --column "resolutions" --column='display n°' \
+				"${_dsp_list[@]}")
+			fi
+			desktop_color='0 0 0'
+			starter_reg="[HKEY_CURRENT_USER\Software\Wine\\\\Explorer]
+	\"Desktop\"=\"Default\"
+	[HKEY_CURRENT_USER\Software\Wine\\\\Explorer\Desktops]
+	\"Default\"=\"$current_res\"
+	[HKEY_CURRENT_USER\Control Panel\Colors]
+	\"Background\"=\"$desktop_color\""
+			printf "REGEDIT4\n\n$starter_reg\n" > $winestarter_reg
+	#		$wine_bin regedit $winestarter_reg
+			if [[ -s $winestarter_reg ]]; then
+				sleep 1
+				$wine_bin regedit $user_prefix/$bottle_prefix/winestarter.reg
+	#			$wine_bin regedit winestarter.reg
+				notify-send -t 3000 "Reloading Wine with new display settings"
+				$wineboot_bin -u
+				$wineserver_bin -k
+				
+			fi
 		fi
-		desktop_color='0 0 0'
-		starter_reg="[HKEY_CURRENT_USER\Software\Wine\\\\Explorer]
-\"Desktop\"=\"Default\"
-[HKEY_CURRENT_USER\Software\Wine\\\\Explorer\Desktops]
-\"Default\"=\"$current_res\"
-[HKEY_CURRENT_USER\Control Panel\Colors]
-\"Background\"=\"$desktop_color\""
-		printf "REGEDIT4\n\n$starter_reg\n" > $winestarter_reg
-#		$wine_bin regedit $winestarter_reg
-		if [[ -s $winestarter_reg ]]; then
-			sleep 1
-			$wine_bin regedit $user_prefix/$bottle_prefix/winestarter.reg
-#			$wine_bin regedit winestarter.reg
-			notify-send -t 3000 "Reloading Wine with new display settings"
+	else
+		if [[ $(cat $default_reg| egrep -c "\"Desktop\"=\"Default\"") -gt 0 ]]; then
+			$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Explorer
+			notify-send -t 2800 "Reloading Wine with no display settings"
 			$wineboot_bin -u
 			$wineserver_bin -k
-			
 		fi
 	fi
 else
-	if [[ $(cat $default_reg| egrep -c "\"Desktop\"=\"Default\"") -gt 0 ]]; then
-		$wine_bin regedit -D HKEY_CURRENT_USER\\Software\\Wine\\Explorer
-		notify-send -t 2800 "Reloading Wine with no display settings"
-		$wineboot_bin -u
-		$wineserver_bin -k
-	fi
+	echo "## Warning: Windowed mode not detected. Config file too old ?" 
 fi
 ## Wine Dbg behaviour options and management
 fn_wine_dbg
