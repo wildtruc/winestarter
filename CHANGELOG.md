@@ -3,6 +3,9 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
+*( 20/12/18 ) v1.3.11*
+ - wtc/wt: adapted Wine package downloads to GLIB system version. That way, downloaded package will be suitable to user's distro environment.
+
 *( 16/12/18 ) v1.3.10*
  - wt: add a winestarter dedicated desktop file presence controler that recreate them at application command line launch if they're missing.
  - wt: add warning text for windowed mode when config files is too old to support it.

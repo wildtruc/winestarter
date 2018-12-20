@@ -202,6 +202,10 @@ fn_use_winepath(){
 #			os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
 #			sed -En "s/^.*([0-9]{2}).*$/\1/p")
 			os_version=$(tac $file_temp | sed -En "s|^.*href=\"([0-9]{2})\/\".*$|\1|p")
+			## package correspond to glibc version, make sur dowloading the good one.
+			if [[ $glib_v -le 226 ]]; then os_version=$(echo "$os_version"| sed -En "s/29//g;/^$/d;p"); fi
+			## next glib update 
+			# if [[ $glib_v -le 227 ]]; then os_version=$(echo "$os_version"| sed -En "s/30//g;/^$/d;p"); fi
 			for os_v in ${os_version[@]}; do
 				wget --read-timeout=10 -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
 				dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-$hq_stage$b_elf-[0-9]+"|\
@@ -241,6 +245,8 @@ fn_use_winepath(){
 	if [[ $sys_arch =~ ^.*64 ]]; then
 		ftp_elf='amd64'; b_elf='64'
 	fi
+	## catch glibc version
+	glib_v=$(ldd --version | sed -n "s/^.* //;s/\.//;1p")
 	## control if wine bin dir exist. If not create it from default
 	if ! [[ -n $wine_path/$ftp_elf/ ]]; then mkdir -p $HOME/.winebin/$ftp_elf; fi
 	if [[ -d $wine_path/$ftp_elf/$wine_ver ]]; then
@@ -261,8 +267,10 @@ fn_use_winepath(){
 				hq_stage='stable'; hq_short='stable'
 			else
 				hq_stage='development'; hq_short='devel'
+#				hq_stage='devel'; hq_short='devel'
 			fi
-			file_temp=$(mktemp --tmpdir ftp.XXXX)
+			file_temp=$(mktemp --tmpdir ftp.XXXX)	
+			##TODO FIXME
 			## identify Wine repo type.
 			if [ $wine_pack = 3 ]; then 
 				dir_ver='wine-builds.old'
