@@ -454,7 +454,8 @@ winestarter $conf_target.conf\\n"
 					else
 						if [ $(printf "$game_dir"| grep -c "Program\ Files") -gt 0 ]; then
 							game_dir=$(printf "$game_dir"| \
-							sed -n "s|^.*Files$elf_ext/\(.*\)$|\1|p")
+							sed -En "s|^.*Files( \(x86\))?/(.*)$|\2|p")
+#							sed -n "s|^.*Files$elf_ext/\(.*\)$|\1|p")
 						else
 							game_dir=$(printf "$game_dir"| sed -n "s|^.*drive_c/\(.*\)$|\1|g;p")
 						fi
@@ -623,7 +624,8 @@ _wine=$_wine"
 ## comments with '##' are user help comments
 ## comments with '#' are unset feature
 "
-		[[ $code_tag = 0 ]]|| echo -e "$conf_headers" > $TEMP_conf
+#		[[ $code_tag = 0 ]]|| echo -e "$conf_headers" > $TEMP_conf
+		echo -e "$conf_headers" > $TEMP_conf
 	}
 	reconf_wbin(){
 		[[ $code_tag = 0 ]]|| echo -e "$g_notif\n##### reconf_wbin $e_notif"
@@ -1279,7 +1281,8 @@ _optimus=$_optimus"
 	fn_create_prefix(){
 		## launch winetricks list building separatly before all ops,
 		## otherwise it takes too much time when tabs are in building process.
-		fn_tricks_list_build &
+		fn_tricks_list_build &#bash_opt='-c'
+#code_tag=0
 		unset form_win def_win default_win
 		unset tab_set tab_temp cfg_set t_display nv_field
 		hq_stb0=$(printf "$_hq_stb0"| cut -d',' -f1)
@@ -1996,7 +1999,8 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 				if [[ $_arg != misc ]]; then
 					if [ $(echo "$wine_opts"| grep -Fc "$_arg") -gt 0 ]; then
 						_def_arg='1'
-						_rev_pat+=("$_arg")
+						_rev_pat+=("$_arg")#bash_opt='-c'
+#code_tag=0
 					else
 						_def_arg='0'
 					fi
@@ -2054,7 +2058,8 @@ $wine_elf;wine_elf;;Set bottle type as 64 bits (global environment);CHK;;"
 			start_cmd='FALSE'
 			windowed='TRUE'
 			cache_wipe='TRUE'
-			w_config='TRUE'
+#			w_config='TRUE'
+			w_config=1
 			if [ $_extended = 0 ]; then
 				dbg_dialog=0
 				dbg_handle=0
