@@ -190,7 +190,7 @@ fn_download_ui(){
 }
 ## wine binary config and use (2).
 fn_use_winepath(){
-	unset dl_list os_version
+	unset dl_list unpack_list os_version
 	## create tmp dir for package download
 	dl_dir=$(mktemp --tmpdir -d wine_dl.XXXXXXXX)	
 	pkg_ver=$(printf $wine_ver| cut -d'-' -f1)
@@ -198,55 +198,49 @@ fn_use_winepath(){
 	download_list(){
 		if [ $wine_pack -gt 0 ]; then
 			## check and detect fedora repo version to download from, ex : 22,23,24,etc.
-			wget -O $file_temp $dl_address/
-#			os_version=$(tac $file_temp | egrep -o "indexcolname.*href=\"[0-9]{2}\/\""| \
-#			sed -En "s/^.*([0-9]{2}).*$/\1/p")
-			os_version=$(tac $file_temp | sed -En "s|^.*href=\"([0-9]{2})\/\".*$|\1|p")
-			## package correspond to glibc version, make sur dowloading the good one.
-			if [[ $glib_v -le 226 ]]; then os_version=$(echo "$os_version"| sed -En "s/29//g;/^$/d;p"); fi
-			## next glib update 
-			# if [[ $glib_v -le 227 ]]; then os_version=$(echo "$os_version"| sed -En "s/30//g;/^$/d;p"); fi
 			for os_v in ${os_version[@]}; do
-				wget --read-timeout=10 -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf/
-				dl_bin_list[$os_v]=$(tac $file_temp.[$os_v]| egrep "wine-$hq_stage$b_elf-[0-9]+"|\
-				sed -En "s/^.*$b_elf-([0-9]\.[0-9]{1,2}(\.[0-9]{1,2})?)-([0-9](.rc[0-9])?).$http_elf.*$/\1-\3-$hq_stage,$os_v/p")
-				if [ $os_v_p ]; then
-					if [ $os_v -ne $os_v_p ]; then
-						new_output=$(echo "${dl_bin_list[$os_v]}"| cut -d',' -f1)
-						prev_output=$(echo "${dl_bin_list[$os_v_p]}"| cut -d',' -f1)
-						_diff=$(echo "$new_output"| grep -vc "$prev_output")
-						[[ $_diff ]]|| _diff=0
-						if [ $_diff -gt 0 ]; then
-							_added='\n'$(echo "${dl_bin_list[$os_v]}"| grep -v "$prev_output")
-							dl_bin_list[$os_v]=$(echo -e "${dl_bin_list[$os_v_p]}$_added")
-							dl_final_list=${dl_bin_list[$os_v]}
+				dl_ver="wine-$hq_stage$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
+				http_query=(
+				"https://download.opensuse.org/repositories/Emulators:/Wine:/Fedora/Fedora_"$os_v"_standard,1"
+				"https://dl.winehq.org/$dir_ver/fedora/$os_v,0"
+				)
+				## look into remote address is package exist, then select then right repo.
+				for address in ${http_query[@]}; do
+					_address=$(echo "$address"| cut -d',' -f1)
+					wget -q --spider $_address/$http_elf/$dl_ver
+					if [ $? = 0 ]; then
+						if [ $os_v = $base_dist ]; then
+							http_src=$(echo "$address"| cut -d',' -f2)
+							if [ $http_src = 0 ]; then
+								dl_address_0="$_address/$http_elf"
+								dl_address_1="$_address/i686"
+								echo $dl_address_0 >> $file_temp
+								echo $dl_address_1 >> $file_temp
+							fi
+							if [ $http_src = 1 ]; then
+								dl_address_0="$_address/$http_elf"
+								dl_address_1="$_address/i686"
+							fi
 						fi
-						os_v_p=$os_v
 					fi
-				else
-					dl_final_list=${dl_bin_list[$os_v]}
-					os_v_p=$os_v
-				fi
+				done
 			done
 		else
 			wget -O $file_temp $dl_address
 			## limit PoL Wine version list from 1.4 to 1.8.6
-#			dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.8\.6.*$/,/^1\.4$/p')" )
 			## Since march 2018 WineHQ old-builds has been remove for an unkwonw reason,
-			## then PoL versio has been update accordingly from 1.4 to 1.9.24.
+			## then PoL version has been update accordingly from 1.4 to 1.9.24.
 			dl_bin_list=( "$(tac "$file_temp"| cut -d';' -f2| sed -n '/1\.9\.24.*$/,/^1\.4$/p')" )
 		fi
-		echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2 > $file_temp.[fedostamp]
+#		echo "$dl_final_list"| grep "$wine_ver"| cut -d',' -f2 > $file_temp.[fedostamp]
 	}
 	## set Wine binary environment arch.
 	if [ $wine_elf = 1 ]; then ftp_elf='amd64'; b_elf='64'; else ftp_elf='x86'; b_elf=''; fi
-	## if system context (distro) is mainly 64bits, prefer to install Wine 64bits packainstead of 32.
+	## if system context (distro) is mainly 64bits, prefer to install Wine 64bits pack instead of 32.
 	sys_arch=$(uname -m)
 	if [[ $sys_arch =~ ^.*64 ]]; then
 		ftp_elf='amd64'; b_elf='64'
 	fi
-	## catch glibc version
-	glib_v=$(ldd --version | sed -n "s/^.* //;s/\.//;1p")
 	## control if wine bin dir exist. If not create it from default
 	if ! [[ -n $wine_path/$ftp_elf/ ]]; then mkdir -p $HOME/.winebin/$ftp_elf; fi
 	if [[ -d $wine_path/$ftp_elf/$wine_ver ]]; then
@@ -259,27 +253,37 @@ fn_use_winepath(){
 			## Check again system arch.
 			if [[ $sys_arch =~ ^.*64 ]]; then
 				http_elf='x86_64'
+			else
+				http_elf='i686'
 			fi
 			## identify Wine version type
-			if [[ $wine_ver =~ ^.*staging.*$ ]]; then
-				hq_stage='staging'; hq_short='staging'
-			elif [[ $wine_ver =~ ^.*stable.*$ ]]; then
-				hq_stage='stable'; hq_short='stable'
-			else
-				hq_stage='development'; hq_short='devel'
-#				hq_stage='devel'; hq_short='devel'
-			fi
+			if [[ $wine_ver =~ ^.*staging.*$ ]]; then hq_stage='staging'; hq_short='staging';
+			elif [[ $wine_ver =~ ^.*stable.*$ ]]; then hq_stage='stable'; hq_short='stable';
+			else hq_stage='development'; hq_short='devel'; fi
 			file_temp=$(mktemp --tmpdir ftp.XXXX)	
-			##TODO FIXME
-			## identify Wine repo type.
-			if [ $wine_pack = 3 ]; then 
-				dir_ver='wine-builds.old'
-			elif [ $wine_pack = 2 ]; then
-				dir_ver=''
-			else
-				dir_ver='wine-builds'
-			fi
-			## tag to identify already download lists.
+			## check glibc os version for corresponding downloadable package list.
+			glibc=$(ldd --version | sed -n "s/^.* //;1p")
+			## Fedora glib package version correspond to 'fedora version - 1', lucky we are !
+			## GLIB Hist : 24 > 2.23, 25 < 2.24, 26 > 2.25, 27 > 2.26, 28 > 2.27, 29 > 2.28, 30 > 2.29
+			unset os_version
+			n=0
+			dist=0
+			base_dist=$(( $(echo "$glibc"| cut -d'.' -f2)+1 ))
+			until [ $dist = 24 ]; do
+				dist=$(( $base_dist-$n ))
+				os_version+=( $dist )
+				((n++))
+			done
+## test
+#			base_dist=29
+#			os_version=( 29 28 27 26 25 )
+			## catch witch WineHQ repo class
+			case $wine_pack in
+				1)	dir_ver='wine-builds';;
+				2) dir_ver='';;
+				3) dir_ver='wine-builds.old';;
+			esac
+			## catch package class from winestarter_conf resources/list. 
 			case $hq_stage in
 				'staging')
 					case $dir_ver in
@@ -289,29 +293,18 @@ fn_use_winepath(){
 					esac
 				;;
 				'stable') hq_ver='hq_stb0' ;;
-				'development') hq_ver='hq_dev0' ;;
+				'development') hq_ver='hq_dev0';;
 			esac
-			if [[ $dir_ver ]]; then
-				web_src='dl.winehq.org/'$dir_ver
-			else
-				## TODO < to remove in case merge between WineHQ staging repo and third party.
-				web_src='repos.wine-staging.com/alesliehughes'
-			fi
-			dl_address="https://$web_src/fedora"
 			dl_text="$vb\\Building WineHQ packages repository list.$end"		
 			download_list | $zen_bin --width=550 --title "$w_title" --text="$dl_text" \
 			--window-icon=filesave --progress --pulsate --auto-close --no-cancel
-			dist_dl_ver=$(cat $file_temp.[fedostamp])
-			dl_address_0="$dl_address/$dist_dl_ver/$http_elf"
-			dl_address_1="$dl_address/$dist_dl_ver/i686"
-			dl_list=(
-				"$dl_address_0/wine-$hq_stage$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
-				"$dl_address_1/wine-$hq_stage-common-$pkg_ver-$pkg_rel.i686.rpm"
-			)
-			unpack_list=(
-				"wine-$hq_stage$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm"
-				"wine-$hq_stage-common-$pkg_ver-$pkg_rel.i686.rpm"
-			)
+			
+			dl_address_0=$(cat $file_temp| sed -n '1p')
+			dl_address_1=$(cat $file_temp| sed -n '2p')
+			dl_list+=( "$dl_address_0/wine-$hq_stage$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm" )
+			dl_list+=( "$dl_address_1/wine-$hq_stage-common-$pkg_ver-$pkg_rel.i686.rpm" )
+			unpack_list+=( "wine-$hq_stage$b_elf-$pkg_ver-$pkg_rel.$http_elf.rpm" )
+			unpack_list+=( "wine-$hq_stage-common-$pkg_ver-$pkg_rel.i686.rpm" )
 		else
 			dl_address_0="http://wine.playonlinux.com/binaries/linux-$ftp_elf"
 			dl_pkg=PlayOnLinux-wine-$wine_ver-linux-$ftp_elf.pol
@@ -328,7 +321,7 @@ fn_use_winepath(){
 			pack_name=$wine_ver
 			fn_download_ui
 		done
-		## extract package with rmp cpio.
+		## extract package with rpm cpio.
 		for dwld in ${unpack_list[@]}; do
 			if [ $wine_pack = 0 ]; then 
 				un_tar(){ tar -xf $dwld; }
@@ -337,14 +330,9 @@ fn_use_winepath(){
 			fi
 			if [ $(ls -1 $dl_dir| egrep -c "$pkg_ver") -gt 0 ]; then
 				e_text="$vb\\Extracting $dwld to $wine_path.$end"
-#			$yad_bin --width=550 --title "$w_title" --text-align=center --no-buttons \
-#			--window-icon=filesave --progress --pulsate --auto-close --text="$e_text"  --progress-text="" &
-#			WAIT_UI=$(ps -A | grep "yad" | awk '{print $1}'| sed -n '1p')
 				$zen_bin --width=550 --title "$w_title" --window-icon=filesave \
 				--progress --pulsate --auto-close --no-cancel --text="$e_text" &
 				WAIT_UI=$(ps -A | grep "zenity" | awk '{print $1}'| sed -n '1p')
-#			un_tar | $yad_bin --width=500 --title "$w_title" --text-align=center --no-buttons\
-#			--window-icon=filesave --progress --pulsate --auto-close --text="$e_text" --progress-text=""
 				un_tar
 				kill $WAIT_UI
 				_use_winepath_env=1
@@ -360,11 +348,13 @@ fn_use_winepath(){
 				_use_winepath_env=0
 			fi
 		done
+		## move extracted parckage to winestarter wine's binaries directory.
 		if [ $_use_winepath_env = 1 ]; then
 			if [ $wine_pack = 0 ]; then
 				cp -Rf wineversion/$wine_ver/ $wine_path/$ftp_elf
 				if [[ -s $HOME/.winestarter/resources/ftp_$hq_ver.\[list\] ]]; then
-					sed -ni "s/^\($wine_ver\)$/\1*/i;p" $HOME/.winestarter/resources/ftp_$hq_ver.[list]
+					sed -ni "s/^\($wine_ver\)$/\1*/i;p" \
+					$HOME/.winestarter/resources/ftp_$hq_ver.[list]
 				fi
 			else
 				mkdir -p $wine_path/$ftp_elf/$wine_ver/
@@ -397,8 +387,8 @@ fn_wine_binary(){
 			#":/lib:/lib64:/usr/lib:/usr/lib64"
 		fi
 		wine_bin_path=$wine_elf_path/bin/
-	## sandoxing wine by exec in WINELOADER directory
-	cd $WINEVERPATH/bin
+		## sandoxing wine by exec in WINELOADER directory
+		cd $WINEVERPATH/bin
 	fi
 	## in case wine prefix is missing, but it is really and app dir with exe to launch,
 	## (re-)create prefix.
@@ -471,8 +461,6 @@ fn_install_tricks(){
 							echo "# Installing $w_list"
 							$w_tricks $w_tricks_opts $w_list
 						done
-			#				)| $yad_bin --width=250 --title "$w_title" --text-align=center --text="$e_text" \
-			#				--window-icon=filesave --progress --pulsate --auto-close --no-buttons
 						)| $zen_bin --width=250 --title="$w_title" --text="$e_text" \
 						--window-icon=filesave --progress --pulsate --auto-close --no-cancel
 						if [[ -s $w_list_file ]]; then
