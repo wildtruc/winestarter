@@ -3,7 +3,11 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
-*( 29/12/18 ) v1.3.12*
+*( 08/01/19 ) v1.3.13*
+ - wtc: fix bad filter brackets in dependencies install function.
+ - wt: integrated compressed files in extra package install.
+ 
+*( 30/12/18 ) v1.3.12*
  - wt/wtc: WineHQ is dispatching packages repos (fedora for the case). Redrawed script to include WineHq, then new and future repos moving. 
  
 *( 20/12/18 ) v1.3.11*

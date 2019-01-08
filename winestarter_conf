@@ -1503,21 +1503,21 @@ Fedora, RedHat, Mageia, Debian, Ubuntu, Mint, Arch.
 					wine_version=$($wine_bin --version| \
 					sed -En "s/^(.*)( [\(]?(\w*)[\)]?)$/\1-\l\3/g;p"| sed -En "s/^.*-([0-9].*)$/\1/p")
 					w_text="$vb$bf\Wine packing has been cancel$end.
-		Installed wine distro package is leave as it is.
-		You can still extract it to Winestarter binaries directory later with the appropriate menu entry
-		or with the standalone winestarter_extract script, but it wont be set as default without further action."
+Installed wine distro package is leave as it is.
+You can still extract it to Winestarter binaries directory later with the appropriate menu entry
+or with the standalone winestarter_extract script, but it wont be set as default without further action."
 					if ! [[ $wine_version =~ staging ]]; then wine_version=$wine_version'-stable'; fi
 					## display what to do with newly installed wine package : nothing, packing, packing and remove, remove.
 					sel_text="$vb\Wine has been installed successfuly and dependencies safely resolved.
-		You migh now choose what to do with it :$vn
-		- Packing : Add the current wine distro package to winestarter and set it as default.
-		- Packing and remove : Same as above, but remove distro wine package afterward.
-		- Remove : Remove safely wine distro package (dependencies will remain).
-		- Nothing : Leave wine package as it is until the next distro package update.\n
-		(Distro wine package is usualy the more adapted for you environment,
-		It's still a good idea anyway to save it for winestarter's future needs)$end\n
-		Notice: You can also use the winestarter_extract standalone script or winestarter's dedicated
-		menu entry later to pack distro Wine package in winestarter's Wine binaries directory.$end"
+You migh now choose what to do with it :$vn
+	- Packing : Add the current wine distro package to winestarter and set it as default.
+	- Packing and remove : Same as above, but remove distro wine package afterward.
+	- Remove : Remove safely wine distro package (dependencies will remain).
+	- Nothing : Leave wine package as it is until the next distro package update.\n
+(Distro wine package is usualy the more adapted for you environment,
+It's still a good idea anyway to save it for winestarter's future needs)$end\n
+Notice: You can also use the winestarter_extract standalone script or winestarter's dedicated
+menu entry later to pack distro Wine package in winestarter's Wine binaries directory.$end"
 					_pack_wine=$($zen_bin --width=600 --height=380 --title "$w_title" --list --radiolist \
 					--window-icon=$img_desktop --text="$sel_text" --column "select" --column='key' --column "action" \
 					--hide-column=2 TRUE 1 "Packing" FALSE 2 "Packing and remove" \
@@ -1569,7 +1569,7 @@ or with the standalone winestarter_extract script.$end" ;;
 		## If no wine package was deteected on the system, the default distro one will be install first to
 		## get correct dependencies.
 #		if [ $wine_bin == '' ]; then
-		if [ $wine_bin == '' ]; then fn_dependencies; fi
+		if [[ $wine_bin == '' ]]; then fn_dependencies; fi
 		if ! [ -s $HOME/.winestarter/default-wine ]; then fn_binary_config; fi
 		## detect system master elf type. 
 		if ! [ $wine_elf ]; then if [[ $(uname -m) =~ ^.*64 ]]; then wine_elf=1, else wine_elf=0; fi; fi

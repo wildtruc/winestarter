@@ -473,7 +473,7 @@ fn_install_tricks(){
 								warn_msg=$(echo "$diff_logs"| tr '\n' ','| sed -n "s/,$//g;p")
 								echo -e "»»»» DLLs install error. $warn_msg are missing or won't install.\n»»»» See config file w_tricks_list field or try to launch winestarter again."
 								if [ $zen_bin ]; then
-									text="$bf\\DLLs install error$end$vb.\n$warn_msg are missing or won't install.\nLook at $config_file or try to launch Winestarter again$end"
+									text="$bf\\DLLs install error$end$vb.\n$rb$warn_msg$end are missing or won't install.\nLook at $rb$config_file$end or try to launch Winestarter again$end"
 									dialog_list="gtk-close;$warning;4;4"; zen_warning
 								fi
 							else
@@ -528,6 +528,99 @@ fn_install_exe(){
 			fn_download_ui
 		fi		
 	}
+	## in case extra package is compressed, extraction & selection functions are isoleted.
+	sub_select_dir(){
+		target_dir=$user_prefix/$bottle_prefix/drive_c/
+		if [[ $w_install_pck =~ ^.*-.*$ ]]; then
+			w_install_dir=$(echo "$w_install_pck"| sed -En "s|^(.*)-(.*)$|\1|;s|^.*/||g;p")
+			target_dir=$target_dir$w_install_dir
+		else
+			if [[ -x $zen_bin ]]; then
+				dir_text="$vb\\Please, select or create the target directory in C: drive.$end"
+				$zen_bin --width=400 --title "$w_title" --question --window-icon=$filesave \
+				--ok-label='Select' --cancel-label='Cancel' --text="$dir_text"
+				abort=$?
+				if [ $? = 0 ]; then
+					w_install_dir=$($zen_bin --title "$w_title" --window-icon=$filesave \
+					--file-selection --filename=$target_dir --directory)
+				fi
+				target_dir=$w_install_dir
+				w_install_dir=$(printf "$target_dir"| sed -n "s/^.*\///g;p")
+			fi
+		fi
+		if [ $extra_pack = 0 ]; then w_install_zip=$w_install_pck; fi
+	}
+	sub_extract(){
+		unset _archive_type
+		_archive_type=( zip tar rar 7z tar.7z exe )
+		for _type in ${_archive_type[@]}; do
+			check_type=$(printf "$w_install_pck"| egrep -oi "$_type$")
+			case $check_type in
+				'zip')
+					auto=0; cd_to=0; cmd='unzip'; _opt_list='-l'
+					_opt_ex0='-o'; _opt_ex1='-d'; _extra=''
+				;;
+				'rar')
+					auto=0; cd_to=1; cmd='unrar'; _opt_list='lb'
+					_opt_ex0='x -y -o+ -inul'; _opt_ex1=''; _extra=''
+				;;
+				'7z')
+					auto=0; cd_to=1; cmd='7z'; _opt_list='l'
+					_opt_ex0='x -y'; _opt_ex1=''; _extra=''
+				;;
+				'tar.7z')
+					auto=0; cd_to=1; cmd='7z'; _opt_list='l'
+					_opt_ex0='x -y -so'; _opt_ex1='|'; _extra=' tar xf -'
+				;;
+				'exe')
+					auto=1; cd_to=0
+					cmd="$wine_bin $w_install_pck $wine_opts"
+				;;
+			esac
+		done
+		## make right selection between w_more_pkgs and zip install type.
+		if [[ $cmd != '' ]]; then
+			if [ $cd_to = 1 ]; then
+				[[ -d $target_dir ]]|| mkdir -p $target_dir
+				cd $target_dir
+				cmd_line="$cmd $_opt_ex0 $w_install_pck $_opt_ex1"
+			else
+				cmd_line="$cmd $_opt_ex0 $w_install_pck $_opt_ex1 $target_dir"
+			fi
+			if [[ $extra_pack = 0 ]]; then
+				if [ $auto = 0 ]; then
+					if [ $( $cmd $_opt_list $w_install_pck | egrep -ic "setup.exe") -gt 0 ]; then
+						warn_msg
+						target_dir=$XDG_DOWNLOAD_DIR/$w_install_dir
+						mkdir -p $target_dir
+						bash -c "$cmd_line"
+						if [ $go_on = 1 ]; then
+							setup_bin=$(ls -1 $target_dir/| egrep -i "setup.exe")
+							if ! [ $setup_bin ]; then
+								echo -e "»»»» WARNING: Setup.exe not found.\n»»»» You need to set the install executable manually and launch the script again."
+								if [ $zen_bin ]; then
+									text="$brf\\Setup.exe not found.$end$vb\nSorry, but you need to set the install executable manually and launch the script again.$end"
+									dialog_list="gtk-close;$warning;4;4"; zen_warning
+								fi
+								exit 0
+							fi
+							w_more_pkgs=$target_dir/$setup_bin
+							w_install_zip=''
+							fn_install_exe
+						fi
+					else
+						bash -c "$cmd_line"
+					fi
+				else
+					$cmd
+				fi
+			else
+				bash -c "$cmd_line"
+				chmod 755 *.exe
+			fi
+		fi
+	}
+	
 	pkgs_log=$user_prefix/$bottle_prefix/packages.log
 	if_install=1
 	if [ "$w_exe_path" != '' ]; then
@@ -553,8 +646,9 @@ fn_install_exe(){
 		abort=0
 	fi
 	if [ $(printf "$w_more_pkgs"| grep -c .) -gt 0 ]; then
+		## define pkg is an extra pack.
+		extra_pack=1
 		extra_log=$user_prefix/$bottle_prefix/extra_pcks.log
-#		w_more_pkgs_list=( $(echo "$w_more_pkgs"| tr ',' '\n') )
 		for pkg in ${w_more_pkgs[@]}; do
 			msi=$(printf "$pkg"| grep -c "\.msi")
 			prev_pck=$(echo -e "$pkg"| sed -n "s/^.*\///g;p")
@@ -564,10 +658,17 @@ fn_install_exe(){
 					sub_download
 					pkg=$dl_dir/$pack_name
 				fi
-				if [ $msi = 0 ]; then
-					$wine_bin $pkg $w_exe_opts
+				## check if package is compressed.
+				if [[ $pkg =~ ^.*\.(zip|tar|rar|7z|tar\.7z)$ ]]; then
+					w_install_pck=$pkg
+					sub_select_dir
+					sub_extract
 				else
-					$wine_bin msiexec \/i $pkg $w_exe_opts
+					if [ $msi = 0 ]; then
+						$wine_bin $pkg $w_exe_opts
+					else
+						$wine_bin msiexec \/i $pkg $w_exe_opts
+					fi
 				fi
 				echo "$prev_pck" >> $extra_log
 			else
@@ -579,7 +680,9 @@ fn_install_exe(){
 	## zip file section.
 	if [ $(printf "$w_install_zip"| grep -c .) -gt 0 ]; then
 	## set functions used by section first.
-		## alert on bd behaviour.
+		## define pkg is not an extra pack.
+		extra_pack=0
+		## alert on wrong behaviour.
 		warn_msg(){
 			echo -e "»»»» WARNING: Archive looks like an installation dir only.\nExtracting in default download dir.\nThen, set up extra packages install."
 			if [ $zen_bin ]; then
@@ -595,94 +698,18 @@ fn_install_exe(){
 			fi
 			target_dir=$user_prefix/$bottle_prefix/drive_c/$w_install_dir
 		else
-			target_dir=$user_prefix/$bottle_prefix/drive_c/
-			if [[ $w_install_zip =~ ^.*-.*$ ]]; then
-				w_install_dir=$(echo "$w_install_zip"| sed -En "s|^(.*)-(.*)$|\1|;s|^.*/||g;p")
-				target_dir=$target_dir$w_install_dir
-			else
-				if [[ -x $zen_bin ]]; then
-					dir_text="$vb\\Please, select or create the target directory in C: drive.$end"
-	#				w_install_dir=$($yad_bin --width=400 --title "$w_title" --form \
-	#				--image=stock_dialog_question --window-icon=filesave --separator="" \
-	#				--field="$dir_text":LBL '' --field="":CDIR "$target_dir")
-					$zen_bin --width=400 --title "$w_title" --question --window-icon=$filesave \
-					--ok-label='Select' --cancel-label='Cancel' --text="$dir_text"
-					abort=$?
-					if [ $? = 0 ]; then
-						w_install_dir=$($zen_bin --title "$w_title" --window-icon=$filesave \
-						--file-selection --filename=$target_dir --directory)
-					fi
-					target_dir=$w_install_dir
-					w_install_dir=$(printf "$target_dir"| sed -n "s/^.*\///g;p")
-				fi
-			fi
+			sub_select_dir
 		fi
-		
-		_archive_type=( zip tar rar 7z tar.7z exe )
 		if  ! [[ -s $pkgs_log ]]||[ $(cat $pkgs_log| grep -wc "$new_pkg") -eq 0 ]; then
 			mkdir -p $target_dir
 			game_dir=$w_install_dir
-		
 			if [[ $w_install_zip =~ ^(http*|ftp*) ]]; then
 				pkgs=$w_install_zip
 				sub_download
 				w_install_zip=$dl_dir/$pack_name
 			fi
-			######
-			_archive_type=( zip tar rar 7z tar.7z exe )
-			for _type in ${_archive_type[@]}; do
-				check_type=$(printf "$w_install_zip"| egrep -oi "$_type$")
-				case $check_type in
-					'zip')
-						auto=0; cd_to=0; cmd='unzip'; _opt_list='-l'
-						_opt_ex0='-o'; _opt_ex1='-d'; _extra=''
-					;;
-					'rar')
-						auto=0; cd_to=1; cmd='unrar'; _opt_list='lb'
-						_opt_ex0='x -y -o+ -inul'; _opt_ex1=''; _extra=''
-					;;
-					'7z')
-						auto=0; cd_to=1; cmd='7z'; _opt_list='l'
-						_opt_ex0='x -y'; _opt_ex1=''; _extra=''
-					;;
-					'tar.7z')
-						auto=0; cd_to=1; cmd='7z'; _opt_list='l'
-						_opt_ex0='x -y -so'; _opt_ex1='|'; _extra=' tar xf -'
-					;;
-					'exe')
-						auto=1; cd_to=0
-						cmd="$wine_bin $w_install_zip $wine_opts"
-					;;
-				esac
-#				fi
-			done
-			if [ $cd_to = 1 ]; then cd $target_dir; fi
-			if [ $auto = 0 ]; then
-				if [ $( $cmd $_opt_list $w_install_zip | egrep -ic "setup.exe") -gt 0 ]; then
-					warn_msg
-					target_dir=$XDG_DOWNLOAD_DIR/$w_install_dir
-					mkdir -p $target_dir
-					$cmd $_opt_ex0 $w_install_zip $_opt_ex1 $target_dir
-					if [ $go_on = 1 ]; then
-						setup_bin=$(ls -1 $target_dir/| egrep -i "setup.exe")
-						if ! [ $setup_bin ]; then
-							echo -e "»»»» WARNING: Setup.exe not found.\n»»»» You need to set the install executable manually and launch the script again."
-							if [ $zen_bin ]; then
-								text="$brf\\Setup.exe not found.$end$vb\nSorry, but you need to set the install executable manually and launch the script again.$end"
-								dialog_list="gtk-close;$warning;4;4"; zen_warning
-							fi
-							exit 0
-						fi
-						w_more_pkgs=$target_dir/$setup_bin
-						w_install_zip=''
-						fn_install_exe
-					fi
-				else
-					$cmd $_opt_ex0 $w_install_zip $_opt_ex1 $target_dir
-				fi
-			else
-				$cmd
-			fi
+			w_install_pck=$w_install_zip
+			sub_extract
 			echo "$new_pkg" >> $pkgs_log
 			if [ $cd_to = 1 ]; then cd $WINEVERPATH/bin; fi
 		else
