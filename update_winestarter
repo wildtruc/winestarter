@@ -20,16 +20,16 @@
 ## author : wildtruc@noneltd.net
 
 ## let some time to desktop interface for starting up. 
-if [ $1 -gt 0 ]; then
+if [[ $1 != '' && $1 -gt 0 ]]; then
 	sleep $1
 else
 	sleep 30
 fi
 ## define winestarter git source
 wine_data=$HOME/.winestarter
-wt_src=$(find -P $HOME -maxdepth 3 -mount -wholename "*/winestart")
+wt_src=$(find -P $HOME -maxdepth 2 -mount -type d -wholename "*/winestarter")
 #wt_src=$HOME/Devel/WINE/test/winestart
-wine_git='https://github.com/wildtruc/winestart'
+wine_git='https://github.com/wildtruc/winestarter'
 w_tricks=$(find /usr/{bin,local/bin} -name winetricks)
 w_bin=$(find /usr/{bin,local/bin} -name wine)
 w_tricks_reserve=$wine_data/resources/tricks_workaround.txt
@@ -74,7 +74,8 @@ if [ $(cat $temp_data| grep -c "master") -eq 1 ]; then
 	tricks_git_ver=$(echo "$tricks_git"| sed -En "s|^.*[\(]?([0-9]{8})[\)]?.*$|\1|p")
 	tricks_git_date=$(echo "$tricks_git"| sed -En "s|^Date:.*([0-9]{4}-[0-9]{2}-[0-9]{2}).*$|\1|p")
 	 # extract site date
-	tricks_version=$(cat $temp_http| sed -En "s/^.*<a href=.*commit.* git ([0-9]*).*$/\1/p"| uniq)
+#	tricks_version=$(cat $temp_http| sed -En "s/^.*<a.*href=.*commit.* git ([0-9]*).*$/\1/p"| uniq)
+	tricks_version=$(cat $temp_http| sed -En "s/^.*winetricks git ([0-9]*).*$/\1/p"| uniq)
 	 # web page date format 2018-03-02T00:50:09Z
 	tricks_page_date=$(cat $temp_http| sed -En "s|^.*winetricks git.* \((.*)\).*$|\1|p"| uniq)
 	 # if first track fail, try a more ugly.
@@ -117,8 +118,6 @@ if [ $(cat $temp_data| grep -c "master") -eq 1 ]; then
 				$w_tricks settings list|sed -n "/^---/,/---$/d;p"| egrep -v "^Using.*$"|awk '{print $1}' \
 				>$w_tricks_reserve
 				$w_tricks dlls list| grep "downloadable" >$w_tricks_dlls
-			else
-				exit 0
 			fi
 		fi
 	fi

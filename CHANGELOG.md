@@ -3,6 +3,12 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
+*( 25/01/19 ) v1.3.14*
+ - wtc: fixed missing conf headers at prefix creation.
+ - wtc: changed default WineHQ new binaries version check from fedora to debian (because of Fedora repos move). Some others fixes in same function.
+ - up_w: fixed bad regex.
+ - next in wt: need to control application package installation method and check, no enought filters and check.
+ 
 *( 08/01/19 ) v1.3.13*
  - wtc: fix bad filter brackets in dependencies install function.
  - wt: integrated compressed files in extra package install.
