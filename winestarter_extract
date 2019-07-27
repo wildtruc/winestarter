@@ -19,9 +19,10 @@
 ## You can redistribute it as you wish : GPL v3
 ## author : wildtruc@noneltd.net
 
-set -e
+#set -e
 ## comment the line below if using script as wine package extrator only and uncomment the second one.
 	[[ -d $HOME'/.winebin' ]]|| exit 0
+	if [[ $wine_bin == '' ]]; then wine_bin=$(find /usr/{bin,local/bin} -name wine); fi
 #	[[ -d $HOME'/.winebin' ]]|| mkdir -p $HOME'/.winebin'
 #export wine_version=$(wine --version| sed -En "s/^(.*) [\(]?(\w*)[\)]?$/\1-\l\2/p")
 	export wine_version=$($wine_bin --version| \

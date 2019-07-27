@@ -3,6 +3,12 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
+*( 25/07/27 ) v1.3.15*
+ - wtc: roll back to fedora WineHq's repos because Debian one's is not si much up to date.
+ - wtc: changes desktop files creator to be more clear and ajustable at need.
+ - we: wine binary was missing. Don't ask ... :'(
+ - and still, my apology for the long delay.
+   
 *( 25/01/19 ) v1.3.14*
  - wtc: fixed missing conf headers at prefix creation.
  - wtc: changed default WineHQ new binaries version check from fedora to debian (because of Fedora repos move). Some others fixes in same function.

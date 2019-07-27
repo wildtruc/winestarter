@@ -1264,7 +1264,7 @@ _optimus=$_optimus"
 	messages(){
 		main_tab_text="$bf Select settings by theme$end$nf\\n \
  Items or section leave \'unset\' or empty will not be set to the Winestarter config file$end"
-		msg_wine="Set a new Wine prefix"
+		msg_wine="Set a Wine prefix"
 		msg_wcfg="Set a custom Wine binary"
 		msg_tricks="Winetricks packages install (Windows packages)"
 		msg_install="Install a Windows Software"
@@ -3392,39 +3392,19 @@ edit_wine_options(){
 
 control_last(){
 ## prior v1.3.14
-#	date_stamp(){
-#		file_temp=$(mktemp --tmpdir ftp_date.XXXX)
-#		select_stg0
-#		elf=$(printf "${tags}"| cut -d',' -f1)
-#		http_elf=$(printf "${tags}"| cut -d',' -f2)
-#		http_class=$(printf "${tags}"| cut -d',' -f3)
-#		wget -O $file_temp $dl_address/
-#		os_version=$(tac $file_temp | sed -En "s|^.*href=\"([0-9]{2})\/\".*$|\1|p")
-#		os_v=$(echo "$os_version"| sed -n '1p')
-#		wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf
-#		last_bin_date=$(tac $file_temp.[$os_v] | egrep "wine-$hq_stage$elf-[0-9]+"| \
-#		sed -En "s/^.*indexcollastmod\">([0-9]{4}-[0-9]{2}-[0-9]{2}) [0-9]+:[0-9]+.*$/\1/;1p")
-#		last_bin_date=$(printf "$last_bin_date"| sed -n "s/-//g;p")
-#		if [[ -s $HOME/.winestarter/last-update ]]; then
-#			previous_bin_date=$(cat $HOME/.winestarter/last-update|sed -n "s/-//g;p")
-#			if [ $last_bin_date -gt $previous_bin_date ]; then
-#				update=1
-#				echo -n "$last_bin_date" > $HOME/.winestarter/last-update
-#			else
-#				update=0
-#			fi
-#		else
-#			echo -n "$last_bin_date" > $HOME/.winestarter/last-update
-#			update=1
-#		fi
-#	}
-## post v1.3.14
 	date_stamp(){
 		file_temp=$(mktemp --tmpdir ftp_date.XXXX)
-		select_deb0
+		select_stg0
+		elf=$(printf "${tags}"| cut -d',' -f1)
+		http_elf=$(printf "${tags}"| cut -d',' -f2)
+		http_class=$(printf "${tags}"| cut -d',' -f3)
 		wget -O $file_temp $dl_address/
-		last_bin_date=$(cat $file_temp| egrep "indexcollastmod.*"$(date +%Y)| \
-		sed -En "s|^.*indexcollastmod\">([0-9]{4}-[0-9]{2}-[0-9]{2}) [0-9]+:[0-9]+.*$|\1|;s|-||g;1p")
+		os_version=$(tac $file_temp | sed -En "s|^.*href=\"([0-9]{2})\/\".*$|\1|p")
+		os_v=$(echo "$os_version"| sed -n '1p')
+		wget -O $file_temp.[$os_v] $dl_address/$os_v/$http_elf
+		last_bin_date=$(tac $file_temp.[$os_v] | egrep "wine-$hq_stage$elf-[0-9]+"| \
+		sed -En "s/^.*indexcollastmod\">([0-9]{4}-[0-9]{2}-[0-9]{2}) [0-9]+:[0-9]+.*$/\1/;1p")
+		last_bin_date=$(printf "$last_bin_date"| sed -n "s/-//g;p")
 		if [[ -s $HOME/.winestarter/last-update ]]; then
 			previous_bin_date=$(cat $HOME/.winestarter/last-update|sed -n "s/-//g;p")
 			if [ $last_bin_date -gt $previous_bin_date ]; then
@@ -3438,6 +3418,26 @@ control_last(){
 			update=1
 		fi
 	}
+## post v1.3.14
+#	date_stamp(){
+#		file_temp=$(mktemp --tmpdir ftp_date.XXXX)
+#		select_deb0
+#		wget -O $file_temp $dl_address/
+#		last_bin_date=$(cat $file_temp| egrep "indexcollastmod.*"$(date +%Y)| \
+#		sed -En "s|^.*indexcollastmod\">([0-9]{4}-[0-9]{2}-[0-9]{2}) [0-9]+:[0-9]+.*$|\1|;s|-||g;1p")
+#		if [[ -s $HOME/.winestarter/last-update ]]; then
+#			previous_bin_date=$(cat $HOME/.winestarter/last-update|sed -n "s/-//g;p")
+#			if [ $last_bin_date -gt $previous_bin_date ]; then
+#				update=1
+#				echo -n "$last_bin_date" > $HOME/.winestarter/last-update
+#			else
+#				update=0
+#			fi
+#		else
+#			echo -n "$last_bin_date" > $HOME/.winestarter/last-update
+#			update=1
+#		fi
+#	}
 	download_list(){
 	if [ $bin_class -gt 0 ]; then
 		## WineHQ give multiple repos for fedora project. To get all availables, we take in all fedora
@@ -3708,11 +3708,13 @@ edit_desktop(){
 	IFS=$(echo -en "\n\b")
 	# set the exe path and bin
 	if [[ $game_exe =~ ^.*\.(exe|EXE)$ ]]; then
-		if [[ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]]; then
-			exe_path="$user_prefix/$bottle_prefix/drive_c/$game_dir/$game_exe"
-		else
-			exe_path="$user_prefix/$bottle_prefix/drive_c/Program Files$elf_ext/$game_dir/$game_exe"
-		fi
+#		if [[ -d $user_prefix/$bottle_prefix/drive_c/$game_dir ]]; then
+#			exe_path=$(find $user_prefix/$bottle_prefix/drive_c/$game_dir -wholename "*/$game_exe")
+##			exe_path="$user_prefix/$bottle_prefix/drive_c/$game_dir/$game_exe"
+#		else
+#			exe_path="$user_prefix/$bottle_prefix/drive_c/Program Files$elf_ext/$game_dir/$game_exe"
+#		fi
+		exe_path=$(find $user_prefix/$bottle_prefix/drive_c/ -wholename "*/$game_exe")
 		# set the icon type to extract
 		ico_type=14
 		# extract the icon
@@ -3824,8 +3826,8 @@ $vb You can create or modify every main fields of a desktop file$end"
 	w_custom_icon="$vb\\Select a custum icon instead of listed$end"
 	## create paned window and send result to associated temp files
 	key=$RANDOM
-	temp1=$(mktemp --tmpdir tab1.XXXXXXXX)
-	temp2=$(mktemp --tmpdir tab2.XXXXXXXX)
+	temp1=$(mktemp --tmpdir tab1.XXX)
+	temp2=$(mktemp --tmpdir tab2.XXX )
 	# editable categories list for Category entry combo box
 	categories='Game;,Office;,Applications;,Multimedia;,Video;,Graphics;'
 	# select_pan part
@@ -3858,16 +3860,18 @@ $vb You can create or modify every main fields of a desktop file$end"
 	if [ $? = 1 ]; then bash $bash_opt $base_script; exit 0; fi
 	## extract setted variable from temp files
 	# create a new temp file if creating a new desktop file
-	temp3=$(mktemp --tmpdir desktop.XXXXXXXX)
+	temp3=$(mktemp --tmpdir desktop.XXX)
 	# order temp file by variable raws
 	tmp_files=("0," "1,$temp1" "2,$temp2")
+	cat $temp1
+	cat $temp2
 	rk=0
 	for tmp in ${tmp_files[@]}; do
 		tp_rk=$(printf "$tmp"| cut -d',' -f1)
 		tp_fl=$(printf "$tmp"| cut -d',' -f2)
 		if [ $rk -eq $tp_rk ]; then
 			#make sure data come from temp file or not
-			if [[ $tp_fl != '' ]]&&[ -e $tp_fl ]; then
+			if [[ $tp_fl != '' && -e $tp_fl ]]; then
 				tmp_data=$(cat $tp_fl)
 			fi
 			for t_vars in "${desktop_vars[@]}"; do
@@ -3876,7 +3880,7 @@ $vb You can create or modify every main fields of a desktop file$end"
 				dsk_rank=$(printf "$t_vars"| cut -d',' -f3)
 				#control again if data come from temp file or not, then apply correct filter
 				if [ $tmp_rank = $tp_rk ]&&[[ $dsk_rank != '' ]]; then
-					if [ $tp_fl	!= '' ]&&[ -e $tp_fl ]; then
+					if [[ $tp_fl != '' && -e $tp_fl ]]; then
 						dsk_field=$(printf "$tmp_data"|cut -d',' -f$dsk_rank)
 					else
 						dsk_field=$dsk_rank
@@ -3884,54 +3888,85 @@ $vb You can create or modify every main fields of a desktop file$end"
 					desktop_field+=("$dsk_var=$dsk_field")
 				fi
 			done
-			rk=$[ $rk+1 ]
+#			rk=$[ $rk+1 ]
+			((rk++))
 		fi
 	done
 	convert_icon=0
+	echo -e "${desktop_field[@]}"
+
 	ifs=$IFS
 	IFS=$(echo -en "\n\b")
 	# take emblem png definition from file
 	emblem_def=$(file $emblem_png| perl -pe "s| ||g;s|^.*,([0-9]*.*)x([0-9]*.*),[0-9].*$|\1x\2|p")
+	
+	## eval first key vars useful for the next loop roll.
+	for key_vars in "${desktop_field[@]}"; do
+		fld_var=$(printf "$key_vars"| cut -d'=' -f1)
+		fld_entry=$(printf "$key_vars"| cut -d'=' -f2)
+		case $fld_var in
+			'dsk_menu')
+				case $fld_entry in
+					'TRUE') menu_entry=1;;
+					'FALSE') menu_entry=0;;
+				esac
+			;;
+			'emblem')
+				case $fld_entry in
+					'TRUE') convert_icon=1;;
+					'FALSE') convert_icon=0;;
+				esac
+			;;
+		esac
+	done
 	## parse now data to desktop entry
+#	$(echo -e "${desktop_field[@]}"| egrep "menu_entry")
 	for keys in "${desktop_field[@]}"; do
 		fld_var=$(printf "$keys"| cut -d'=' -f1)
 		fld_entry=$(printf "$keys"| cut -d'=' -f2)
-		# if emblem overlay is selected, check vlaue first before telling to script to create 
-		# the overlay at the next loop.
-		if [ "$fld_entry" == TRUE ]; then
-			if [ "$fld_var" == emblem ]; then convert_icon=1; else convert_icon=0; fi
-			if [ "$fld_var" == dsk_menu ]; then menu_entry=1; else menu_entry=0; fi
-		fi
-		# next loop create the overlay if set.
-		if [[ "$fld_var" == Icon && $convert_icon = 1 ]]; then
-			for l_png in ${icon_def[@]}; do
-				png=$(printf "$l_png"| cut -d',' -f1)
-				def=$(printf "$l_png"| cut -d',' -f2)
-				if [ $png == $fld_entry ]; then
-					if [ $(printf "$fld_entry"| grep -c "$emblem_def") = 0 ]; then
-						scale="-scale $def"
-					fi
+#		fld_line=
+#		Exec Startup Name Comment dsk_menu Categories emblem 
+		case $fld_var in
+			'Icon')
+				if [[ $convert_icon = 1 ]]; then
+					for l_png in ${icon_def[@]}; do
+						png=$(printf "$l_png"| cut -d',' -f1)
+						def=$(printf "$l_png"| cut -d',' -f2)
+						if [[ $png == $fld_entry ]]; then
+							if [ $(printf "$fld_entry"| grep -c "$emblem_def") = 0 ]; then
+								png_scale='-scale '$def
+							else
+								png_scale=''
+							fi
+						fi
+					done
+					$conv_bin $fld_entry $emblem_png $png_scale -composite $_img_set/$exe_name.png
+					fld_entry=$_img_set/$exe_name.png
+					keys="$fld_var=$fld_entry"
 				fi
-			done
-			$conv_bin $fld_entry $emblem_png $scale -composite $_img_set/$exe_name.png
-			fld_entry=$_img_set/$exe_name.png
-			keys="$fld_var=$fld_entry"
-		fi
-		# control if this is an edit from existing file and then apply correct filter
+			;;
+		esac
 		if [[ -a $XDG_DESKTOP_DIR/$exe_name.desktop ]]; then
-			perl -ni -pe "s|^($fld_var=)(.*)$|\1$fld_entry|i" \
+#			perl -ni -pe "s|^($fld_var=)(.*)$|\1$fld_entry|i" \		
+			sed -Eni "s|^($fld_var)=.*$|\1="$fld_entry"|g;p" \
 			$XDG_DESKTOP_DIR/$exe_name.desktop
-			if [ $menu_entry = 1 ]&&[ $HOME/.local/share/applications/$exe_name.desktop ]; then
-				perl -ni -pe "s|^($fld_var=)(.*)$|\1$fld_entry|i" \
+			if [[ $menu_entry = 1 && \
+			$HOME/.local/share/applications/$exe_name.desktop ]]; then
+#				perl -ni -pe "s|^($fld_var=)(.*)$|\1$fld_entry|i" \				
+				sed -Eni "s|^($fld_var)=.*$|\1="$fld_entry"|g;p" \
 				$HOME/.local/share/applications/$exe_name.desktop
 			fi
 		else
-			if ! [[ $fld_var == emblem || $fld_var == dsk_menu ]]; then printf "$keys\n" >> $temp3; fi
+			if [[ ! $fld_var =~ emblem|dsk_menu ]]; then
+				printf "$keys\n" >> $temp3
+			fi
 		fi
 	done
-	# for complete new desktop file entry creation add first line headers in first place. 
 	if [ ! -f $XDG_DESKTOP_DIR/$exe_name.desktop ]; then
-		printf "[Desktop Entry]\nEncoding=UTF-8\nType=Application\n" > $XDG_DESKTOP_DIR/$exe_name.desktop
+		## Create "path" desktop entry vars using app conf file.
+		if [[ $wine_elf && $wine_elf -gt 0 ]]; then pgfile=' (x86)'; else pgfile=''; fi
+		app_path=$HOME/$bottle_prefix/dosdevices/c:/'Program Files'$pgfile/$game_dir
+		printf "[Desktop Entry]\nEncoding=UTF-8\nType=Application\nPath=$app_path\n" > $XDG_DESKTOP_DIR/$exe_name.desktop
 		cat $temp3 >> $XDG_DESKTOP_DIR/$exe_name.desktop
 		chmod 755 $XDG_DESKTOP_DIR/$exe_name.desktop
 		if [ $menu_entry = 1 ]; then
@@ -4198,7 +4233,7 @@ sub_wine_extract(){
 		wine_version=$($wine_bin --version| sed -En "s/^(.*)( [\(]?(\w*)[\)]?)$/\1-\l\3/g;p")
 		wine_save=$(echo "$wine_version"| sed -En "s/^.*-([0-9].*)$/\1/p")
 		_extract_tip="$vn\Current $vb$wine_version$end will be saved
-as $vb$wine_save$end in winestarter bianries directories.\n
+as $vb$wine_save$end in winestarter binaries directories.\n
 Is that correct ?$end"
 		$zen_bin --width=300 --title "Winestarter's Tools" --question --text="$_extract_tip" --window-icon=$img_desktop
 		if [ $? = 0 ]; then
