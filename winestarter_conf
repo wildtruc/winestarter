@@ -4078,8 +4078,7 @@ Editor is for quick config edits. Don't remove '##' comments they're essential f
 			fi
 		;;
 		1) bash_cmd="colors; icons_set; edit_desktop" ;;
-		2) 
-			## load config file first
+		2) ## load config file first
 			. $config_file
 			_case_list=( '_wine,Wine Basics' '_tricks,Winetricks' '_install,Install package' '_wbin,Wine binary pack' '_xrandr,Display options' )
 			for section_def in "${_case_list[@]}"; do
@@ -4248,7 +4247,7 @@ or use$vb Wine and dependencies installer$end from$vb Tools menu$end.$end"
 }
 script_tools(){
 #	term=$(echo "$TERM"| awk '{print $1}')
-	term=$(find /usr/{bin,local/bin} -name xterm)
+	export term=$(find /usr/{bin,local/bin} -name xterm)
 	[[ -x $term ]]|| ( echo "## xterm not found, install it first."; exit 0; )
 	sleep 1
 	kill $YAD_PID
@@ -4287,7 +4286,7 @@ $vb - Wine apps killer :$end $_tip_kill.$end"
 #bash_opt='-x -c'
 #code_tag=1
 bash_opt='-c'
-code_tag=0
+mode_tag=0
 ## check internet connection.
 line=$(nc -z 8.8.8.8 53)
 export line=$?

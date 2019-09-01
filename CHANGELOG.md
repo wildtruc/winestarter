@@ -3,7 +3,11 @@ wtc => winestarter_conf, wt => winestarter, up_w => update_winestarter, wk => wi
 
 -----------
 ### Change Log
-*( 25/07/27 ) v1.3.15*
+*( 01/09/19 ) v1.3.16*
+ - we: discovered very bad behavoour between exec via terminal session and UI session. This is fixed.
+ - other minor fixes I can't list ( I can't remind, too old: the fixes and the guy).
+ 
+*( 25/07/19 ) v1.3.15*
  - wtc: roll back to fedora WineHq's repos because Debian one's is not si much up to date.
  - wtc: changes desktop files creator to be more clear and ajustable at need.
  - we: wine binary was missing. Don't ask ... :'(
