@@ -955,7 +955,7 @@ winetricks_selfupdate()
     _W_tmpdir=${TMPDIR:-/tmp}
     _W_tmpdir="$(mktemp -d "$_W_tmpdir/$_W_filename.XXXXXXXX")"
 
-    w_download_to "$_W_tmpdir" https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks
+    w_download_to "$_W_tmpdir" https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks "" "$_W_filename"
 
     # 2016/10/26: now file is uncompressed? Handle both cases:
     update_file_type="$(file "$_W_tmpdir/$_W_filename")"
@@ -7506,6 +7506,26 @@ load_dxvk133()
     helper_dxvk_d9vk "$file1" "4.5" "1.1.113" "dxgi,d3d10,d3d11"
 }
 
+w_metadata dxvk134 dlls \
+    title="Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.3.4)" \
+    publisher="Philip Rebohle" \
+    year="2017" \
+    media="download" \
+    file1="dxvk-1.3.4.tar.gz" \
+    installed_file1="$W_SYSTEM32_DLLS_WIN/d3d10.dll" \
+    installed_file2="$W_SYSTEM32_DLLS_WIN/d3d10_1.dll" \
+    installed_file3="$W_SYSTEM32_DLLS_WIN/d3d10core.dll" \
+    installed_file4="$W_SYSTEM32_DLLS_WIN/d3d11.dll" \
+    installed_file5="$W_SYSTEM32_DLLS_WIN/dxgi.dll"
+
+load_dxvk134()
+{
+    # https://github.com/doitsujin/dxvk
+    w_download "https://github.com/doitsujin/dxvk/releases/download/v1.3.4/dxvk-1.3.4.tar.gz" 4683e2ad4221b16572b0d939da5a05ab9a16b2b62c2f4e0c8bf3b2cdb27918ff
+    # FIXME: The current Wine release (4.15) does not include the latest Vulkan 1.1.113 headers.
+    helper_dxvk_d9vk "$file1" "4.5" "1.1.113" "dxgi,d3d10,d3d11"
+}
+
 
 #----------------------------------------------------------------
 
@@ -8564,15 +8584,13 @@ load_dotnet46()
         w_warn "If you see heap timeouts like: 'err:ntdll:RtlpWaitForCriticalSection section 0x110060 \"heap.c: main process heap section\" wait timed out in thread 0064, blocked by 0000, retrying (60 sec)', try the patch from https://bugs.winehq.org/show_bug.cgi?id=42470"
     fi
 
-    if w_workaround_wine_bug 38959 ; then
-        echo "This installer will fail unless run in quiet mode."
-        echo "See: https://bugs.winehq.org/show_bug.cgi?id=38959"
-
+    if w_workaround_wine_bug 38959 "This installer will fail unless run in quiet mode. See: https://bugs.winehq.org/show_bug.cgi?id=38959" ,3.6; then
         WINEDLLOVERRIDES=fusion=b "$WINE" "$file1" /q /c:"install.exe /q"
-        # Once bug is fixed, use:
-        #WINEDLLOVERRIDES=fusion=b "$WINE" "$file1" ${W_OPT_UNATTENDED:+/q /c:"install.exe /q"}
-        status=$?
+    else
+        WINEDLLOVERRIDES=fusion=b "$WINE" "$file1" ${W_OPT_UNATTENDED:+/q /c:"install.exe /q"}
     fi
+
+    status=$?
 
     case $status in
         0) ;;
@@ -11392,7 +11410,7 @@ load_vcrun2005()
     if [ $W_ARCH = win64 ] ;then
         w_download https://download.microsoft.com/download/9/1/4/914851c6-9141-443b-bdb4-8bad3a57bea9/vcredist_x64.exe bb9e8606e26c2b76984252182f7db0d6e9108b204b81d2a7b036c9b618c1f9f1
 
-        if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls"; then
+        if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
             rm -f "$W_TMP"/*  # Avoid permission error
             w_try_cabextract --directory="$W_TMP" vcredist_x64.exe
             w_try_cabextract --directory="$W_TMP" "$W_TMP/VCREDI~2.EXE"
@@ -11448,7 +11466,7 @@ load_vcrun2008()
             # Also install the 64-bit version
             # 2016/11/15: b811f2c047a3e828517c234bd4aa4883e1ec591d88fad21289ae68a6915a6665
             w_download https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe b811f2c047a3e828517c234bd4aa4883e1ec591d88fad21289ae68a6915a6665
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls"; then
+            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
                 rm -f "$W_TMP"/*  # Avoid permission error
                 w_try_cabextract --directory="$W_TMP" vcredist_x64.exe
                 w_try_cabextract --directory="$W_TMP" "$W_TMP/vc_red.cab"
@@ -11491,7 +11509,7 @@ load_vcrun2010()
             # Also install the 64-bit version
             # https://www.microsoft.com/en-us/download/details.aspx?id=13523
             w_download https://download.microsoft.com/download/A/8/0/A80747C3-41BD-45DF-B505-E9710D2744E0/vcredist_x64.exe c6cd2d3f0b11dc2a604ffdc4dd97861a83b77e21709ba71b962a47759c93f4c8
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls"; then
+            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
                 w_try_cabextract --directory="$W_TMP" vcredist_x64.exe -F '*.cab'
                 w_try_cabextract --directory="$W_TMP" "$W_TMP"/vc_red.cab
                 cp "$W_TMP"/F_CENTRAL_mfc100_x64 "$W_SYSTEM64_DLLS"/mfc100.dll
@@ -11531,7 +11549,7 @@ load_vcrun2012()
             # Also install the 64-bit version
             # 2015/10/19: 681be3e5ba9fd3da02c09d7e565adfa078640ed66a0d58583efad2c1e3cc4064
             w_download https://download.microsoft.com/download/1/6/B/16B06F60-3B20-4FF2-B699-5E9B7962F9AE/VSU_4/vcredist_x64.exe 681be3e5ba9fd3da02c09d7e565adfa078640ed66a0d58583efad2c1e3cc4064
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls"; then
+            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
                 rm -f "$W_TMP"/*  # Avoid permission error
                 w_try_cabextract --directory="$W_TMP" vcredist_x64.exe
                 w_try_cabextract --directory="$W_TMP" "$W_TMP/a2"
@@ -11576,7 +11594,7 @@ load_vcrun2013()
             # 2015/10/19: e554425243e3e8ca1cd5fe550db41e6fa58a007c74fad400274b128452f38fb8
             # 2019/03/24: 20e2645b7cd5873b1fa3462b99a665ac8d6e14aae83ded9d875fea35ffdd7d7e
             w_download https://download.microsoft.com/download/0/5/6/056dcda9-d667-4e27-8001-8a0c6971d6b1/vcredist_x64.exe 20e2645b7cd5873b1fa3462b99a665ac8d6e14aae83ded9d875fea35ffdd7d7e
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls"; then
+            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
                 rm -f "$W_TMP"/*  # Avoid permission error
                 w_try_cabextract --directory="$W_TMP" vcredist_x64.exe
                 w_try_cabextract --directory="$W_TMP" "$W_TMP/a2"
@@ -11626,7 +11644,7 @@ load_vcrun2015()
             # Also install the 64-bit version
             # 2015/10/12: 5eea714e1f22f1875c1cb7b1738b0c0b1f02aec5ecb95f0fdb1c5171c6cd93a3
             w_download https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x64.exe 5eea714e1f22f1875c1cb7b1738b0c0b1f02aec5ecb95f0fdb1c5171c6cd93a3
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls"; then
+            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls", 3.8; then
                 rm -f "$W_TMP"/*  # Avoid permission error
                 w_try_cabextract --directory="$W_TMP" vc_redist.x64.exe
                 w_try_cabextract --directory="$W_TMP" "$W_TMP/a10"
@@ -11693,7 +11711,7 @@ load_vcrun2017()
             # 2019/03/17: b192e143d55257a0a2f76be42e44ff8ee14014f3b1b196c6e59829b6b3ec453c
             # 2019/08/14: 5b0cbb977f2f5253b1ebe5c9d30edbda35dbd68fb70de7af5faac6423db575b5
             w_download https://aka.ms/vs/15/release/vc_redist.x64.exe 5b0cbb977f2f5253b1ebe5c9d30edbda35dbd68fb70de7af5faac6423db575b5
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls"; then
+            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
                 rm -f "$W_TMP"/*  # Avoid permission error
                 w_try_cabextract --directory="$W_TMP" vc_redist.x64.exe
                 w_try_cabextract --directory="$W_TMP" "$W_TMP/a10"
@@ -13146,20 +13164,17 @@ load_wenquanyi()
 w_metadata unifont fonts \
     title="Unifont alternative to Arial Unicode MS" \
     publisher="Roman Czyborra / GNU" \
-    year="2008" \
+    year="2019" \
     media="download" \
-    file1="unifont-5.1.20080907.zip" \
+    file1="unifont-12.1.02.ttf" \
     installed_file1="$W_FONTSDIR_WIN/unifont.ttf"
 
 load_unifont()
 {
     # The GNU Unifont provides glyphs for just about everything in common language.  It is intended for multilingual usage.
     # See http://unifoundry.com/unifont.html for project page
-    w_download "http://unifoundry.com/unifont-5.1.20080907.zip" 6ec1176f83769072b09de2bc1fff68ec5d802183304756a372e2419236f5b5ba
-    w_try_unzip "$W_TMP" "$W_CACHE/$W_PACKAGE/unifont-5.1.20080907.zip"
-
-    w_try mv -f "$W_TMP/unifont-5.1.20080907.ttf" "$W_TMP/unifont.ttf"
-
+    w_download "http://unifoundry.com/pub/unifont/unifont-12.1.02/font-builds/unifont-12.1.02.ttf" da4961540b9d02e01fb8755924db730db233c360b20ee321fda8ab7d0b9ca549
+    w_try cp "$W_CACHE/$W_PACKAGE/$file1" "$W_TMP/unifont.ttf"
     w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX"
 
     w_register_font unifont.ttf "Unifont"
@@ -13667,6 +13682,8 @@ load_irfanview()
             winactivate, Setup, This program will install
             Sleep 900
             ControlClick, Button7 ; Uncheck All
+            Sleep 900
+            ControlClick, Button4 ; Create start menu icons
             Sleep 900
             ControlClick, Button11 ; Next
             Sleep 900
@@ -14671,7 +14688,7 @@ w_metadata protectionid apps \
 
 load_protectionid()
 {
-    w_download_manual "https://pid.gamecopyworld.com/" ProtectionId.685.December.2016.rar 27a84d740c9fb96cc866438a2b5cd4afc350affc8b7a0122c28c651af3559aea
+    w_download "https://web.archive.org/web/20181209123344/https://pid.wiretarget.com/?f=ProtectionId.685.December.2016.rar" 27a84d740c9fb96cc866438a2b5cd4afc350affc8b7a0122c28c651af3559aea ProtectionId.685.December.2016.rar
     w_try_cd "$W_SYSTEM32_DLLS"
     w_try_unrar "${W_CACHE}/${W_PACKAGE}/${file1}"
 
@@ -21693,7 +21710,7 @@ execute_command()
         glsl-enable) w_warn "Calling glsl-enable is deprecated, please use glsl=enabled instead" ; w_call glsl=enabled ;;
         ie6_full) w_warn "Calling ie6_full is deprecated, please use ie6 instead" ; w_call ie6 ;;
         # FIXME: use wsh57 instead?
-        jscript) w_warn "Calling jscript is deprecated, please use wsh56js instead" ; w_call wsh56js ;;
+        jscript) w_warn "Calling jscript is deprecated, please use wsh57 instead" ; w_call wsh57 ;;
         npm-repack) w_warn "Calling npm-repack is deprecated, please use npm=repack instead" ; w_call npm=repack ;;
         oss) w_warn "Calling oss is deprecated, please use sound=oss instead" ; w_call sound=oss ;;
         python) w_warn "Calling python is deprecated, please use python26 instead" ; w_call python26 ;;
