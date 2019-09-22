@@ -2399,7 +2399,7 @@ _EOF_
             csdversion_hex=dword:00000200
             "$WINE" reg add "HKLM\\System\\CurrentControlSet\\Control\\ProductOptions" /v ProductType /d "WinNT" /f
             ;;
-        win7)
+        win7|default)
             csdversion="Service Pack 1"
             currentbuildnumber="7601"
             currentversion="6.1"
@@ -2460,8 +2460,8 @@ _EOF_
 
 w_unset_winver()
 {
-    # FIXME: update when wine bumps default version
-    w_set_winver win7
+  w_warn "w_unset_winver() is deprecated, use \'w_set_winver default\' instead"
+  w_set_winver default
 }
 
 # Present app $1 with the Windows personality $2
@@ -7525,6 +7525,26 @@ load_dxvk134()
     helper_dxvk_d9vk "$file1" "4.5" "1.1.113" "dxgi,d3d10,d3d11"
 }
 
+w_metadata dxvk140 dlls \
+    title="Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.4)" \
+    publisher="Philip Rebohle" \
+    year="2017" \
+    media="download" \
+    file1="dxvk-1.4.tar.gz" \
+    installed_file1="$W_SYSTEM32_DLLS_WIN/d3d10.dll" \
+    installed_file2="$W_SYSTEM32_DLLS_WIN/d3d10_1.dll" \
+    installed_file3="$W_SYSTEM32_DLLS_WIN/d3d10core.dll" \
+    installed_file4="$W_SYSTEM32_DLLS_WIN/d3d11.dll" \
+    installed_file5="$W_SYSTEM32_DLLS_WIN/dxgi.dll"
+
+load_dxvk140()
+{
+    # https://github.com/doitsujin/dxvk
+    w_download "https://github.com/doitsujin/dxvk/releases/download/v1.4/dxvk-1.4.tar.gz" bf22785de1ce728bbdcfb4615035924112b4718049ca2cade5861b03735181de
+    # FIXME: The current Wine release (4.15) does not include the latest Vulkan 1.1.113 headers.
+    helper_dxvk_d9vk "$file1" "4.5" "1.1.113" "dxgi,d3d10,d3d11"
+}
+
 
 #----------------------------------------------------------------
 
@@ -7933,7 +7953,7 @@ load_dotnet20()
             *) w_die "exit status $status - $W_PACKAGE installation failed" ;;
         esac
 
-        w_unset_winver
+        w_set_winver 'default'
 
         # We can't stop installing dotnet20 in win2k mode until Wine supports
         # reparse/junction points
@@ -8085,7 +8105,7 @@ load_dotnet20sp1()
 
     fi
 
-    w_unset_winver
+    w_set_winver 'default'
 
     W_NGEN_CMD="w_try $WINE $W_DRIVE_C/windows/Microsoft.NET/Framework/v2.0.50727/ngen.exe executequeueditems"
 
@@ -8150,7 +8170,7 @@ load_dotnet20sp2()
         rm -f "$W_SYSTEM32_DLLS"/msvc?80.dll
     fi
 
-    w_unset_winver
+    w_set_winver 'default'
 
     W_NGEN_CMD="w_try $WINE $W_DRIVE_C/windows/Microsoft.NET/Framework/v2.0.50727/ngen.exe executequeueditems"
 }
@@ -8284,7 +8304,7 @@ load_dotnet30sp1()
         *) w_die "exit status $status - $W_PACKAGE installation failed" ;;
     esac
 
-    w_unset_winver
+    w_set_winver 'default'
 
     # Doesn't install any ngen.exe
     # W_NGEN_CMD=""
@@ -8442,7 +8462,7 @@ load_dotnet40()
 
     W_NGEN_CMD="$WINE $WINEPREFIX/drive_c/windows/Microsoft.NET/Framework/v4.0.30319/ngen.exe executequeueditems"
 
-    w_unset_winver
+    w_set_winver 'default'
 }
 
 verify_dotnet40()
@@ -9856,7 +9876,7 @@ load_ie8_kb2936068()
         *) w_die "$W_PACKAGE installation failed"
     esac
 
-    w_unset_winver
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
@@ -9907,7 +9927,7 @@ load_mdac27()
     w_set_winver nt40
     w_try_cd "${W_CACHE}/${W_PACKAGE}"
     w_try "$WINE" "${file1}" ${W_OPT_UNATTENDED:+ /q /C:"setup $W_UNATTENDED_SLASH_QNT"}
-    w_unset_winver
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
@@ -9933,7 +9953,7 @@ load_mdac28()
     w_set_winver nt40
     w_try_cd "$W_CACHE"/"$W_PACKAGE"
     w_try "$WINE" mdac_typ.exe ${W_OPT_UNATTENDED:+ /q /C:"setup $W_UNATTENDED_SLASH_QNT"}
-    w_unset_winver
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
@@ -10882,7 +10902,8 @@ load_riched30()
     # with sha256sum 536e4c8385d7d250fd5702a6868d1ed004692136eefad22252d0dac15f02563a
     # Mirror list at http://www.filewatcher.com/m/InstMsiA.Exe.1707856-0.html
     # But they all have a different sha256sum, 5ab8b82f578f09dbccf797754155e531b5996b532c1f19c531596ec07cc4b46d
-    w_download http://ftp.tw.vim.org/cpatch/msupdate/msi/source/instmsia.exe 5ab8b82f578f09dbccf797754155e531b5996b532c1f19c531596ec07cc4b46d InstMsiA.exe
+    # Since mirrors are dead, going back to the microsoft.com version, via archive.org
+    w_download https://web.archive.org/web/20060720160141/https://download.microsoft.com/download/WindowsInstaller/Install/2.0/W9XMe/EN-US/InstMsiA.exe 536e4c8385d7d250fd5702a6868d1ed004692136eefad22252d0dac15f02563a
 
     w_try_cabextract --directory="$W_TMP" "$W_CACHE"/riched30/InstMsiA.exe
     w_try cp -f "$W_TMP"/riched20.dll "$W_SYSTEM32_DLLS"
@@ -11027,7 +11048,7 @@ load_speechsdk()
 
     w_override_dlls native sapi
 
-    w_unset_winver
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
@@ -11893,7 +11914,7 @@ load_windowscodecs()
         w_try "$WINE" "$EXE" /passive
     fi
 
-    w_unset_winver
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
@@ -11990,7 +12011,7 @@ load_wmi()
     w_try "$WINE" wmi9x.exe $W_UNATTENDED_SLASH_S
     w_killall "WinMgmt.exe"
 
-    w_unset_winver
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
@@ -13809,7 +13830,7 @@ load_ie6()
     done
 
     # Set windows version back to user's default. Leave at win2k for better rendering (is there a bug for that?)
-    w_unset_winver
+    w_set_winver 'default'
 
     # the ie6 we use these days lacks pngfilt, so grab that
     w_call pngfilt
@@ -14047,30 +14068,7 @@ _EOF_
             ;;
     esac
 
-    w_unset_winver
-}
-
-#----------------------------------------------------------------
-
-w_metadata kde apps \
-    title="KDE on Windows" \
-    publisher="various" \
-    year="2013" \
-    media="download" \
-    file1="kdewin-installer-gui-1.0.0.exe" \
-    installed_exe1="$W_PROGRAMS_WIN/kde/etc/installer.ini" \
-    homepage="https://community.kde.org/Windows" \
-    unattended="no"
-
-load_kde()
-{
-    w_download https://mirrors.mit.edu/kde/stable/kdewin/installer/kdewin-installer-gui-1.0.0.exe 6bc5e0cc9e3418c08b6545300f68de0652ac297cbcdc81fd0ebe04f5934006f5
-    mkdir -p "$W_PROGRAMS_UNIX/kde"
-    w_try cp "$W_CACHE/kde/${file1}" "$W_PROGRAMS_UNIX/kde"
-    w_try_cd "$W_PROGRAMS_UNIX/kde"
-    # There's no unattended option, probably because there are so many choices,
-    # it's like Cygwin
-    w_try "$WINE" "${file1}"
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
@@ -14374,14 +14372,14 @@ load_nook()
 w_metadata npp apps \
     title="Notepad++" \
     publisher="Don Ho" \
-    year="2015" \
+    year="2019" \
     media="download" \
-    file1="npp.6.7.9.2.Installer.exe" \
+    file1="npp.7.7.1.Installer.exe" \
     installed_exe1="$W_PROGRAMS_X86_WIN/Notepad++/notepad++.exe"
 
 load_npp()
 {
-    w_download https://notepad-plus-plus.org/repository/6.x/6.7.9.2/npp.6.7.9.2.Installer.exe cecc981d56d759233b804fa77e70ed62e411aaee58dcb1e53b91909c99d29096
+    w_download https://notepad-plus-plus.org/repository/7.x/7.7.1/npp.7.7.1.Installer.exe 6787c524b0ac30a698237ffb035f932d7132343671b8fe8f0388ed380d19a51c
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" "${file1}" $W_UNATTENDED_SLASH_S
 }
@@ -15462,7 +15460,7 @@ load_wmp9()
 
     load_wm9codecs
 
-    w_unset_winver
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
@@ -15506,7 +15504,7 @@ load_wmp10()
 
     load_wm9codecs
 
-    w_unset_winver
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
