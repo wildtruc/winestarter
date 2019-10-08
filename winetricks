@@ -5053,8 +5053,6 @@ winetricks_init()
     # whether to use shared wineprefix (1) or unique wineprefix for each app (0)
     WINETRICKS_OPT_SHAREDPREFIX=${WINETRICKS_OPT_SHAREDPREFIX:-0}
 
-    WINETRICKS_SOURCEFORGE=https://downloads.sourceforge.net
-
     winetricks_get_sha256sum_prog
 
     winetricks_get_platform
@@ -5729,9 +5727,9 @@ load_comctl32()
     # 2011/01/17: https://www.microsoft.com/en-us/download/details.aspx?id=14672
     # 2012/08/11: w_download https://download.microsoft.com/download/platformsdk/redist/5.80.2614.3600/w9xnt4/en-us/cc32inst.exe d68c0cca721870aed39f5f2efd80dfb74f3db66d5f9a49e7578b18279edfa4a7
     # 2016/01/07: w_download ftp://ftp.ie.debian.org/disk1/download.sourceforge.net/pub/sourceforge/p/po/pocmin/Win%2095_98%20Controls/Win%2095_98%20Controls/CC32inst.exe
-    # 2017/03/12: w_download $WINETRICKS_SOURCEFORGE/project/pocmin/Win%2095_98%20Controls/Win%2095_98%20Controls/CC32inst.exe
+    # 2017/03/12: w_download https://downloads.sourceforge.net/project/pocmin/Win%2095_98%20Controls/Win%2095_98%20Controls/CC32inst.exe
 
-    w_download $WINETRICKS_SOURCEFORGE/project/pocmin/Win%2095_98%20Controls/Win%2095_98%20Controls/CC32inst.exe d68c0cca721870aed39f5f2efd80dfb74f3db66d5f9a49e7578b18279edfa4a7
+    w_download https://downloads.sourceforge.net/project/pocmin/Win%2095_98%20Controls/Win%2095_98%20Controls/CC32inst.exe d68c0cca721870aed39f5f2efd80dfb74f3db66d5f9a49e7578b18279edfa4a7
 
     w_try "$WINE" "$W_CACHE"/comctl32/cc32inst.exe "/T:$W_TMP_WIN" /c $W_UNATTENDED_SLASH_Q
     w_try_unzip "$W_TMP" "$W_TMP"/comctl32.exe
@@ -9632,7 +9630,7 @@ w_metadata dirac dlls \
 
 load_dirac()
 {
-    w_download $WINETRICKS_SOURCEFORGE/dirac/DiracDirectShowFilter-1.0.2.exe 7257de4be940405637bb5d11c1179f7db86f165f21fc0ba24f42a9ecbc55fe20
+    w_download https://downloads.sourceforge.net/dirac/DiracDirectShowFilter-1.0.2.exe 7257de4be940405637bb5d11c1179f7db86f165f21fc0ba24f42a9ecbc55fe20
 
     # Avoid mfc90 not found error.  (DiracSplitter-libschroedinger.ax needs mfc90 to register itself, I think.)
     w_call vcrun2008
@@ -9677,7 +9675,7 @@ w_metadata ffdshow dlls \
 
 load_ffdshow()
 {
-    w_download $WINETRICKS_SOURCEFORGE/ffdshow-tryout/ffdshow_beta7_rev3154_20091209.exe 86fb22e9a79a1c83340a99fd5722974a4d03948109d404a383c4334fab8f8860
+    w_download https://downloads.sourceforge.net/ffdshow-tryout/ffdshow_beta7_rev3154_20091209.exe 86fb22e9a79a1c83340a99fd5722974a4d03948109d404a383c4334fab8f8860
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" ffdshow_beta7_rev3154_20091209.exe $W_UNATTENDED_SLASH_SILENT
 }
@@ -10169,13 +10167,13 @@ w_metadata mfc40 dlls \
 
 load_mfc40()
 {
-    w_warn "mfc40 no longer installs msvcrt40.dll, only mfc40.dll/mfc40u.dll. Please file a bug if you have an application that needs native msvcrt40.dll."
-
     helper_win7sp1 x86_microsoft-windows-mfc40_31bf3856ad364e35_6.1.7601.17514_none_5c06580240091047/mfc40.dll
     w_try cp "$W_TMP/x86_microsoft-windows-mfc40_31bf3856ad364e35_6.1.7601.17514_none_5c06580240091047/mfc40.dll" "$W_SYSTEM32_DLLS/mfc40.dll"
 
     helper_win7sp1 x86_microsoft-windows-mfc40u_31bf3856ad364e35_6.1.7601.17514_none_f51a7bf0b3d25294/mfc40u.dll
     w_try cp "$W_TMP/x86_microsoft-windows-mfc40u_31bf3856ad364e35_6.1.7601.17514_none_f51a7bf0b3d25294/mfc40u.dll" "$W_SYSTEM32_DLLS/mfc40u.dll"
+
+    w_call msvcrt40
 }
 
 #----------------------------------------------------------------
@@ -10409,6 +10407,24 @@ load_msftedit()
     fi
 
     w_override_dlls native,builtin msftedit
+}
+
+#----------------------------------------------------------------
+
+w_metadata msvcrt40 dlls \
+    title="fixme" \
+    publisher="Microsoft" \
+    year="2011" \
+    media="download" \
+    file1="../winxpsp3/WindowsXP-KB936929-SP3-x86-ENU.exe" \
+    installed_file1="$W_SYSTEM32_DLLS_WIN/msvcrt40.dll"
+
+load_msvcrt40()
+{
+    helper_winxpsp3 i386/msvcrt40.dl_
+    w_try_cabextract --directory="$W_SYSTEM32_DLLS" "$W_TMP"/i386/msvcrt40.dl_
+
+    w_override_dlls native,builtin msvcrt40
 }
 
 #----------------------------------------------------------------
@@ -10698,7 +10714,7 @@ w_metadata python26 dlls \
 load_python26()
 {
     w_download https://www.python.org/ftp/python/2.6.2/python-2.6.2.msi c2276b398864b822c25a7c240cb12ddb178962afd2e12d602f1a961e31ad52ff
-    w_download $WINETRICKS_SOURCEFORGE/project/pywin32/pywin32/Build%20214/pywin32-214.win32-py2.6.exe dc311bbdc5868e3dd139dfc46136221b7f55c5613a98a5a48fa725a6c681cd40
+    w_download https://downloads.sourceforge.net/project/pywin32/pywin32/Build%20214/pywin32-214.win32-py2.6.exe dc311bbdc5868e3dd139dfc46136221b7f55c5613a98a5a48fa725a6c681cd40
 
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" msiexec /i python-2.6.2.msi ALLUSERS=1 $W_UNATTENDED_SLASH_Q
@@ -14231,7 +14247,7 @@ w_metadata mingw apps \
 
 load_mingw()
 {
-    w_download "$WINETRICKS_SOURCEFORGE/mingw/files/mingw-get-setup.exe" aab27bd5547d35dc159288f3b5b8760f21b0cfec86e8f0032b49dd0410f232bc
+    w_download "https://downloads.sourceforge.net/mingw/files/mingw-get-setup.exe" aab27bd5547d35dc159288f3b5b8760f21b0cfec86e8f0032b49dd0410f232bc
 
     if test "$W_OPT_UNATTENDED"; then
         w_info "FYI: Quiet mode will install these mingw packages: 'gcc msys-base'"
@@ -14300,7 +14316,7 @@ w_metadata mpc apps \
 
 load_mpc()
 {
-    w_download $WINETRICKS_SOURCEFORGE/project/mpc-hc/MPC%20HomeCinema%20-%20Win32/MPC-HC_v1.7.5_x86/MPC-HC.1.7.5.x86.exe 1d690da5b330f723aea4a294d478828395d321b59fc680f2b971e8b16b8bd33d
+    w_download https://downloads.sourceforge.net/project/mpc-hc/MPC%20HomeCinema%20-%20Win32/MPC-HC_v1.7.5_x86/MPC-HC.1.7.5.x86.exe 1d690da5b330f723aea4a294d478828395d321b59fc680f2b971e8b16b8bd33d
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" MPC-HC.1.7.5.x86.exe ${W_OPT_UNATTENDED:+ /VERYSILENT}
 }
