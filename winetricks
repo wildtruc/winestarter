@@ -908,44 +908,45 @@ w_dotnet_verify()
         dotnet48) version="4.8" ;;
         *) echo error ; exit 1 ;;
     esac
-            w_call dotnet_verifier
 
-            # FIXME: The logfile may be useful somewhere (or at least print the location)
+    w_call dotnet_verifier
 
-            # for 'run, netfx_setupverifier.exe /q:a /c:"setupverifier2.exe"' line
-            # shellcheck disable=SC2140
-            w_ahk_do "
-                SetTitleMatchMode, 2
-                ; FIXME; this only works the first time? Check if it's already verified somehow..
+    # FIXME: The logfile may be useful somewhere (or at least print the location)
 
-                run, netfx_setupverifier.exe /q:a /c:"setupverifier2.exe"
-                winwait, Verification Utility
-                ControlClick, Button1
-                Control, ChooseString, NET Framework $version, ComboBox1
-                ControlClick, Button1 ; Verify
-                loop, 60
-                {
-                    sleep 1000
-                    process, exist, setupverifier2.exe
-                    dn_pid=%ErrorLevel%
-                    if dn_pid = 0
-                    {
-                        break
-                    }
-                    ifWinExist, Verification Utility, Product verification failed
-                    {
-                        process, close, setupverifier2.exe
-                        exit 1
-                    }
-                    ifWinExist, Verification Utility, Product verification succeeded
-                    {
-                        process, close, setupverifier2.exe
-                        break
-                    }
-                }
-            "
-            dn_status="$?"
-            w_info ".Net Verifier returned $dn_status"
+    # for 'run, netfx_setupverifier.exe /q:a /c:"setupverifier2.exe"' line
+    # shellcheck disable=SC2140
+    w_ahk_do "
+        SetTitleMatchMode, 2
+        ; FIXME; this only works the first time? Check if it's already verified somehow..
+
+        run, netfx_setupverifier.exe /q:a /c:"setupverifier2.exe"
+        winwait, Verification Utility
+        ControlClick, Button1
+        Control, ChooseString, NET Framework $version, ComboBox1
+        ControlClick, Button1 ; Verify
+        loop, 60
+        {
+            sleep 1000
+            process, exist, setupverifier2.exe
+            dn_pid=%ErrorLevel%
+            if dn_pid = 0
+            {
+                break
+            }
+            ifWinExist, Verification Utility, Product verification failed
+            {
+                process, close, setupverifier2.exe
+                exit 1
+            }
+            ifWinExist, Verification Utility, Product verification succeeded
+            {
+                process, close, setupverifier2.exe
+                break
+            }
+        }
+    "
+    dn_status="$?"
+    w_info ".Net Verifier returned $dn_status"
 }
 
 # Checks if the user can run the self-update/rollback commands
@@ -7688,6 +7689,26 @@ load_dxvk143()
     helper_dxvk_d9vk "$file1" "4.5" "1.1.113" "dxgi,d3d10,d3d11"
 }
 
+w_metadata dxvk144 dlls \
+    title="Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.4.4)" \
+    publisher="Philip Rebohle" \
+    year="2017" \
+    media="download" \
+    file1="dxvk-1.4.4.tar.gz" \
+    installed_file1="$W_SYSTEM32_DLLS_WIN/d3d10.dll" \
+    installed_file2="$W_SYSTEM32_DLLS_WIN/d3d10_1.dll" \
+    installed_file3="$W_SYSTEM32_DLLS_WIN/d3d10core.dll" \
+    installed_file4="$W_SYSTEM32_DLLS_WIN/d3d11.dll" \
+    installed_file5="$W_SYSTEM32_DLLS_WIN/dxgi.dll"
+
+load_dxvk144()
+{
+    # https://github.com/doitsujin/dxvk
+    w_download "https://github.com/doitsujin/dxvk/releases/download/v1.4.4/dxvk-1.4.4.tar.gz" a845285c8dfc63c7d00c14520b58fc6048796fef69fea49617edb46662a0ba31
+    # FIXME: The current Wine release (4.15) does not include the latest Vulkan 1.1.113 headers.
+    helper_dxvk_d9vk "$file1" "4.5" "1.1.113" "dxgi,d3d10,d3d11"
+}
+
 
 #----------------------------------------------------------------
 
@@ -7945,7 +7966,7 @@ load_dotnet11()
     w_call corefonts
     w_call fontfix
 
-    w_try w_try_cd "$W_CACHE/$W_PACKAGE"
+    w_try_cd "$W_CACHE/$W_PACKAGE"
     # Use builtin regsvcs.exe to work around https://bugs.winehq.org/show_bug.cgi?id=25120
     if test $W_OPT_UNATTENDED; then
         WINEDLLOVERRIDES="regsvcs.exe=b" w_ahk_do "
@@ -8000,7 +8021,7 @@ load_dotnet11sp1()
     w_call remove_mono
     w_call dotnet11
 
-    w_try w_try_cd "$W_CACHE/$W_PACKAGE"
+    w_try_cd "$W_CACHE/$W_PACKAGE"
     # Use builtin regsvcs.exe to work around https://bugs.winehq.org/show_bug.cgi?id=25120
     if test $W_OPT_UNATTENDED; then
         WINEDLLOVERRIDES="regsvcs.exe=b" w_ahk_do "
@@ -21390,7 +21411,7 @@ load_remove_mono()
     mono_uuid="$("${WINE_ARCH}" uninstaller --list | grep 'Wine Mono' | cut -f1 -d\|)"
     if test "$mono_uuid"; then
         for uuid in $mono_uuid;
-	    do "${WINE_ARCH}" uninstaller --remove "$uuid"
+            do "${WINE_ARCH}" uninstaller --remove "$uuid"
         done
     else
         # Bail out if mono isn't installed, so we don't break .Net setups
