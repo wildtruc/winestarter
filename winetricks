@@ -675,7 +675,7 @@ w_verify_cabextract_available()
     # If verb_a requires verb_b, then verba will fail when the dependency for verb_b is installed
     # This should be called by verb_a, to give a proper warning
 
-    w_try_cabextract -q -v
+    w_try_cabextract -q -v >/dev/null 2>&1
 }
 
 # Convert a Windows path to a Unix path quickly.
@@ -8001,7 +8001,7 @@ load_dotnet11()
                     WinClose, Fatal error, Failed to delay load library
                     continue
                 }
-                Process, exist, dotnetfx.exe
+                Process, exist, NDP1.1sp1-KB867460-X86.exe
                 dotnet_pid = %ErrorLevel%  ; Save the value immediately since ErrorLevel is often changed.
                 if dotnet_pid = 0
                 {
@@ -21189,16 +21189,17 @@ load_vsm()
 
 #----------------------------------------------------------------
 
-w_metadata autostart_winedbg=enable settings \
+w_metadata autostart_winedbg=enabled settings \
     title="Automatically launch winedbg when an unhandled exception occurs (default)"
-w_metadata autostart_winedbg=disable settings \
+w_metadata autostart_winedbg=disabled settings \
     title="Prevent winedbg from launching when an unhandled exception occurs"
 
 load_autostart_winedbg()
 {
     case "$arg" in
-        enable) _W_debugger_value="winedbg --auto %ld %ld";;
-        disable) _W_debugger_value="false";;
+	# accidentally commited as enable/disable, so accept that, but prefer enabled/disabled
+        enable|enabled) _W_debugger_value="winedbg --auto %ld %ld";;
+        disable|disabled) _W_debugger_value="false";;
         *) w_die "Unexpected argument '$arg'. Should be enable/disable";;
     esac
 
