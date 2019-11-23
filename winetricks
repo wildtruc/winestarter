@@ -8046,7 +8046,7 @@ load_dotnet11()
                     WinClose, Fatal error, Failed to delay load library
                     continue
                 }
-                Process, exist, NDP1.1sp1-KB867460-X86.exe
+                Process, exist, dotnetfx.exe
                 dotnet_pid = %ErrorLevel%  ; Save the value immediately since ErrorLevel is often changed.
                 if dotnet_pid = 0
                 {
@@ -14041,8 +14041,6 @@ load_ie6()
     w_try_cd "$W_TMP"
     "$WINE" "$W_CACHE/$W_PACKAGE/$file1"
 
-    w_call msls31
-
     # Unregister Wine IE
     if [ ! -f "$W_SYSTEM32_DLLS"/plugin.ocx ]; then
         w_override_dlls builtin iexplore.exe
@@ -14112,6 +14110,8 @@ load_ie6()
 
     # the ie6 we use these days lacks pngfilt, so grab that
     w_call pngfilt
+
+    w_call msls31
 }
 
 #----------------------------------------------------------------
@@ -21242,7 +21242,7 @@ w_metadata autostart_winedbg=disabled settings \
 load_autostart_winedbg()
 {
     case "$arg" in
-	# accidentally commited as enable/disable, so accept that, but prefer enabled/disabled
+        # accidentally commited as enable/disable, so accept that, but prefer enabled/disabled
         enable|enabled) _W_debugger_value="winedbg --auto %ld %ld";;
         disable|disabled) _W_debugger_value="false";;
         *) w_die "Unexpected argument '$arg'. Should be enable/disable";;
