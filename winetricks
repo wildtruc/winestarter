@@ -8928,6 +8928,40 @@ verify_dotnet40()
 
 #----------------------------------------------------------------
 
+w_metadata dotnet40_kb2468871 dlls \
+    title="MS .NET 4.0 KB2468871" \
+    publisher="Microsoft" \
+    year="2011" \
+    media="download" \
+    conflicts="dotnet20sdk" \
+    file1="NDP40-KB2468871-v2-x86.exe"
+
+load_dotnet40_kb2468871()
+{
+    w_call dotnet40
+
+    # Install KB2468871:
+    if [ "$W_ARCH" = "win32" ]; then
+        w_download https://download.microsoft.com/download/2/B/F/2BF4D7D1-E781-4EE0-9E4F-FDD44A2F8934/NDP40-KB2468871-v2-x86.exe 8822672fc864544e0766c80b635973bd9459d719b1af75f51483ff36cfb26f03
+        w_try_7z "$W_TMP" "${W_CACHE}/${W_PACKAGE}/NDP40-KB2468871-v2-x86.exe" NDP40-KB2468871.msp
+    elif [ "$W_ARCH" = "win64" ]; then
+        w_download https://download.microsoft.com/download/2/B/F/2BF4D7D1-E781-4EE0-9E4F-FDD44A2F8934/NDP40-KB2468871-v2-x64.exe b1b53c3953377b111fe394dd57592d342cfc8a3261a5575253b211c1c2e48ff8
+        w_try_7z "$W_TMP" "${W_CACHE}/${W_PACKAGE}/NDP40-KB2468871-v2-x64.exe" NDP40-KB2468871.msp
+    fi
+
+    w_try_cd "$W_TMP"
+    w_try "$WINE" msiexec /p NDP40-KB2468871.msp
+
+    w_set_winver 'default'
+}
+
+verify_dotnet40_kb2468871()
+{
+    w_dotnet_verify dotnet40
+}
+
+#----------------------------------------------------------------
+
 w_metadata dotnet45 dlls \
     title="MS .NET 4.5" \
     publisher="Microsoft" \
@@ -14259,6 +14293,7 @@ w_metadata ie6 dlls \
     publisher="Microsoft" \
     year="2002" \
     media="download" \
+    conflicts="ie7 ie8" \
     file1="ie60.exe" \
     installed_file1="c:/Program Files/Internet Explorer/iedetect.dll"
 
@@ -14349,6 +14384,7 @@ w_metadata ie7 dlls \
     publisher="Microsoft" \
     year="2008" \
     media="download" \
+    conflicts="ie6 ie8" \
     file1="IE7-WindowsXP-x86-enu.exe" \
     installed_file1="c:/windows/ie7.log"
 
@@ -14460,6 +14496,7 @@ w_metadata ie8 dlls \
     publisher="Microsoft" \
     year="2009" \
     media="download" \
+    conflicts="ie6 ie7" \
     file1="IE8-WindowsXP-x86-ENU.exe" \
     installed_file1="c:/windows/ie8_main.log"
 
@@ -20956,6 +20993,40 @@ REGEDIT4
 
 _EOF_
     w_try_regedit "$W_TMP"/set-mac.reg
+}
+
+#----------------------------------------------------------------
+
+w_metadata mackeyremap=both settings \
+    title="Enable mapping opt->alt and cmd->ctrl keys for the Mac native driver"
+w_metadata mackeyremap=left settings \
+    title="Enable mapping of left opt->alt and cmd->ctrl keys for the Mac native driver"
+w_metadata mackeyremap=none settings \
+    title="Do not remap keys for the Mac native driver (default)"
+
+load_mackeyremap()
+{
+    case "$1" in
+        both|y) arg=both; _W_arg_l=y; _W_arg_r=y ;;
+        left)   arg=left; _W_arg_l=y; _W_arg_r=n ;;
+        none|n) arg=none; _W_arg_l=n; _W_arg_r=n ;;
+        *) w_die "illegal value $1 for MacKeyRemap";;
+    esac
+
+    echo "Setting MacKeyRemap to $arg"
+    cat > "$W_TMP"/set-mackeyremap.reg <<_EOF_
+REGEDIT4
+
+[HKEY_CURRENT_USER\\Software\\Wine\\Mac Driver]
+"LeftCommandIsCtrl"="$_W_arg_l"
+"LeftOptionIsAlt"="$_W_arg_l"
+"RightCommandIsCtrl"="$_W_arg_r"
+"RightOptionIsAlt"="$_W_arg_r"
+
+_EOF_
+    w_try_regedit "$W_TMP"/set-mackeyremap.reg
+
+    unset _W_arg_l _W_arg_r
 }
 
 #----------------------------------------------------------------
