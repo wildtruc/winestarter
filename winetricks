@@ -3027,13 +3027,16 @@ _EOF_
     unset W_file W_font
 }
 
+# Note: we use UTF-16 (little endian) in .reg file for native (non-English) font names.
 w_register_font_replacement()
 {
     _W_alias=$1
     shift
     _W_font=$1
+    # UTF-16 BOM (U+FEFF, "0xEF 0xBB 0xBF" in UTF-8)
+    printf "\357\273\277" | iconv -f UTF-8 -t UTF-16LE > "$W_TMP"/_register-font-replacements.reg
     # Kludge: use _r to avoid \r expansion in w_try
-    cat > "$W_TMP"/_register-font-replacements.reg <<_EOF_
+    iconv -f UTF-8 -t UTF-16LE >> "$W_TMP"/_register-font-replacements.reg <<_EOF_
 REGEDIT4
 
 [HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements]
@@ -13452,27 +13455,37 @@ load_eufonts()
 #----------------------------------------------------------------
 
 w_metadata fakechinese fonts \
-    title="Creates aliases for Chinese fonts using WenQuanYi fonts" \
-    publisher="wenq.org" \
-    year="2009"
+    title="Creates aliases for Chinese fonts using Source Han Sans fonts" \
+    publisher="Adobe" \
+    year="2019"
 
 load_fakechinese()
 {
-    w_call wenquanyi
-    # Loads Wenquanyi fonts and sets aliases for Microsoft Chinese fonts
+    w_call sourcehansans_cn
+    w_call sourcehansans_tw
+    # Loads Source Han Sans fonts and sets aliases for Microsoft Chinese fonts
     # Reference : https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_fonts
 
-    w_register_font_replacement "Microsoft JhengHei" "WenQuanYi Micro Hei"
-    w_register_font_replacement "Microsoft YaHei" "WenQuanYi Micro Hei"
-    w_register_font_replacement "SimHei" "WenQuanYi Micro Hei"
-    w_register_font_replacement "DFKai-SB" "WenQuanYi Micro Hei"
-    w_register_font_replacement "FangSong" "WenQuanYi Micro Hei"
-    w_register_font_replacement "KaiTi" "WenQuanYi Micro Hei"
-    w_register_font_replacement "PMingLiU" "WenQuanYi Micro Hei"
-    w_register_font_replacement "MingLiU" "WenQuanYi Micro Hei"
-    w_register_font_replacement "NSimSun" "WenQuanYi Micro Hei"
-    w_register_font_replacement "SimKai" "WenQuanYi Micro Hei"
-    w_register_font_replacement "SimSun" "WenQuanYi Micro Hei"
+    # Simplified Chinese
+    w_register_font_replacement "Dengxian" "Source Han Sans CN"
+    w_register_font_replacement "FangSong" "Source Han Sans CN"
+    w_register_font_replacement "KaiTi" "Source Han Sans CN"
+    w_register_font_replacement "Microsoft YaHei" "Source Han Sans CN"
+    w_register_font_replacement "Microsoft YaHei UI" "Source Han Sans CN"
+    w_register_font_replacement "NSimSun" "Source Han Sans CN"
+    w_register_font_replacement "SimHei" "Source Han Sans CN"
+    w_register_font_replacement "SimKai" "Source Han Sans CN"
+    w_register_font_replacement "SimSun" "Source Han Sans CN"
+    w_register_font_replacement "SimSun-ExtB" "Source Han Sans CN"
+
+    # Traditional Chinese
+    w_register_font_replacement "DFKai-SB" "Source Han Sans TW"
+    w_register_font_replacement "Microsoft JhengHei" "Source Han Sans TW"
+    w_register_font_replacement "Microsoft JhengHei UI" "Source Han Sans TW"
+    w_register_font_replacement "MingLiU" "Source Han Sans TW"
+    w_register_font_replacement "PMingLiU" "Source Han Sans TW"
+    w_register_font_replacement "MingLiU-ExtB" "Source Han Sans TW"
+    w_register_font_replacement "PMingLiU-ExtB" "Source Han Sans TW"
 }
 
 #----------------------------------------------------------------
@@ -13485,13 +13498,15 @@ w_metadata fakejapanese fonts \
 load_fakejapanese()
 {
     w_call takao
-    # Loads Takao fonts and sets aliases for MS Gothic, MS UI Gothic, and MS PGothic, mainly for Japanese language support
+    # Loads Takao fonts and sets aliases for MS UI Gothic, MS Gothic,
+    # MS PGothic, MS Mincho, and MS PMincho, mainly for Japanese language support
+
     # Aliases to set:
-    # MS Gothic --> TakaoGothic
     # MS UI Gothic --> TakaoGothic
-    # MS PGothic --> TakaoPGothic
-    # MS Mincho --> TakaoMincho
-    # MS PMincho --> TakaoPMincho
+    # MS Gothic (ＭＳ ゴシック) --> TakaoGothic
+    # MS PGothic (ＭＳ Ｐゴシック) --> TakaoPGothic
+    # MS Mincho (ＭＳ 明朝) --> TakaoMincho
+    # MS PMincho (ＭＳ Ｐ明朝) --> TakaoPMincho
     # These aliases were taken from what was listed in Ubuntu's fontconfig definitions.
 
     w_register_font_replacement "MS Gothic" "TakaoGothic"
@@ -13499,6 +13514,10 @@ load_fakejapanese()
     w_register_font_replacement "MS PGothic" "TakaoPGothic"
     w_register_font_replacement "MS Mincho" "TakaoMincho"
     w_register_font_replacement "MS PMincho" "TakaoPMincho"
+    w_register_font_replacement "ＭＳ ゴシック" "TakaoGothic"
+    w_register_font_replacement "ＭＳ Ｐゴシック" "TakaoPGothic"
+    w_register_font_replacement "ＭＳ 明朝" "TakaoMincho"
+    w_register_font_replacement "ＭＳ Ｐ明朝" "TakaoPMincho"
 }
 
 #----------------------------------------------------------------
@@ -13519,20 +13538,15 @@ load_fakejapanese_ipamona()
     # MS Mincho (ＭＳ 明朝) --> IPAMonaMincho
     # MS PMincho (ＭＳ Ｐ明朝) --> IPAMonaPMincho
 
-    jpname_msgothic="$(echo "ＭＳ ゴシック" | iconv -f utf8 -t cp932)"
-    jpname_mspgothic="$(echo "ＭＳ Ｐゴシック" | iconv -f utf8 -t cp932)"
-    jpname_msmincho="$(echo "ＭＳ 明朝" | iconv -f utf8 -t cp932)"
-    jpname_mspmincho="$(echo "ＭＳ Ｐ明朝" | iconv -f utf8 -t cp932)"
-
     w_register_font_replacement "MS UI Gothic" "IPAMonaUIGothic"
     w_register_font_replacement "MS Gothic" "IPAMonaGothic"
     w_register_font_replacement "MS PGothic" "IPAMonaPGothic"
     w_register_font_replacement "MS Mincho" "IPAMonaMincho"
     w_register_font_replacement "MS PMincho" "IPAMonaPMincho"
-    w_register_font_replacement "$jpname_msgothic" "IPAMonaGothic"
-    w_register_font_replacement "$jpname_mspgothic" "IPAMonaPGothic"
-    w_register_font_replacement "$jpname_msmincho" "IPAMonaMincho"
-    w_register_font_replacement "$jpname_mspmincho" "IPAMonaPMincho"
+    w_register_font_replacement "ＭＳ ゴシック" "IPAMonaGothic"
+    w_register_font_replacement "ＭＳ Ｐゴシック" "IPAMonaPGothic"
+    w_register_font_replacement "ＭＳ 明朝" "IPAMonaMincho"
+    w_register_font_replacement "ＭＳ Ｐ明朝" "IPAMonaPMincho"
 }
 
 #----------------------------------------------------------------
@@ -13551,11 +13565,9 @@ load_fakejapanese_vlgothic()
     # Meiryo UI --> VL Gothic
     # Meiryo (メイリオ) --> VL Gothic
 
-    jpname_meiryo="$(echo "メイリオ" | iconv -f utf8 -t cp932)"
-
     w_register_font_replacement "Meiryo UI" "VL Gothic"
     w_register_font_replacement "Meiryo" "VL Gothic"
-    w_register_font_replacement "$jpname_meiryo" "VL Gothic"
+    w_register_font_replacement "メイリオ" "VL Gothic"
 }
 
 #----------------------------------------------------------------
@@ -13570,19 +13582,28 @@ load_fakekorean()
     w_call baekmuk
     # Loads Baekmuk fonts and sets as an alias for Gulim, Dotum, and Batang for Korean language support
     # Aliases to set:
-    # Gulim --> Baekmuk Gulim
-    # GulimChe --> Baekmuk Gulim
-    # Batang --> Baekmuk Batang
-    # BatangChe --> Baekmuk Batang
-    # Dotum --> Baekmuk Dotum
-    # DotumChe --> Baekmuk Dotum
+    # Malgun Gothic (맑은 고딕) --> Baekmuk Gulim
+    # Gulim (굴림) --> Baekmuk Gulim
+    # GulimChe (굴림체) --> Baekmuk Gulim
+    # Batang (바탕) --> Baekmuk Batang
+    # BatangChe (바탕체) --> Baekmuk Batang
+    # Dotum (돋움) --> Baekmuk Dotum
+    # DotumChe (돋움체) --> Baekmuk Dotum
 
+    w_register_font_replacement "Malgun Gothic" "Baekmuk Gulim"
     w_register_font_replacement "Gulim" "Baekmuk Gulim"
     w_register_font_replacement "GulimChe" "Baekmuk Gulim"
     w_register_font_replacement "Batang" "Baekmuk Batang"
     w_register_font_replacement "BatangChe" "Baekmuk Batang"
     w_register_font_replacement "Dotum" "Baekmuk Dotum"
     w_register_font_replacement "DotumChe" "Baekmuk Dotum"
+    w_register_font_replacement "맑은 고딕" "Baekmuk Gulim"
+    w_register_font_replacement "굴림" "Baekmuk Gulim"
+    w_register_font_replacement "굴림체" "Baekmuk Gulim"
+    w_register_font_replacement "바탕" "Baekmuk Batang"
+    w_register_font_replacement "바탕체" "Baekmuk Batang"
+    w_register_font_replacement "돋움" "Baekmuk Dotum"
+    w_register_font_replacement "돋움체" "Baekmuk Dotum"
 }
 
 #----------------------------------------------------------------
@@ -13690,6 +13711,58 @@ load_opensymbol()
     w_try tar -Jxf "$W_TMP/data.tar.xz" ./usr/share/fonts/truetype/openoffice/opens___.ttf
     w_try_cp_font_files "usr/share/fonts/truetype/openoffice" "$W_FONTSDIR_UNIX"
     w_register_font opens___.ttf "OpenSymbol"
+}
+
+#----------------------------------------------------------------
+
+w_metadata sourcehansans_cn fonts \
+    title="Source Han Sans CN fonts" \
+    publisher="Adobe" \
+    year="2019" \
+    media="download" \
+    file1="SourceHanSansCN.zip" \
+    installed_file1="$W_FONTSDIR_WIN/sourcehansanscn-regular.otf"
+
+load_sourcehansans_cn()
+{
+    w_download "https://github.com/adobe-fonts/source-han-sans/raw/2.001R/SubsetOTF/SourceHanSansCN.zip" dbc63746cd8daa8b219a236fe0278e5eb7f910bec90c9897ada440e6d796f256
+
+    w_try_unzip "$W_TMP" "$W_CACHE/$W_PACKAGE/$file1"
+    w_try_cp_font_files "$W_TMP/SourceHanSansCN" "$W_FONTSDIR_UNIX" "*.otf"
+
+    w_register_font sourcehansanscn-extralight.otf "Source Han Sans CN Extra Light"
+    w_register_font sourcehansanscn-light.otf "Source Han Sans CN Light"
+    w_register_font sourcehansanscn-normal.otf "Source Han Sans CN Normal"
+    w_register_font sourcehansanscn-regular.otf "Source Han Sans CN"
+    w_register_font sourcehansanscn-medium.otf "Source Han Sans CN Medium"
+    w_register_font sourcehansanscn-bold.otf "Source Han Sans CN Bold"
+    w_register_font sourcehansanscn-heavy.otf "Source Han Sans CN Heavy"
+}
+
+#----------------------------------------------------------------
+
+w_metadata sourcehansans_tw fonts \
+    title="Source Han Sans TW fonts" \
+    publisher="Adobe" \
+    year="2019" \
+    media="download" \
+    file1="SourceHanSansTW.zip" \
+    installed_file1="$W_FONTSDIR_WIN/sourcehansanstw-regular.otf"
+
+load_sourcehansans_tw()
+{
+    w_download "https://github.com/adobe-fonts/source-han-sans/raw/2.001R/SubsetOTF/SourceHanSansTW.zip" 46d0ab308913572698d7a0ddf031c74b420bc0d575aba9a332db9e7e872db40f
+
+    w_try_unzip "$W_TMP" "$W_CACHE/$W_PACKAGE/$file1"
+    w_try_cp_font_files "$W_TMP/SourceHanSansTW" "$W_FONTSDIR_UNIX" "*.otf"
+
+    w_register_font sourcehansanstw-extralight.otf "Source Han Sans TW Extra Light"
+    w_register_font sourcehansanstw-light.otf "Source Han Sans TW Light"
+    w_register_font sourcehansanstw-normal.otf "Source Han Sans TW Normal"
+    w_register_font sourcehansanstw-regular.otf "Source Han Sans TW"
+    w_register_font sourcehansanstw-medium.otf "Source Han Sans TW Medium"
+    w_register_font sourcehansanstw-bold.otf "Source Han Sans TW Bold"
+    w_register_font sourcehansanstw-heavy.otf "Source Han Sans TW Heavy"
 }
 
 #----------------------------------------------------------------
