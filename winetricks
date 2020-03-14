@@ -12947,15 +12947,14 @@ load_baekmuk()
 
 w_metadata cjkfonts fonts \
     title="All Chinese, Japanese, Korean fonts and aliases" \
-    publisher="various" \
-    date="1999-2010" \
+    publisher="Various" \
+    date="1999-2019" \
     media="download"
 
 load_cjkfonts()
 {
     w_call fakechinese
     w_call fakejapanese
-    w_call fakejapanese_vlgothic
     w_call fakekorean
     w_call unifont
 }
@@ -13461,63 +13460,63 @@ w_metadata fakechinese fonts \
 
 load_fakechinese()
 {
-    w_call sourcehansans_cn
-    w_call sourcehansans_tw
     # Loads Source Han Sans fonts and sets aliases for Microsoft Chinese fonts
     # Reference : https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_fonts
+    w_call sourcehansans
 
     # Simplified Chinese
-    w_register_font_replacement "Dengxian" "Source Han Sans CN"
-    w_register_font_replacement "FangSong" "Source Han Sans CN"
-    w_register_font_replacement "KaiTi" "Source Han Sans CN"
-    w_register_font_replacement "Microsoft YaHei" "Source Han Sans CN"
-    w_register_font_replacement "Microsoft YaHei UI" "Source Han Sans CN"
-    w_register_font_replacement "NSimSun" "Source Han Sans CN"
-    w_register_font_replacement "SimHei" "Source Han Sans CN"
-    w_register_font_replacement "SimKai" "Source Han Sans CN"
-    w_register_font_replacement "SimSun" "Source Han Sans CN"
-    w_register_font_replacement "SimSun-ExtB" "Source Han Sans CN"
+    w_register_font_replacement "Dengxian" "Source Han Sans SC"
+    w_register_font_replacement "FangSong" "Source Han Sans SC"
+    w_register_font_replacement "KaiTi" "Source Han Sans SC"
+    w_register_font_replacement "Microsoft YaHei" "Source Han Sans SC"
+    w_register_font_replacement "Microsoft YaHei UI" "Source Han Sans SC"
+    w_register_font_replacement "NSimSun" "Source Han Sans SC"
+    w_register_font_replacement "SimHei" "Source Han Sans SC"
+    w_register_font_replacement "SimKai" "Source Han Sans SC"
+    w_register_font_replacement "SimSun" "Source Han Sans SC"
+    w_register_font_replacement "SimSun-ExtB" "Source Han Sans SC"
 
     # Traditional Chinese
-    w_register_font_replacement "DFKai-SB" "Source Han Sans TW"
-    w_register_font_replacement "Microsoft JhengHei" "Source Han Sans TW"
-    w_register_font_replacement "Microsoft JhengHei UI" "Source Han Sans TW"
-    w_register_font_replacement "MingLiU" "Source Han Sans TW"
-    w_register_font_replacement "PMingLiU" "Source Han Sans TW"
-    w_register_font_replacement "MingLiU-ExtB" "Source Han Sans TW"
-    w_register_font_replacement "PMingLiU-ExtB" "Source Han Sans TW"
+    w_register_font_replacement "DFKai-SB" "Source Han Sans TC"
+    w_register_font_replacement "Microsoft JhengHei" "Source Han Sans TC"
+    w_register_font_replacement "Microsoft JhengHei UI" "Source Han Sans TC"
+    w_register_font_replacement "MingLiU" "Source Han Sans TC"
+    w_register_font_replacement "PMingLiU" "Source Han Sans TC"
+    w_register_font_replacement "MingLiU-ExtB" "Source Han Sans TC"
+    w_register_font_replacement "PMingLiU-ExtB" "Source Han Sans TC"
 }
 
 #----------------------------------------------------------------
 
 w_metadata fakejapanese fonts \
-    title="Creates aliases for Japanese fonts using Takao fonts" \
-    publisher="Jun Kobayashi" \
-    year="2010"
+    title="Creates aliases for Japanese fonts using Source Han Sans fonts" \
+    publisher="Adobe" \
+    year="2019"
 
 load_fakejapanese()
 {
-    w_call takao
-    # Loads Takao fonts and sets aliases for MS UI Gothic, MS Gothic,
-    # MS PGothic, MS Mincho, and MS PMincho, mainly for Japanese language support
+    # Loads Source Han Sans fonts and sets aliases for Microsoft Japanese fonts
+    # Reference : https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_fonts
+    w_call sourcehansans
 
-    # Aliases to set:
-    # MS UI Gothic --> TakaoGothic
-    # MS Gothic (ＭＳ ゴシック) --> TakaoGothic
-    # MS PGothic (ＭＳ Ｐゴシック) --> TakaoPGothic
-    # MS Mincho (ＭＳ 明朝) --> TakaoMincho
-    # MS PMincho (ＭＳ Ｐ明朝) --> TakaoPMincho
-    # These aliases were taken from what was listed in Ubuntu's fontconfig definitions.
-
-    w_register_font_replacement "MS Gothic" "TakaoGothic"
-    w_register_font_replacement "MS UI Gothic" "TakaoGothic"
-    w_register_font_replacement "MS PGothic" "TakaoPGothic"
-    w_register_font_replacement "MS Mincho" "TakaoMincho"
-    w_register_font_replacement "MS PMincho" "TakaoPMincho"
-    w_register_font_replacement "ＭＳ ゴシック" "TakaoGothic"
-    w_register_font_replacement "ＭＳ Ｐゴシック" "TakaoPGothic"
-    w_register_font_replacement "ＭＳ 明朝" "TakaoMincho"
-    w_register_font_replacement "ＭＳ Ｐ明朝" "TakaoPMincho"
+    w_register_font_replacement "Meiryo" "Source Han Sans"
+    w_register_font_replacement "Meiryo UI" "Source Han Sans"
+    w_register_font_replacement "MS Gothic" "Source Han Sans"
+    w_register_font_replacement "MS PGothic" "Source Han Sans"
+    w_register_font_replacement "MS Mincho" "Source Han Sans"
+    w_register_font_replacement "MS PMincho" "Source Han Sans"
+    w_register_font_replacement "MS UI Gothic" "Source Han Sans"
+    w_register_font_replacement "UD Digi KyoKasho N-R" "Source Han Sans"
+    w_register_font_replacement "UD Digi KyoKasho NK-R" "Source Han Sans"
+    w_register_font_replacement "UD Digi KyoKasho NP-R" "Source Han Sans"
+    w_register_font_replacement "Yu Gothic" "Source Han Sans"
+    w_register_font_replacement "Yu Gothic UI" "Source Han Sans"
+    w_register_font_replacement "Yu Mincho" "Source Han Sans"
+    w_register_font_replacement "メイリオ" "Source Han Sans"
+    w_register_font_replacement "ＭＳ ゴシック" "Source Han Sans"
+    w_register_font_replacement "ＭＳ Ｐゴシック" "Source Han Sans"
+    w_register_font_replacement "ＭＳ 明朝" "Source Han Sans"
+    w_register_font_replacement "ＭＳ Ｐ明朝" "Source Han Sans"
 }
 
 #----------------------------------------------------------------
@@ -13573,37 +13572,32 @@ load_fakejapanese_vlgothic()
 #----------------------------------------------------------------
 
 w_metadata fakekorean fonts \
-    title="Creates aliases for Korean fonts using Baekmuk fonts" \
-    publisher="Wooderart Inc. / kldp.net" \
-    year="1999"
+    title="Creates aliases for Korean fonts using Source Han Sans fonts" \
+    publisher="Adobe" \
+    year="2019"
 
 load_fakekorean()
 {
-    w_call baekmuk
-    # Loads Baekmuk fonts and sets as an alias for Gulim, Dotum, and Batang for Korean language support
-    # Aliases to set:
-    # Malgun Gothic (맑은 고딕) --> Baekmuk Gulim
-    # Gulim (굴림) --> Baekmuk Gulim
-    # GulimChe (굴림체) --> Baekmuk Gulim
-    # Batang (바탕) --> Baekmuk Batang
-    # BatangChe (바탕체) --> Baekmuk Batang
-    # Dotum (돋움) --> Baekmuk Dotum
-    # DotumChe (돋움체) --> Baekmuk Dotum
+    # Loads Source Han Sans fonts and sets aliases for Microsoft Korean fonts
+    # Reference : https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_fonts
+    w_call sourcehansans
 
-    w_register_font_replacement "Malgun Gothic" "Baekmuk Gulim"
-    w_register_font_replacement "Gulim" "Baekmuk Gulim"
-    w_register_font_replacement "GulimChe" "Baekmuk Gulim"
-    w_register_font_replacement "Batang" "Baekmuk Batang"
-    w_register_font_replacement "BatangChe" "Baekmuk Batang"
-    w_register_font_replacement "Dotum" "Baekmuk Dotum"
-    w_register_font_replacement "DotumChe" "Baekmuk Dotum"
-    w_register_font_replacement "맑은 고딕" "Baekmuk Gulim"
-    w_register_font_replacement "굴림" "Baekmuk Gulim"
-    w_register_font_replacement "굴림체" "Baekmuk Gulim"
-    w_register_font_replacement "바탕" "Baekmuk Batang"
-    w_register_font_replacement "바탕체" "Baekmuk Batang"
-    w_register_font_replacement "돋움" "Baekmuk Dotum"
-    w_register_font_replacement "돋움체" "Baekmuk Dotum"
+    w_register_font_replacement "Batang" "Source Han Sans K"
+    w_register_font_replacement "BatangChe" "Source Han Sans K"
+    w_register_font_replacement "Dotum" "Source Han Sans K"
+    w_register_font_replacement "DotumChe" "Source Han Sans K"
+    w_register_font_replacement "Gulim" "Source Han Sans K"
+    w_register_font_replacement "GulimChe" "Source Han Sans K"
+    w_register_font_replacement "Gungsuh" "Source Han Sans K"
+    w_register_font_replacement "GungsuhChe" "Source Han Sans K"
+    w_register_font_replacement "Malgun Gothic" "Source Han Sans K"
+    w_register_font_replacement "바탕" "Source Han Sans K"
+    w_register_font_replacement "바탕체" "Source Han Sans K"
+    w_register_font_replacement "돋움" "Source Han Sans K"
+    w_register_font_replacement "돋움체" "Source Han Sans K"
+    w_register_font_replacement "굴림" "Source Han Sans K"
+    w_register_font_replacement "굴림체" "Source Han Sans K"
+    w_register_font_replacement "맑은 고딕" "Source Han Sans K"
 }
 
 #----------------------------------------------------------------
@@ -13715,54 +13709,55 @@ load_opensymbol()
 
 #----------------------------------------------------------------
 
-w_metadata sourcehansans_cn fonts \
-    title="Source Han Sans CN fonts" \
+w_metadata sourcehansans fonts \
+    title="Source Han Sans fonts" \
     publisher="Adobe" \
     year="2019" \
     media="download" \
-    file1="SourceHanSansCN.zip" \
-    installed_file1="$W_FONTSDIR_WIN/sourcehansanscn-regular.otf"
+    file1="SourceHanSans.ttc" \
+    installed_file1="$W_FONTSDIR_WIN/sourcehansans.ttc"
 
-load_sourcehansans_cn()
+load_sourcehansans()
 {
-    w_download "https://github.com/adobe-fonts/source-han-sans/raw/2.001R/SubsetOTF/SourceHanSansCN.zip" dbc63746cd8daa8b219a236fe0278e5eb7f910bec90c9897ada440e6d796f256
+    w_download "https://github.com/adobe-fonts/source-han-sans/releases/download/2.001R/SourceHanSans.ttc" 9e94fe493685a7c99ce61e4488169007e3b97badb9f1ef43d3c13da501463780
+    w_try cp "$W_CACHE/$W_PACKAGE/$file1" "$W_TMP/sourcehansans.ttc"
+    w_try_cp_font_files "$W_TMP" "$W_FONTSDIR_UNIX" "*.ttc"
 
-    w_try_unzip "$W_TMP" "$W_CACHE/$W_PACKAGE/$file1"
-    w_try_cp_font_files "$W_TMP/SourceHanSansCN" "$W_FONTSDIR_UNIX" "*.otf"
+    # Simplified Chinese
+    w_register_font sourcehansans.ttc "Source Han Sans SC ExtraLight"
+    w_register_font sourcehansans.ttc "Source Han Sans SC Light"
+    w_register_font sourcehansans.ttc "Source Han Sans SC Normal"
+    w_register_font sourcehansans.ttc "Source Han Sans SC"
+    w_register_font sourcehansans.ttc "Source Han Sans SC Medium"
+    w_register_font sourcehansans.ttc "Source Han Sans SC Bold"
+    w_register_font sourcehansans.ttc "Source Han Sans SC Heavy"
 
-    w_register_font sourcehansanscn-extralight.otf "Source Han Sans CN Extra Light"
-    w_register_font sourcehansanscn-light.otf "Source Han Sans CN Light"
-    w_register_font sourcehansanscn-normal.otf "Source Han Sans CN Normal"
-    w_register_font sourcehansanscn-regular.otf "Source Han Sans CN"
-    w_register_font sourcehansanscn-medium.otf "Source Han Sans CN Medium"
-    w_register_font sourcehansanscn-bold.otf "Source Han Sans CN Bold"
-    w_register_font sourcehansanscn-heavy.otf "Source Han Sans CN Heavy"
-}
+    # Traditional Chinese (Taiwan)
+    w_register_font sourcehansans.ttc "Source Han Sans TC ExtraLight"
+    w_register_font sourcehansans.ttc "Source Han Sans TC Light"
+    w_register_font sourcehansans.ttc "Source Han Sans TC Normal"
+    w_register_font sourcehansans.ttc "Source Han Sans TC"
+    w_register_font sourcehansans.ttc "Source Han Sans TC Medium"
+    w_register_font sourcehansans.ttc "Source Han Sans TC Bold"
+    w_register_font sourcehansans.ttc "Source Han Sans TC Heavy"
 
-#----------------------------------------------------------------
+    # Japanese
+    w_register_font sourcehansans.ttc "Source Han Sans ExtraLight"
+    w_register_font sourcehansans.ttc "Source Han Sans Light"
+    w_register_font sourcehansans.ttc "Source Han Sans Normal"
+    w_register_font sourcehansans.ttc "Source Han Sans"
+    w_register_font sourcehansans.ttc "Source Han Sans Medium"
+    w_register_font sourcehansans.ttc "Source Han Sans Bold"
+    w_register_font sourcehansans.ttc "Source Han Sans Heavy"
 
-w_metadata sourcehansans_tw fonts \
-    title="Source Han Sans TW fonts" \
-    publisher="Adobe" \
-    year="2019" \
-    media="download" \
-    file1="SourceHanSansTW.zip" \
-    installed_file1="$W_FONTSDIR_WIN/sourcehansanstw-regular.otf"
-
-load_sourcehansans_tw()
-{
-    w_download "https://github.com/adobe-fonts/source-han-sans/raw/2.001R/SubsetOTF/SourceHanSansTW.zip" 46d0ab308913572698d7a0ddf031c74b420bc0d575aba9a332db9e7e872db40f
-
-    w_try_unzip "$W_TMP" "$W_CACHE/$W_PACKAGE/$file1"
-    w_try_cp_font_files "$W_TMP/SourceHanSansTW" "$W_FONTSDIR_UNIX" "*.otf"
-
-    w_register_font sourcehansanstw-extralight.otf "Source Han Sans TW Extra Light"
-    w_register_font sourcehansanstw-light.otf "Source Han Sans TW Light"
-    w_register_font sourcehansanstw-normal.otf "Source Han Sans TW Normal"
-    w_register_font sourcehansanstw-regular.otf "Source Han Sans TW"
-    w_register_font sourcehansanstw-medium.otf "Source Han Sans TW Medium"
-    w_register_font sourcehansanstw-bold.otf "Source Han Sans TW Bold"
-    w_register_font sourcehansanstw-heavy.otf "Source Han Sans TW Heavy"
+    # Korean
+    w_register_font sourcehansans.ttc "Source Han Sans K ExtraLight"
+    w_register_font sourcehansans.ttc "Source Han Sans K Light"
+    w_register_font sourcehansans.ttc "Source Han Sans K Normal"
+    w_register_font sourcehansans.ttc "Source Han Sans K"
+    w_register_font sourcehansans.ttc "Source Han Sans K Medium"
+    w_register_font sourcehansans.ttc "Source Han Sans K Bold"
+    w_register_font sourcehansans.ttc "Source Han Sans K Heavy"
 }
 
 #----------------------------------------------------------------
