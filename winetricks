@@ -5489,6 +5489,7 @@ winetricks_handle_option()
         --verify) WINETRICKS_VERIFY=1 ;;
         -vv|--really-verbose) WINETRICKS_OPT_VERBOSE=2 ; set -x ;;
         -*) w_die "unknown option $1" ;;
+        prefix=*) export WINEPREFIX="${W_PREFIXES_ROOT}/${1##prefix=}" ;;
         *) return 1 ;;
     esac
     return 0
@@ -10007,18 +10008,18 @@ load_gdiplus()
 w_metadata gdiplus_winxp dlls \
     title="MS GDI+" \
     publisher="Microsoft" \
-    year="2004" \
+    year="2009" \
     media="manual_download" \
-    file1="NDP1.0sp2-KB830348-X86-Enu.exe" \
+    file1="WindowsXP-KB975337-x86-ENU.exe" \
     installed_file1="$W_SYSTEM32_DLLS_WIN/gdiplus.dll"
 
 load_gdiplus_winxp()
 {
     # https://www.microsoft.com/en-us/download/details.aspx?id=5339
-    w_download https://download.microsoft.com/download/1/4/6/1467c2ba-4d1f-43ad-8d9b-3e8bc1c6ac3d/NDP1.0sp2-KB830348-X86-Enu.exe 3c6c7eed4a0ccd2ea2ce0446359b8c752dd2a3b82332663f655e803ce0b05335
+    w_download https://web.archive.org/web/20140615000000/http://download.microsoft.com/download/a/b/c/abc45517-97a0-4cee-a362-1957be2f24e1/WindowsXP-KB975337-x86-ENU.exe 699e76e9f100db3d50da8762c484a369df4698d4b84f7821d4df0e37ce68bcbe
     w_try_cd "$W_CACHE/$W_PACKAGE"
-    w_try_cabextract -d "$W_TMP" -F FL_gdiplus_dll_____X86.3643236F_FC70_11D3_A536_0090278A1BB8 "$W_CACHE/${W_PACKAGE}/$file1"
-    w_try cp "$W_TMP/FL_gdiplus_dll_____X86.3643236F_FC70_11D3_A536_0090278A1BB8" "$W_SYSTEM32_DLLS/gdiplus.dll"
+    w_try_cabextract -d "$W_TMP" -F _sfx_0005._p "$W_CACHE/${W_PACKAGE}/$file1"
+    w_try cp "$W_TMP/_sfx_0005._p" "$W_SYSTEM32_DLLS/gdiplus.dll"
 
     # For some reason, native, builtin isn't good enough...?
     w_override_dlls native gdiplus
@@ -11006,30 +11007,32 @@ load_msxml4()
 #----------------------------------------------------------------
 
 w_metadata msxml6 dlls \
-    title="MS XML Core Services 6.0 sp1" \
+    title="MS XML Core Services 6.0 sp2" \
     publisher="Microsoft" \
-    year="2007" \
+    year="2009" \
     media="download" \
-    file1="msxml6_x86.msi" \
+    file1="msxml6-KB973686-enu-amd64.exe" \
     installed_file1="$W_SYSTEM32_DLLS_WIN/msxml6.dll"
 
 load_msxml6()
 {
-    # Service Pack 1
-    # https://www.microsoft.com/en-us/download/details.aspx?id=6276
-    if [ $W_ARCH = win64 ]; then
-        w_download https://download.microsoft.com/download/e/a/f/eafb8ee7-667d-4e30-bb39-4694b5b3006f/msxml6_x64.msi 945d8c535758d5178d4de9063cfcba7dfa96987eaa478e0c03ba646cc7ca772f
-    else
-        w_download https://download.microsoft.com/download/e/a/f/eafb8ee7-667d-4e30-bb39-4694b5b3006f/msxml6_x86.msi efa48f8cab5a89b8e667ed3e10dfb71bddc02923d0f3757bd93ffabe6fb6c598
+    # Service Pack 2
+    # https://www.microsoft.com/en-us/download/details.aspx?id=9774
+
+    # 64bit exe also includes 32bit dlls
+    w_download https://download.microsoft.com/download/1/5/8/158F681A-E595-472B-B15E-62B649B1B6FF/msxml6-KB973686-enu-amd64.exe 0e5c4af488e88e8defb59de80271671d8283d5744b2eebdb351bbd4950fb0883
+
+    w_try_cabextract --directory="${W_TMP}" "${W_CACHE}"/msxml6/msxml6-KB973686-enu-amd64.exe
+    w_try_cabextract --directory="${W_TMP}" "${W_TMP}"/msxml6.msi
+    w_try cp -f "${W_TMP}"/msxml6.dll.86F857F6_A743_463D_B2FE_98CB5F727E09 "$W_SYSTEM32_DLLS"/msxml6.dll
+    w_try cp -f "${W_TMP}"/msxml6r.dll.86F857F6_A743_463D_B2FE_98CB5F727E09 "$W_SYSTEM32_DLLS"/msxml6r.dll
+
+    if [ "$W_ARCH" = "win64" ]; then
+        w_try cp -f "${W_TMP}"/msxml6.dll.1ECC0691_D2EB_4A33_9CBF_5487E5CB17DB "$W_SYSTEM64_DLLS"/msxml6.dll
+        w_try cp -f "${W_TMP}"/msxml6r.dll.1ECC0691_D2EB_4A33_9CBF_5487E5CB17DB "$W_SYSTEM64_DLLS"/msxml6r.dll
     fi
+
     w_override_dlls native,builtin msxml6
-    rm -f "$W_SYSTEM32_DLLS/msxml6.dll"
-    if [ $W_ARCH = win64 ]; then
-        rm -f "$W_SYSTEM64_DLLS/msxml6.dll"
-        w_try_msiexec64 /i "$W_CACHE"/msxml6/msxml6_x64.msi
-    else
-        w_try "$WINE" msiexec /i "$W_CACHE"/msxml6/msxml6_x86.msi $W_UNATTENDED_SLASH_Q
-    fi
 }
 
 #----------------------------------------------------------------
