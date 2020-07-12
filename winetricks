@@ -228,15 +228,11 @@ w_info()
         echo "------------------------------------------------------"
     fi
 
-    _W_timeout="--timeout 3"
-
     case $WINETRICKS_GUI in
-        zenity) $WINETRICKS_GUI "$_W_timeout" --info --title=winetricks --text="$(echo "$@" | sed 's,\\\\,\\\\\\\\,g')" --no-wrap;;
+        zenity) $WINETRICKS_GUI --timeout=3 --info --title=winetricks --text="$(echo "$@" | sed 's,\\\\,\\\\\\\\,g')" --no-wrap;;
         kdialog) $WINETRICKS_GUI --title winetricks --msgbox "$@" ;;
         none) ;;
     esac
-
-    unset _W_timeout
 }
 
 # Display warning message to stderr (since it is called inside redirected code)
@@ -300,6 +296,18 @@ w_killall()
     kill -s KILL $(pgrep $1)
 }
 
+# Helper for w_package_broken() and friends. If --force is used, continue.
+# If not, exit 99 or the optional value passed as $1
+_w_force_continue_check()
+{
+    exitval="${1:-99}"
+    if [ "$WINETRICKS_FORCE" = 1 ]; then
+        w_warn "--force was used, so trying anyway. Caveat emptor."
+    else
+        exit "$exitval"
+    fi
+}
+
 # Warn user if package is broken (on all arches) in the current wine version. Bug report required.
 w_package_broken()
 {
@@ -316,17 +324,16 @@ w_package_broken()
     if [ -n "$good_version" ]; then
         if ! w_wine_version_in "${bad_version},${good_version}"; then
             w_warn "This package ($W_PACKAGE) is broken in ${_wine_version_stripped}. Upgrade to >=${good_version}. See ${bug_link} for more info."
-            exit 99
         fi
     elif [ -n "$bad_version" ]; then
         if ! w_wine_version_in "${bad_version}"; then
             w_warn "This package ($W_PACKAGE) is broken in ${_wine_version_stripped}. Broken since ${bad_version}. See ${bug_link} for more info."
-            exit 99
         fi
     else
         w_warn "This package ($W_PACKAGE) is broken. See ${bug_link} for more info."
-        exit 99
     fi
+
+    _w_force_continue_check
 }
 
 w_detect_mingw()
@@ -377,20 +384,20 @@ w_package_broken_mingw()
     if [ -n "$good_version" ]; then
         if ! w_wine_version_in "${bad_version},${good_version}"; then
             w_warn "This package ($W_PACKAGE) is broken in ${_wine_version_stripped} when wine is built with mingw. Upgrade to >=${good_version} or disable mingw. See ${bug_link} for more info."
-            exit 99
+            _w_force_continue_check
         else
             echo "package was broken, now fixed"
         fi
     elif [ -n "$bad_version" ]; then
         if ! w_wine_version_in "${bad_version}"; then
             w_warn "This package ($W_PACKAGE) is broken in ${_wine_version_stripped} (broken since ${bad_version} when wine is built with mingw. See ${bug_link} for more info."
-            exit 99
+            _w_force_continue_check
         else
             echo "Package is broken in future versions"
         fi
     else
         w_warn "This package ($W_PACKAGE) is broken when wine is built with mingw. See ${bug_link} for more info."
-        exit 99
+        _w_force_continue_check
     fi
 }
 
@@ -415,20 +422,20 @@ w_package_broken_no_mingw()
     if [ -n "$good_version" ]; then
         if ! w_wine_version_in "${bad_version},${good_version}"; then
             w_warn "This package ($W_PACKAGE) is broken in ${_wine_version_stripped} when wine is built without mingw. Upgrade to >=${good_version}. See ${bug_link} for more info."
-            exit 99
+            _w_force_continue_check
         else
             echo "package was broken, now fixed"
         fi
     elif [ -n "$bad_version" ]; then
         if ! w_wine_version_in "${bad_version}"; then
             w_warn "This package ($W_PACKAGE) is broken in ${_wine_version_stripped} (broken since ${bad_version} when wine is built without mingw. See ${bug_link} for more info."
-            exit 99
+            _w_force_continue_check
         else
             echo "Package is broken in future versions"
         fi
     else
         w_warn "This package ($W_PACKAGE) is broken when wine is built without mingw. See ${bug_link} for more info."
-        exit 99
+        _w_force_continue_check
     fi
 }
 
@@ -440,9 +447,11 @@ w_package_broken_win64()
 
     if [ "$W_ARCH" = "win64" ] ; then
         if [ -n "$1" ] ; then
-            w_die "This package ($W_PACKAGE) is broken on 64-bit Wine. Using a prefix made with WINEARCH=win32 to work around this. See: ${bug_link}"
+            w_warn "This package ($W_PACKAGE) is broken on 64-bit Wine. Using a prefix made with WINEARCH=win32 to work around this. See: ${bug_link}"
+            _w_force_continue_check
         else
-            w_die "This package ($W_PACKAGE) is broken on 64-bit Wine. Using a prefix made with WINEARCH=win32 to work around this."
+            w_warn "This package ($W_PACKAGE) is broken on 64-bit Wine. Using a prefix made with WINEARCH=win32 to work around this."
+            _w_force_continue_check
         fi
     fi
 }
@@ -453,7 +462,7 @@ w_package_unsupported_win32()
 {
     if [ "$W_ARCH" = "win32" ] ; then
         w_warn "This package ($W_PACKAGE) does not work on a 32-bit installation. You must use a prefix made with WINEARCH=win64."
-        exit 64
+        _w_force_continue_check 64
     fi
 }
 
@@ -471,7 +480,7 @@ w_package_unsupported_win64()
             zh_TW*|zh_HK*) w_warn "($W_PACKAGE) 無法在64元下工作，只能將容器變數設定為 WINEARCH=win32 安装。" ;;
             *) w_warn "This package ($W_PACKAGE) does not work on a 64-bit installation. You must use a prefix made with WINEARCH=win32." ;;
         esac
-        exit 32
+        _w_force_continue_check 32
     fi
 }
 
@@ -2689,11 +2698,10 @@ REGEDIT4
 
 _EOF_
         w_try_regedit "$W_TMP_WIN"\\set-winver.reg
+        fi # if w_wine_version_in ,5.7
 
-        # Prevent a race when calling from another verb
-        w_wineserver -w
-
-        fi
+    # Prevent a race when calling from another verb
+    w_wineserver -w
 }
 
 w_unset_winver()
@@ -6065,8 +6073,7 @@ load_binkw32()
     #
     # Zip sha256sum:
     # 2015/12/27: 1d5efda8e4af796319b94034ba67b453cbbfddd81eb7d94fd059b40e237fa75d
-
-    w_download http://www.down-dll.com/dll/b/__32-binkw32.dll3.0.0.0.zip 1d5efda8e4af796319b94034ba67b453cbbfddd81eb7d94fd059b40e237fa75d
+    w_download https://web.archive.org/web/20160221223726if_/http://www.down-dll.com/dll/b/__32-binkw32.dll3.0.0.0.zip 1d5efda8e4af796319b94034ba67b453cbbfddd81eb7d94fd059b40e237fa75d
 
     w_try_unzip "$W_TMP" "$W_CACHE"/binkw32/__32-binkw32.dll3.0.0.0.zip
     w_try cp "$W_TMP"/binkw32.dll "$W_SYSTEM32_DLLS"/binkw32.dll
@@ -12678,39 +12685,39 @@ load_vjrun20()
 
 #----------------------------------------------------------------
 
-w_metadata vulkanrt dlls \
-    title="Vulkan Runtime 1.1.73.0" \
+w_metadata vulkanrt121412 dlls \
+    title="Vulkan Runtime 1.2.141.2" \
     publisher="LunarG" \
-    year="2018" \
+    year="2020" \
     media="download" \
-    file1="VulkanRT-1.1.73.0-Installer.exe" \
+    file1="VulkanRT-1.2.141.2-Installer.exe" \
     installed_exe1="$W_SYSTEM32_DLLS_WIN/vulkaninfo.exe"
 
-load_vulkanrt()
+load_vulkanrt121412()
 {
     # https://vulkan.lunarg.com/sdk/home
-    w_download "https://sdk.lunarg.com/sdk/download/1.1.73.0/windows/VulkanRT-1.1.73.0-Installer.exe?Human=true;u=" cfec461b17aff521cf06b727aa612d654d4e72de8e3c21bd219e77b87f56f20a VulkanRT-1.1.73.0-Installer.exe
+    w_download "https://sdk.lunarg.com/sdk/download/1.2.141.2/windows/VulkanRT-1.2.141.2-Installer.exe?Human=true;u=" bf5050ead980e66fdd7b8eb5664d2b92e037ec5c400f75c2dc209a595828aaf7 "$file1"
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" "$file1" ${W_OPT_UNATTENDED:+/S}
 }
 
 #----------------------------------------------------------------
 
-w_metadata vulkansdk apps \
-    title="Vulkan SDK 1.1.73.0 (developers only)" \
+w_metadata vulkansdk121412 apps \
+    title="Vulkan SDK 1.2.141.2 (developers only)" \
     publisher="LunarG" \
-    year="2018" \
+    year="2020" \
     media="download" \
-    file1="VulkanSDK-1.1.73.0-Installer.exe" \
-    installed_file1="C:/VulkanSDK/1.1.73.0/Vulkan.ico" \
+    file1="VulkanSDK-1.2.141.2-Installer.exe" \
+    installed_file1="C:/VulkanSDK/1.2.141.2/vulkan.ico" \
     installed_file2="C:/windows/winevulkan.json"
 
-load_vulkansdk()
+load_vulkansdk121412()
 {
     _W_vulkan_version="${file1%-*.exe}"
     _W_vulkan_version="${_W_vulkan_version#*-}"
     # https://vulkan.lunarg.com/sdk/home
-    w_download "https://sdk.lunarg.com/sdk/download/1.1.73.0/windows/VulkanSDK-1.1.73.0-Installer.exe?Human=true;u=" a5d193f97db4de97e6b4fdd81f00ff6a603f66bb17dc3cf8ac0fe9aec58497c7 VulkanSDK-1.1.73.0-Installer.exe
+    w_download "https://sdk.lunarg.com/sdk/download/1.2.141.2/windows/VulkanSDK-1.2.141.2-Installer.exe?Human=true;u=" d732eaee50c5f924ee64c9408bec7073b7a230464f1636f346833727c9bbddd0 "$file1"
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" "$file1" ${W_OPT_UNATTENDED:+/S}
     echo "Creating C:\\windows\\winevulkan.json winevulkan json file"
@@ -12732,6 +12739,83 @@ REGEDIT4
 
 _EOF_
     w_try_regedit "$W_TMP_WIN"\\winevulkan.reg
+}
+
+#----------------------------------------------------------------
+
+w_metadata vulkanrt dlls \
+    title="Vulkan Runtime (latest)" \
+    publisher="LunarG" \
+    year="2020" \
+    media="download" \
+    file1="vulkan-rt.exe" \
+    installed_exe1="$W_SYSTEM32_DLLS_WIN/vulkaninfo.exe"
+
+load_vulkanrt()
+{
+    # https://vulkan.lunarg.com/sdk/home
+
+    # Thankfully, they provide a sha256, see https://github.com/Winetricks/winetricks/issues/1368
+    _W_vulkan_shafile="vulkan-RT-sha.txt"
+    # Don't cache the shasum, we want to check it each time it's run. If the sha doesn't change, it won't download the binary again.
+    w_download_to "${W_TMP_EARLY}" "https://sdk.lunarg.com/sdk/sha/latest/windows/vulkan-RT-sha.txt?Human=true;u=" "" "${_W_vulkan_shafile}"
+    _W_vulkan_sha256="$(cut -d ' ' -f1 "${W_TMP}/${_W_vulkan_shafile}")"
+    w_download "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-rt.exe?Human=true;u=" "${_W_vulkan_sha256}" "${file1}"
+
+    w_try_cd "$W_CACHE/$W_PACKAGE"
+    w_try "$WINE" "$file1" ${W_OPT_UNATTENDED:+/S}
+}
+
+#----------------------------------------------------------------
+
+w_metadata vulkansdk apps \
+    title="Vulkan SDK (latest) (developers only)" \
+    publisher="LunarG" \
+    year="2018" \
+    media="download" \
+    file1="vulkan-sdk.exe" \
+    installed_file1="C:/VulkanSDK/latest/vulkan.ico"
+
+load_vulkansdk()
+{
+    # https://vulkan.lunarg.com/sdk/home
+
+    _W_vulkan_version="${file1%-*.exe}"
+    _W_vulkan_version="${_W_vulkan_version#*-}"
+
+    # Thankfully, they provide a sha256, see https://github.com/Winetricks/winetricks/issue
+    _W_vulkan_shafile="vulkan-sha.txt"
+    # Don't cache the shasum, we want to check it each time it's run. If the sha doesn't change, it won't download the binary again.
+    w_download_to "${W_TMP}" "https://sdk.lunarg.com/sdk/sha/latest/windows/vulkan-sha.txt?Human=true;u=" "" "${_W_vulkan_shafile}"
+    _W_vulkan_sha256="$(cut -d ' ' -f1 "${W_TMP}/${_W_vulkan_shafile}")"
+    w_download "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe?Human=true;u=" "${_W_vulkan_sha256}" "${file1}"
+
+    w_try_cd "$W_CACHE/$W_PACKAGE"
+    w_try "$WINE" "$file1" ${W_OPT_UNATTENDED:+/S}
+    echo "Creating C:\\windows\\winevulkan.json winevulkan json file"
+    cat > "$W_WINDIR_UNIX"/winevulkan.json <<_EOF_
+{
+    "file_format_version": "1.0.0",
+    "ICD": {
+        "library_path": "c:\\\\windows\\\\system32\\\\winevulkan.dll",
+        "api_version": "$_W_vulkan_version"
+    }
+}
+_EOF_
+    echo "Creating winevulkan registry settings"
+    cat > "$W_TMP"/winevulkan.reg <<_EOF_
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\\SOFTWARE\\Khronos\\Vulkan\\Drivers\\]
+"C:\\\\Windows\\\\winevulkan.json"=dword:00000000
+
+_EOF_
+    w_try_regedit "$W_TMP_WIN"\\winevulkan.reg
+
+    w_try_cd "$W_DRIVE_C/VulkanSDK"
+    # We're assuming here that only the sdks are installed here. This is really only for the installed_file check,
+    # as there are no files with non-versioned filenames installed
+    w_try ln -sf "$(find . -maxdepth 1 -mindepth 1 -type d | grep -v latest | sort -V | tail -n 1)" latest
 }
 
 #----------------------------------------------------------------
