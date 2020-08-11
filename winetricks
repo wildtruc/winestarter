@@ -442,17 +442,36 @@ w_package_broken_no_mingw()
 # Warn user if package is broken on win64. Optionally provide a link to the bug report.
 w_package_broken_win64()
 {
-    # Optional:
-    bug_link="$1"
+    # FIXME: test cases for this
 
-    if [ "$W_ARCH" = "win64" ] ; then
-        if [ -n "$1" ] ; then
-            w_warn "This package ($W_PACKAGE) is broken on 64-bit Wine. Using a prefix made with WINEARCH=win32 to work around this. See: ${bug_link}"
+    bug_link="$1"
+    bad_version="$2"
+    good_version="$3"
+
+    if [ "$W_ARCH" != "win64" ]; then
+        # not a 64-bit prefix, nothing to do:
+        :
+    elif [ -z "$bug_link" ]; then
+        w_die "Bug report link required!"
+    fi
+
+    if [ -n "$good_version" ]; then
+        if ! w_wine_version_in "${bad_version},${good_version}"; then
+            w_warn "This package ($W_PACKAGE) is broken on 64-bit wine-${_wine_version_stripped}. Use a prefix made with WINEARCH=win32 or upgrade wine to >=${good_version} to work around this. See: ${bug_link}"
             _w_force_continue_check
         else
-            w_warn "This package ($W_PACKAGE) is broken on 64-bit Wine. Using a prefix made with WINEARCH=win32 to work around this."
-            _w_force_continue_check
+            echo "package was broken on win64, now fixed"
         fi
+    elif [ -n "$bad_version" ]; then
+        if ! w_wine_version_in "${bad_version}"; then
+            w_warn "This package ($W_PACKAGE) is broken on 64-bit wine-${_wine_version_stripped} (broken since ${bad_version}. Use a prefix made with WINEARCH=win32 to work around this. See: ${bug_link}"
+            _w_force_continue_check
+        else
+            echo "Package is broken in future versions on win64"
+        fi
+    else
+        w_warn "This package ($W_PACKAGE) is broken when wine is built without mingw. See ${bug_link} for more info."
+        _w_force_continue_check
     fi
 }
 
@@ -9032,14 +9051,7 @@ w_metadata dotnet35 dlls \
 
 load_dotnet35()
 {
-    if [ "$W_ARCH" = "win64" ] && w_workaround_wine_bug 45680 "Upgrade to 3.18 for win64 support" ,3.18 ; then
-        w_package_unsupported_win64
-    fi
-
-    case "$W_PLATFORM" in
-        windows_cmd) ;;
-        *) w_warn "dotnet35 does not yet fully work or install on wine.  Caveat emptor." ;;
-    esac
+    w_package_broken_win64 https://bugs.winehq.org/show_bug.cgi?id=49690 5.12
 
     w_verify_cabextract_available
 
@@ -9078,14 +9090,7 @@ w_metadata dotnet35sp1 dlls \
 
 load_dotnet35sp1()
 {
-    if [ "$W_ARCH" = "win64" ] && w_workaround_wine_bug 46168 "Doesn't install prior to wine-4.0-rc1" ,4.0; then
-        w_package_unsupported_win64
-    fi
-
-    case "$W_PLATFORM" in
-        windows_cmd) ;;
-        *) w_warn "dotnet35sp1 does not yet fully work or install on wine.  Caveat emptor." ;;
-    esac
+    w_package_broken_win64 https://bugs.winehq.org/show_bug.cgi?id=49690 5.12
 
     w_verify_cabextract_available
 
@@ -9121,6 +9126,8 @@ w_metadata dotnet40 dlls \
 
 load_dotnet40()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+
     w_package_warn_win64
 
     case "$W_PLATFORM" in
@@ -9137,10 +9144,6 @@ load_dotnet40()
 
     w_call remove_mono
 
-    # Installing dotnet20 beforehand avoids a popup for users when updating their WINEPREFIX
-    # See https://bugs.winehq.org/show_bug.cgi?id=41727#c5
-    w_call dotnet20
-
     w_call winxp
 
     w_try_cd "$W_CACHE/$W_PACKAGE"
@@ -9153,6 +9156,9 @@ load_dotnet40()
     "$WINE" reg add "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full" /v Version /t REG_SZ /d "4.0.30319" /f
 
     W_NGEN_CMD="$WINE $WINEPREFIX/drive_c/windows/Microsoft.NET/Framework/v4.0.30319/ngen.exe executequeueditems"
+
+    # Avoid a popup on WINEPREFIX updates, see https://bugs.winehq.org/show_bug.cgi?id=41727#c5
+    "$WINE" reg add "HKLM\\Software\\Microsoft\\.NETFramework" /v OnlyUseLatestCLR /t REG_DWORD /d 0001 /f
 
     w_set_winver 'default'
 }
@@ -9174,6 +9180,8 @@ w_metadata dotnet40_kb2468871 dlls \
 
 load_dotnet40_kb2468871()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+
     w_call dotnet40
 
     # Install KB2468871:
@@ -9209,6 +9217,8 @@ w_metadata dotnet45 dlls \
 
 load_dotnet45()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+
     w_package_warn_win64
 
     w_verify_cabextract_available
@@ -9230,6 +9240,9 @@ load_dotnet45()
     WINEDLLOVERRIDES=fusion=b w_try_ms_installer "$WINE" dotnetfx45_full_x86_x64.exe ${W_OPT_UNATTENDED:+/q /c:"install.exe /q"}
 
     w_override_dlls native mscoree
+
+    # Avoid a popup on WINEPREFIX updates, see https://bugs.winehq.org/show_bug.cgi?id=41727#c5
+    "$WINE" reg add "HKLM\\Software\\Microsoft\\.NETFramework" /v OnlyUseLatestCLR /t REG_DWORD /d 0001 /f
 
     w_warn "Setting Windows version to 2003, otherwise applications using .NET 4.5 will subtly fail"
     w_set_winver win2k3
@@ -9253,6 +9266,8 @@ w_metadata dotnet452 dlls \
 
 load_dotnet452()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+
     w_package_warn_win64
 
     w_verify_cabextract_available
@@ -9297,6 +9312,8 @@ w_metadata dotnet46 dlls \
 
 load_dotnet46()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+
     w_package_warn_win64
 
     # https://support.microsoft.com/kb/3045560
@@ -9340,6 +9357,8 @@ w_metadata dotnet461 dlls \
 
 load_dotnet461()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+
     w_package_warn_win64
 
     # https://www.microsoft.com/en-us/download/details.aspx?id=49982
@@ -9377,6 +9396,8 @@ w_metadata dotnet462 dlls \
 
 load_dotnet462()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+
     w_package_warn_win64
 
     # Official version. See https://www.microsoft.com/en-us/download/details.aspx?id=53344
@@ -9417,6 +9438,8 @@ w_metadata dotnet471 dlls \
 
 load_dotnet471()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+
     w_package_warn_win64
 
     # https://www.microsoft.com/en-US/download/details.aspx?id=56116
@@ -9454,6 +9477,8 @@ w_metadata dotnet472 dlls \
 
 load_dotnet472()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+
     w_package_warn_win64
 
     # Official version. See https://www.microsoft.com/en-us/download/details.aspx?id=53344
@@ -9492,6 +9517,8 @@ w_metadata dotnet48 dlls \
 
 load_dotnet48()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+
     w_package_warn_win64
 
     # Official version. See https://dotnet.microsoft.com/download/dotnet-framework/net48
@@ -9978,6 +10005,8 @@ w_metadata galliumnine02 dlls \
 
 load_galliumnine02()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49676" 5.13
+
     w_download "https://github.com/iXit/wine-nine-standalone/releases/download/v0.2/gallium-nine-standalone-v0.2.tar.gz" 6818fe890e343aa32d3d53179bfeb63df40977797bd7b6263e85e2bb57559313
     helper_galliumnine "$file1"
 }
@@ -9994,6 +10023,8 @@ w_metadata galliumnine03 dlls \
 
 load_galliumnine03()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49676" 5.13
+
     w_download "https://github.com/iXit/wine-nine-standalone/releases/download/v0.3/gallium-nine-standalone-v0.3.tar.gz" 8bb564073ab2198e5b9b870f7b8cac8d9bc20bc6accf66c4c798e4b450ec0c91
     helper_galliumnine "$file1"
 }
@@ -10010,6 +10041,8 @@ w_metadata galliumnine04 dlls \
 
 load_galliumnine04()
 {
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49676" 5.13
+
     w_download "https://github.com/iXit/wine-nine-standalone/releases/download/v0.4/gallium-nine-standalone-v0.4.tar.gz" 4423c32d46419830c8e68fea86d28e740f17f182c365250c379b5493176e19ab
     helper_galliumnine "$file1"
 }
@@ -14929,7 +14962,9 @@ load_ie7()
     fi
 
     # Install
-    w_download https://download.microsoft.com/download/3/8/8/38889DC1-848C-4BF2-8335-86C573AD86D9/IE7-WindowsXP-x86-enu.exe bf5c325bbe3f4174869b2a8ff75f92833e7f7debe64777ed0faf293c7725cbef
+    # Microsoft took this down (as of 2020/08/08), but the latest snapshot on archive.org (2020/06/20) gives a different binary.
+    # The snapshot just before that (2020/06/17) is fine, however:
+    w_download https://web.archive.org/web/20200617171343/https://download.microsoft.com/download/3/8/8/38889DC1-848C-4BF2-8335-86C573AD86D9/IE7-WindowsXP-x86-enu.exe bf5c325bbe3f4174869b2a8ff75f92833e7f7debe64777ed0faf293c7725cbef
     w_try_cd "$W_CACHE/$W_PACKAGE"
 
     # IE7 requies winxp to install:
