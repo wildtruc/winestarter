@@ -314,28 +314,38 @@ _w_force_continue_check()
 
 _w_get_broken_messages()
 {
+    # bit of a hack, but otherwise if two bugs are reported, the second message won't get set:
+    unset broken_good_version_known
+    unset broken_good_and_bad_version_known
+    unset broken_only_bad_version_known
+    unset broken_no_version_known
+
     # Unify the broken messages (to make it easier for future translators):
     case $LANG in
         *)
-            broken_good_version_known_default="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Upgrade to >=${good_version}. See ${bug_link} for more info."
-            broken_good_and_bad_version_known_default="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version}. Upgrade to >=${good_version}. See ${bug_link} for more info."
-            broken_only_bad_version_known_default="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version}. See ${bug_link} for more info."
-            broken_no_version_known_default="This package ($W_PACKAGE) is broken. See ${bug_link} for more info."
+            # default broken messages
+            broken_good_version_known_default="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Upgrade to >=${good_version}. See ${bug_link} for more info. Use --force to try anyway."
+            broken_good_and_bad_version_known_default="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version}. Upgrade to >=${good_version}. See ${bug_link} for more info. Use --force to try anyway."
+            broken_only_bad_version_known_default="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version}. See ${bug_link} for more info. Use --force to try anyway."
+            broken_no_version_known_default="This package ($W_PACKAGE) is broken. See ${bug_link} for more info. Use --force to try anyway."
 
-            broken_good_version_known_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped} when wine is built with mingw. Upgrade to >=${good_version} or rebuild wine without mingw. See ${bug_link} for more info."
-            broken_good_and_bad_version_known_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version} when wine is built with mingw. Upgrade to >=${good_version} or rebuild wine without mingw. See ${bug_link} for more info."
-            broken_only_bad_version_known_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version} when wine is built with mingw. See ${bug_link} for more info."
-            broken_no_version_known_mingw="This package ($W_PACKAGE) is broken when wine is built with mingw. See ${bug_link} for more info."
+            # mingw broken messages
+            broken_good_version_known_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped} when wine is built with mingw. Upgrade to >=${good_version} or rebuild wine without mingw. See ${bug_link} for more info. Use --force to try anyway."
+            broken_good_and_bad_version_known_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version} when wine is built with mingw. Upgrade to >=${good_version} or rebuild wine without mingw. See ${bug_link} for more info. Use --force to try anyway."
+            broken_only_bad_version_known_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version} when wine is built with mingw. See ${bug_link} for more info. Use --force to try anyway."
+            broken_no_version_known_mingw="This package ($W_PACKAGE) is broken when wine is built with mingw. See ${bug_link} for more info. Use --force to try anyway."
 
-            broken_good_version_known_no_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped} when wine is built without mingw. Upgrade to >=${good_version}. See ${bug_link} for more info."
-            broken_good_and_bad_version_known_no_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version} when wine is built without mingw. Upgrade to >=${good_version}. See ${bug_link} for more info."
-            broken_only_bad_version_known_no_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version} when wine is built without mingw. See ${bug_link} for more info."
-            broken_no_version_known_no_mingw="This package ($W_PACKAGE) is broken when wine is built without mingw. See ${bug_link} for more info."
+            # no mingw broken messages
+            broken_good_version_known_no_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped} when wine is built without mingw. Upgrade to >=${good_version}. See ${bug_link} for more info. Use --force to try anyway."
+            broken_good_and_bad_version_known_no_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version} when wine is built without mingw. Upgrade to >=${good_version}. See ${bug_link} for more info. Use --force to try anyway."
+            broken_only_bad_version_known_no_mingw="This package ($W_PACKAGE) is broken in wine-${_wine_version_stripped}. Broken since ${bad_version} when wine is built without mingw. See ${bug_link} for more info. Use --force to try anyway."
+            broken_no_version_known_no_mingw="This package ($W_PACKAGE) is broken when wine is built without mingw. See ${bug_link} for more info. Use --force to try anyway."
 
-            broken_good_version_known_win64="This package ($W_PACKAGE) is broken on 64-bit wine-${_wine_version_stripped}. Use a prefix made with WINEARCH=win32 or upgrade wine to >=${good_version} to work around this. See: ${bug_link}"
-            broken_good_and_bad_version_known_win64="This package ($W_PACKAGE) is broken on 64-bit wine-${_wine_version_stripped}. Broken since ${bad_version}. Use a prefix made with WINEARCH=win32 or upgrade wine to >=${good_version} to work around this. See: ${bug_link}"
-            broken_only_bad_version_known_win64="This package ($W_PACKAGE) is broken on 64-bit wine-${_wine_version_stripped}. Broken since ${bad_version}. Use a prefix made with WINEARCH=win32 to work around this. See: ${bug_link}"
-            broken_no_version_known_win64="This package ($W_PACKAGE) is broken when wine is built without mingw. See ${bug_link} for more info."
+            # win64 broken messages
+            broken_good_version_known_win64="This package ($W_PACKAGE) is broken on 64-bit wine-${_wine_version_stripped}. Use a prefix made with WINEARCH=win32 or upgrade wine to >=${good_version} to work around this. Or use --force to try anyway. See ${bug_link} for more info. Use --force to try anyway."
+            broken_good_and_bad_version_known_win64="This package ($W_PACKAGE) is broken on 64-bit wine-${_wine_version_stripped}. Broken since ${bad_version}. Use a prefix made with WINEARCH=win32 or upgrade wine to >=${good_version} to work around this. See ${bug_link} for more info. Use --force to try anyway."
+            broken_only_bad_version_known_win64="This package ($W_PACKAGE) is broken on 64-bit wine-${_wine_version_stripped}. Broken since ${bad_version}. Use a prefix made with WINEARCH=win32 to work around this. See ${bug_link} for more info. Use --force to try anyway."
+            broken_no_version_known_win64="This package ($W_PACKAGE) is broken when wine is built without mingw. See ${bug_link} for more info. Use --force to try anyway."
             ;;
     esac
 }
@@ -9022,6 +9032,7 @@ load_dotnet30()
     w_try "$WINE" "$file1" /q /c:"install.exe /q"
 
     w_override_dlls native mscorwks
+    w_set_winver 'default'
 
     # Doesn't install any ngen.exe
     # W_NGEN_CMD=""
@@ -9125,6 +9136,8 @@ load_dotnet35()
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try_ms_installer "$WINE" "${file1}" /lang:ENU ${W_OPT_UNATTENDED:+/q}
 
+    w_set_winver 'default'
+
     # Doesn't install any ngen.exe
     # W_NGEN_CMD=""
 }
@@ -9161,6 +9174,8 @@ load_dotnet35sp1()
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try_ms_installer "$WINE" dotnetfx35.exe /lang:ENU ${W_OPT_UNATTENDED:+/q}
 
+    w_set_winver 'default'
+
     # Doesn't install any ngen.exe
     # W_NGEN_CMD=""
 }
@@ -9183,7 +9198,7 @@ w_metadata dotnet40 dlls \
 
 load_dotnet40()
 {
-    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12 5.18
 
     w_package_warn_win64
 
@@ -9237,7 +9252,7 @@ w_metadata dotnet40_kb2468871 dlls \
 
 load_dotnet40_kb2468871()
 {
-    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12 5.18
 
     w_call dotnet40
 
@@ -9274,7 +9289,8 @@ w_metadata dotnet45 dlls \
 
 load_dotnet45()
 {
-    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12 5.18
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49897" 5.18
 
     w_package_warn_win64
 
@@ -9323,7 +9339,8 @@ w_metadata dotnet452 dlls \
 
 load_dotnet452()
 {
-    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12 5.18
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49897" 5.18
 
     w_package_warn_win64
 
@@ -9369,7 +9386,7 @@ w_metadata dotnet46 dlls \
 
 load_dotnet46()
 {
-    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12 5.18
 
     w_package_warn_win64
 
@@ -9414,7 +9431,7 @@ w_metadata dotnet461 dlls \
 
 load_dotnet461()
 {
-    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12 5.18
 
     w_package_warn_win64
 
@@ -9453,7 +9470,7 @@ w_metadata dotnet462 dlls \
 
 load_dotnet462()
 {
-    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12 5.18
 
     w_package_warn_win64
 
@@ -9495,7 +9512,7 @@ w_metadata dotnet471 dlls \
 
 load_dotnet471()
 {
-    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12 5.18
 
     w_package_warn_win64
 
@@ -9534,7 +9551,7 @@ w_metadata dotnet472 dlls \
 
 load_dotnet472()
 {
-    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12 5.18
 
     w_package_warn_win64
 
@@ -9574,7 +9591,8 @@ w_metadata dotnet48 dlls \
 
 load_dotnet48()
 {
-    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49532" 5.12 5.18
+    w_package_broken "https://bugs.winehq.org/show_bug.cgi?id=49897" 5.18
 
     w_package_warn_win64
 
@@ -14469,23 +14487,6 @@ load_7zip()
     w_download https://www.7-zip.org/a/7z1900.exe 759aa04d5b03ebeee13ba01df554e8c962ca339c74f56627c8bed6984bb7ef80
     w_try_cd "$W_CACHE/$W_PACKAGE"
     w_try "$WINE" "${file1}" ${W_OPT_UNATTENDED:+/S}
-}
-
-#----------------------------------------------------------------
-
-w_metadata abiword apps \
-    title="AbiWord 2.8.6" \
-    publisher="AbiSource" \
-    year="2010" \
-    media="download" \
-    file1="abiword-setup-2.8.6.exe" \
-    installed_exe1="$W_PROGRAMS_X86_WIN/AbiWord/bin/AbiWord.exe"
-
-load_abiword()
-{
-    w_download https://www.abisource.com/downloads/abiword/2.8.6/Windows/abiword-setup-2.8.6.exe f85c7f32044bbb4d31f1672c86951e35319f8e89fbd6c01ab4c19e960efd9ff8
-    w_try_cd "$W_CACHE/$W_PACKAGE"
-    w_try "$WINE" abiword-setup-2.8.6.exe ${W_OPT_UNATTENDED:+/S}
 }
 
 #----------------------------------------------------------------
