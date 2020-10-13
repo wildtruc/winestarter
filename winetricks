@@ -6217,7 +6217,7 @@ w_metadata d3dcompiler_43 dlls \
 
 load_d3dcompiler_43()
 {
-    if w_workaround_wine_bug 24013; then
+    if w_workaround_wine_bug 24013 ,5.4; then
         w_warn "Native d3dcompiler_43 may cause some d3d10 apps to crash, see https://bugs.winehq.org/show_bug.cgi?id=24013"
     fi
 
@@ -9096,7 +9096,7 @@ load_dotnet30sp1()
     w_call dotnet20sp1
     w_wineserver -w
 
-    if w_workaround_wine_bug 47436 "Installing native prntvpt" 4.11, ; then
+    if w_workaround_wine_bug 47436 "Installing native prntvpt" 4.11,4.15 ;then
         w_call prntvpt
     fi
 
@@ -9224,10 +9224,6 @@ load_dotnet40()
         windows_cmd) ;;
         *) w_warn "dotnet40 does not yet fully work or install on wine.  Caveat emptor." ;;
     esac
-
-    if [ "${W_ARCH}" = "win64" ]; then
-        w_workaround_wine_bug 42701 "On 64-bit, you'll run into https://bugs.winehq.org/show_bug.cgi?id=42701 (missing api-ms-win-core-winrt-roparameterizediid-l1-1-0.dll.RoGetParameterizedTypeInstanceIID", 2.22
-    fi
 
     # https://www.microsoft.com/en-us/download/details.aspx?id=17718
     w_download https://download.microsoft.com/download/9/5/A/95A9616B-7A37-4AF6-BC36-D6EA96C8DAAE/dotNetFx40_Full_x86_x64.exe 65e064258f2e418816b304f646ff9e87af101e4c9552ab064bb74d281c38659f
@@ -9418,15 +9414,7 @@ load_dotnet46()
 
     w_try_cd "${W_CACHE}/${W_PACKAGE}"
 
-    if w_workaround_wine_bug 42470 "${W_PACKAGE} may experience heap timeouts" ,3.14; then
-        w_warn "If you see heap timeouts like: 'err:ntdll:RtlpWaitForCriticalSection section 0x110060 \"heap.c: main process heap section\" wait timed out in thread 0064, blocked by 0000, retrying (60 sec)', try the patch from https://bugs.winehq.org/show_bug.cgi?id=42470"
-    fi
-
-    if w_workaround_wine_bug 38959 "This installer will fail unless run in quiet mode. See: https://bugs.winehq.org/show_bug.cgi?id=38959" ,3.6; then
-        WINEDLLOVERRIDES=fusion=b w_try_ms_installer "${WINE}" "${file1}" /q /c:"install.exe /q"
-    else
-        WINEDLLOVERRIDES=fusion=b w_try_ms_installer "${WINE}" "${file1}" ${W_OPT_UNATTENDED:+/q /c:"install.exe /q"}
-    fi
+    WINEDLLOVERRIDES=fusion=b w_try_ms_installer "${WINE}" "${file1}" ${W_OPT_UNATTENDED:+/q /c:"install.exe /q"}
 
     w_override_dlls native mscoree
 }
@@ -12377,21 +12365,7 @@ load_vcrun2008()
             # Also install the 64-bit version
             # 2016/11/15: b811f2c047a3e828517c234bd4aa4883e1ec591d88fad21289ae68a6915a6665
             w_download https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe b811f2c047a3e828517c234bd4aa4883e1ec591d88fad21289ae68a6915a6665
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
-                rm -f "${W_TMP}"/*  # Avoid permission error
-                w_try_cabextract --directory="${W_TMP}" vcredist_x64.exe
-                w_try_cabextract --directory="${W_TMP}" "${W_TMP}/vc_red.cab"
-
-                w_try cp "${W_TMP}"/atl90.dll.30729.6161.Microsoft_VC90_ATL_x64.QFE "${W_SYSTEM64_DLLS}"/atl90.dll
-                w_try cp "${W_TMP}"/mfc90.dll.30729.6161.Microsoft_VC90_MFC_x64.QFE "${W_SYSTEM64_DLLS}"/mfc90.dll
-                w_try cp "${W_TMP}"/mfcm90.dll.30729.6161.Microsoft_VC90_MFC_x64.QFE "${W_SYSTEM64_DLLS}"/mfcm90.dll
-                w_try cp "${W_TMP}"/msvcm90.dll.30729.6161.Microsoft_VC90_CRT_x64.QFE "${W_SYSTEM64_DLLS}"/msvcm90.dll
-                w_try cp "${W_TMP}"/msvcp90.dll.30729.6161.Microsoft_VC90_CRT_x64.QFE "${W_SYSTEM64_DLLS}"/msvcp90.dll
-                w_try cp "${W_TMP}"/msvcr90.dll.30729.6161.Microsoft_VC90_CRT_x64.QFE "${W_SYSTEM64_DLLS}"/msvcr90.dll
-                w_try cp "${W_TMP}"/vcomp90.dll.30729.6161.Microsoft_VC90_OpenMP_x64.QFE "${W_SYSTEM64_DLLS}"/vcomp90.dll
-            else
-                w_try "${WINE}" vcredist_x64.exe ${W_OPT_UNATTENDED:+/q}
-            fi
+            w_try "${WINE}" vcredist_x64.exe ${W_OPT_UNATTENDED:+/q}
             ;;
     esac
 }
@@ -12453,18 +12427,7 @@ load_vcrun2010()
             # Also install the 64-bit version
             # https://www.microsoft.com/en-us/download/details.aspx?id=13523
             w_download https://download.microsoft.com/download/A/8/0/A80747C3-41BD-45DF-B505-E9710D2744E0/vcredist_x64.exe c6cd2d3f0b11dc2a604ffdc4dd97861a83b77e21709ba71b962a47759c93f4c8
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
-                w_try_cabextract --directory="${W_TMP}" vcredist_x64.exe -F '*.cab'
-                w_try_cabextract --directory="${W_TMP}" "${W_TMP}"/vc_red.cab
-                cp "${W_TMP}"/F_CENTRAL_mfc100_x64 "${W_SYSTEM64_DLLS}"/mfc100.dll
-                cp "${W_TMP}"/F_CENTRAL_mfc100u_x64 "${W_SYSTEM64_DLLS}"/mfc100u.dll
-                cp "${W_TMP}"/F_CENTRAL_msvcr100_x64 "${W_SYSTEM64_DLLS}"/msvcr100.dll
-                cp "${W_TMP}"/F_CENTRAL_msvcp100_x64 "${W_SYSTEM64_DLLS}"/msvcp100.dll
-                cp "${W_TMP}"/F_CENTRAL_vcomp100_x64 "${W_SYSTEM64_DLLS}"/vcomp100.dll
-                cp "${W_TMP}"/F_CENTRAL_atl100_x64 "${W_SYSTEM64_DLLS}"/atl100.dll
-            else
-                w_try "${WINE}" vcredist_x64.exe ${W_OPT_UNATTENDED:+/q}
-            fi
+            w_try "${WINE}" vcredist_x64.exe ${W_OPT_UNATTENDED:+/q}
             ;;
     esac
 }
@@ -12526,20 +12489,7 @@ load_vcrun2012()
             # Also install the 64-bit version
             # 2015/10/19: 681be3e5ba9fd3da02c09d7e565adfa078640ed66a0d58583efad2c1e3cc4064
             w_download https://download.microsoft.com/download/1/6/B/16B06F60-3B20-4FF2-B699-5E9B7962F9AE/VSU_4/vcredist_x64.exe 681be3e5ba9fd3da02c09d7e565adfa078640ed66a0d58583efad2c1e3cc4064
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
-                rm -f "${W_TMP}"/*  # Avoid permission error
-                w_try_cabextract --directory="${W_TMP}" vcredist_x64.exe
-                w_try_cabextract --directory="${W_TMP}" "${W_TMP}/a2"
-                w_try_cabextract --directory="${W_TMP}" "${W_TMP}/a3"
-                cp "${W_TMP}"/F_CENTRAL_atl110_x64 "${W_SYSTEM64_DLLS}"/atl110.dll
-                cp "${W_TMP}"/F_CENTRAL_mfc110_x64 "${W_SYSTEM64_DLLS}"/mfc110.dll
-                cp "${W_TMP}"/F_CENTRAL_mfc110u_x64 "${W_SYSTEM64_DLLS}"/mfc110u.dll
-                cp "${W_TMP}"/F_CENTRAL_msvcp110_x64 "${W_SYSTEM64_DLLS}"/msvcp110.dll
-                cp "${W_TMP}"/F_CENTRAL_msvcr110_x64 "${W_SYSTEM64_DLLS}"/msvcr110.dll
-                cp "${W_TMP}"/F_CENTRAL_vcomp110_x64 "${W_SYSTEM64_DLLS}"/vcomp110.dll
-            else
-                w_try "${WINE}" vcredist_x64.exe ${W_OPT_UNATTENDED:+/q}
-            fi
+            w_try "${WINE}" vcredist_x64.exe ${W_OPT_UNATTENDED:+/q}
             ;;
     esac
 }
@@ -12604,19 +12554,7 @@ load_vcrun2013()
             # 2015/10/19: e554425243e3e8ca1cd5fe550db41e6fa58a007c74fad400274b128452f38fb8
             # 2019/03/24: 20e2645b7cd5873b1fa3462b99a665ac8d6e14aae83ded9d875fea35ffdd7d7e
             w_download https://download.microsoft.com/download/0/5/6/056dcda9-d667-4e27-8001-8a0c6971d6b1/vcredist_x64.exe 20e2645b7cd5873b1fa3462b99a665ac8d6e14aae83ded9d875fea35ffdd7d7e
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
-                rm -f "${W_TMP}"/*  # Avoid permission error
-                w_try_cabextract --directory="${W_TMP}" vcredist_x64.exe
-                w_try_cabextract --directory="${W_TMP}" "${W_TMP}/a2"
-                w_try_cabextract --directory="${W_TMP}" "${W_TMP}/a3"
-                cp "${W_TMP}"/F_CENTRAL_mfc120_x64 "${W_SYSTEM64_DLLS}"/mfc120.dll
-                cp "${W_TMP}"/F_CENTRAL_mfc120u_x64 "${W_SYSTEM64_DLLS}"/mfc120u.dll
-                cp "${W_TMP}"/F_CENTRAL_msvcp120_x64 "${W_SYSTEM64_DLLS}"/msvcp120.dll
-                cp "${W_TMP}"/F_CENTRAL_msvcr120_x64 "${W_SYSTEM64_DLLS}"/msvcr120.dll
-                cp "${W_TMP}"/F_CENTRAL_vcomp120_x64 "${W_SYSTEM64_DLLS}"/vcomp120.dll
-            else
-                w_try "${WINE}" vcredist_x64.exe ${W_OPT_UNATTENDED:+/q}
-            fi
+            w_try "${WINE}" vcredist_x64.exe ${W_OPT_UNATTENDED:+/q}
             ;;
     esac
 }
@@ -12671,7 +12609,7 @@ load_vcrun2015()
     # 2015/10/12: fdd1e1f0dcae2d0aa0720895eff33b927d13076e64464bb7c7e5843b7667cd14
     w_download https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x86.exe fdd1e1f0dcae2d0aa0720895eff33b927d13076e64464bb7c7e5843b7667cd14
 
-    if w_workaround_wine_bug 37781; then
+    if w_workaround_wine_bug 37781 ,4.15; then
         w_warn "This may fail in non-XP mode, see https://bugs.winehq.org/show_bug.cgi?id=37781"
     fi
 
@@ -12687,32 +12625,7 @@ load_vcrun2015()
             # Also install the 64-bit version
             # 2015/10/12: 5eea714e1f22f1875c1cb7b1738b0c0b1f02aec5ecb95f0fdb1c5171c6cd93a3
             w_download https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x64.exe 5eea714e1f22f1875c1cb7b1738b0c0b1f02aec5ecb95f0fdb1c5171c6cd93a3
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls", 3.8; then
-                rm -f "${W_TMP}"/*  # Avoid permission error
-                w_try_cabextract --directory="${W_TMP}" vc_redist.x64.exe
-                w_try_cabextract --directory="${W_TMP}" "${W_TMP}/a10"
-                w_try_cabextract --directory="${W_TMP}" "${W_TMP}/a11"
-                cp "${W_TMP}"/concrt140.dll "${W_SYSTEM64_DLLS}"/concrt140.dll
-                cp "${W_TMP}"/mfc140.dll "${W_SYSTEM64_DLLS}"/mfc140.dll
-                cp "${W_TMP}"/mfc140u.dll "${W_SYSTEM64_DLLS}"/mfc140u.dll
-                cp "${W_TMP}"/mfcm140.dll "${W_SYSTEM64_DLLS}"/mfcm140.dll
-                cp "${W_TMP}"/mfcm140u.dll "${W_SYSTEM64_DLLS}"/mfcm140u.dll
-                cp "${W_TMP}"/msvcp140.dll "${W_SYSTEM64_DLLS}"/msvcp140.dll
-                cp "${W_TMP}"/vcamp140.dll "${W_SYSTEM64_DLLS}"/vcamp140.dll
-                cp "${W_TMP}"/vccorlib140.dll "${W_SYSTEM64_DLLS}"/vccorlib140.dll
-                cp "${W_TMP}"/vcomp140.dll "${W_SYSTEM64_DLLS}"/vcomp140.dll
-                cp "${W_TMP}"/vcruntime140.dll "${W_SYSTEM64_DLLS}"/vcruntime140.dll
-
-                cp "${W_TMP}"/api_ms_win_crt_conio_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-conio-l1-1-0.dll
-                cp "${W_TMP}"/api_ms_win_crt_heap_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-heap-l1-1-0.dll
-                cp "${W_TMP}"/api_ms_win_crt_locale_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-locale-l1-1-0.dll
-                cp "${W_TMP}"/api_ms_win_crt_math_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-math-l1-1-0.dll
-                cp "${W_TMP}"/api_ms_win_crt_runtime_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-runtime-l1-1-0.dll
-                cp "${W_TMP}"/api_ms_win_crt_stdio_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-stdio-l1-1-0.dll
-                cp "${W_TMP}"/ucrtbase.dll "${W_SYSTEM64_DLLS}"/ucrtbase.dll
-            else
-                w_try "${WINE}" vc_redist.x64.exe ${W_OPT_UNATTENDED:+/q}
-            fi
+            w_try "${WINE}" vc_redist.x64.exe ${W_OPT_UNATTENDED:+/q}
             ;;
     esac
 }
@@ -12769,7 +12682,7 @@ load_vcrun2017()
     # 2019/08/14: 54ad46ae80984aa48cae6361213692c96b3639e322730d28c7fb93b183c761da
     w_download https://aka.ms/vs/15/release/vc_redist.x86.exe 54ad46ae80984aa48cae6361213692c96b3639e322730d28c7fb93b183c761da
 
-    if w_workaround_wine_bug 37781; then
+    if w_workaround_wine_bug 37781 ,4.15; then
         w_warn "This may fail in non-XP mode, see https://bugs.winehq.org/show_bug.cgi?id=37781"
     fi
 
@@ -12788,32 +12701,7 @@ load_vcrun2017()
             # 2019/03/17: b192e143d55257a0a2f76be42e44ff8ee14014f3b1b196c6e59829b6b3ec453c
             # 2019/08/14: 5b0cbb977f2f5253b1ebe5c9d30edbda35dbd68fb70de7af5faac6423db575b5
             w_download https://aka.ms/vs/15/release/vc_redist.x64.exe 5b0cbb977f2f5253b1ebe5c9d30edbda35dbd68fb70de7af5faac6423db575b5
-            if w_workaround_wine_bug 30713 "Manually extracting the 64-bit dlls" ,3.8; then
-                rm -f "${W_TMP}"/*  # Avoid permission error
-                w_try_cabextract --directory="${W_TMP}" vc_redist.x64.exe
-                w_try_cabextract --directory="${W_TMP}" "${W_TMP}/a10"
-                w_try_cabextract --directory="${W_TMP}" "${W_TMP}/a11"
-                cp "${W_TMP}"/concrt140.dll "${W_SYSTEM64_DLLS}"/concrt140.dll
-                cp "${W_TMP}"/mfc140.dll "${W_SYSTEM64_DLLS}"/mfc140.dll
-                cp "${W_TMP}"/mfc140u.dll "${W_SYSTEM64_DLLS}"/mfc140u.dll
-                cp "${W_TMP}"/mfcm140.dll "${W_SYSTEM64_DLLS}"/mfcm140.dll
-                cp "${W_TMP}"/mfcm140u.dll "${W_SYSTEM64_DLLS}"/mfcm140u.dll
-                cp "${W_TMP}"/msvcp140.dll "${W_SYSTEM64_DLLS}"/msvcp140.dll
-                cp "${W_TMP}"/vcamp140.dll "${W_SYSTEM64_DLLS}"/vcamp140.dll
-                cp "${W_TMP}"/vccorlib140.dll "${W_SYSTEM64_DLLS}"/vccorlib140.dll
-                cp "${W_TMP}"/vcomp140.dll "${W_SYSTEM64_DLLS}"/vcomp140.dll
-                cp "${W_TMP}"/vcruntime140.dll "${W_SYSTEM64_DLLS}"/vcruntime140.dll
-
-                cp "${W_TMP}"/api_ms_win_crt_conio_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-conio-l1-1-0.dll
-                cp "${W_TMP}"/api_ms_win_crt_heap_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-heap-l1-1-0.dll
-                cp "${W_TMP}"/api_ms_win_crt_locale_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-locale-l1-1-0.dll
-                cp "${W_TMP}"/api_ms_win_crt_math_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-math-l1-1-0.dll
-                cp "${W_TMP}"/api_ms_win_crt_runtime_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-runtime-l1-1-0.dll
-                cp "${W_TMP}"/api_ms_win_crt_stdio_l1_1_0.dll "${W_SYSTEM64_DLLS}"/api-ms-win-crt-stdio-l1-1-0.dll
-                cp "${W_TMP}"/ucrtbase.dll "${W_SYSTEM64_DLLS}"/ucrtbase.dll
-            else
-                w_try "${WINE}" vc_redist.x64.exe ${W_OPT_UNATTENDED:+/q}
-            fi
+            w_try "${WINE}" vc_redist.x64.exe ${W_OPT_UNATTENDED:+/q}
             ;;
     esac
 }
@@ -13418,12 +13306,9 @@ w_metadata xna40 dlls \
 load_xna40()
 {
     if w_workaround_wine_bug 30718; then
-        w_warn "${W_PACKAGE} may not install properly in Wine yet"
+        export COMPlus_OnlyUseLatestCLR=1
+        w_call dotnet40
     fi
-
-    # See https://bugs.winehq.org/show_bug.cgi?id=30718#c8
-    export COMPlus_OnlyUseLatestCLR=1
-    w_call dotnet40
 
     # https://www.microsoft.com/en-us/download/details.aspx?id=20914
     w_download https://download.microsoft.com/download/A/C/2/AC2C903B-E6E8-42C2-9FD7-BEBAC362A930/xnafx40_redist.msi e6c41d692ebcba854dad4b1c52bb7ddd05926bad3105595d6596b8bab01c25e7
@@ -14554,7 +14439,7 @@ load_adobe_diged4()
 
     #w_call win7
     w_try_cd "${W_CACHE}/${W_PACKAGE}"
-    if w_workaround_wine_bug 46019 "Installer fails under wine, manually unpacking it instead"; then
+    if w_workaround_wine_bug 46019 "Installer fails under wine, manually unpacking it instead" ,4.6; then
         w_try_7z "${W_PROGRAMS_X86_UNIX}/Adobe/Adobe Digital Editions 4.5" "${file1}" -y
     else
         w_ahk_do "
@@ -14716,9 +14601,10 @@ load_dxdiag()
     w_try_cabextract -d "${W_WINDIR_UNIX}/help" -L -F "dxdiag.chm" "${W_TMP}/dxnt.cab"
     w_override_dlls native dxdiag.exe
 
-    if w_workaround_wine_bug 1429; then
+    if w_workaround_wine_bug 49996; then
         w_call dxdiagn_feb2010
     fi
+
     if w_workaround_wine_bug 9027; then
         w_call dmband
         w_call dmime
@@ -15731,17 +15617,6 @@ load_office2013pro()
         w_call msxml6
     fi
 
-    if w_workaround_wine_bug 38648 "DirectX < 11 has problems with black window after installation" ,3.0; then
-        cat > "${W_TMP}"/MaxVersionGL.reg <<_EOF_
-REGEDIT4
-
-[HKEY_CURRENT_USER\\Software\\Wine\\Direct3D]
-"MaxVersionGL"=dword:00030002
-
-_EOF_
-        w_try_regedit "${W_TMP_WIN}"\\MaxVersionGL.reg
-    fi
-
     case "${WINETRICKS_ISO_MOUNT}" in
         # archivemount > 0.8.8: works
         # archivemount <= 0.8.8: cannot finish installation due to path issue
@@ -15954,9 +15829,6 @@ load_psdkwin7()
     # https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/c053b616-7d5b-405d-9841-ec465a8e21d5/
     w_download https://download.microsoft.com/download/7/A/B/7ABD2203-C472-4036-8BA0-E505528CCCB7/winsdk_web.exe bb0e3b5d8feb750b3164b657a046f76ff086887719e418f57ce88ada5e8990d5
     w_try_cd "${W_CACHE}/${W_PACKAGE}"
-    if w_workaround_wine_bug 21596; then
-        w_warn "When given a choice, select only C++ compilers and headers, the other options don't work yet.  See https://bugs.winehq.org/show_bug.cgi?id=21596"
-    fi
     w_try "${WINE}" winsdk_web.exe
 
     if w_workaround_wine_bug 21362; then
@@ -15996,10 +15868,6 @@ load_psdkwin71()
     w_call mfc42   # need mfc42u, or setup will abort
     # https://www.microsoft.com/en-us/download/details.aspx?id=3138
     w_download https://download.microsoft.com/download/A/6/A/A6AC035D-DA3F-4F0C-ADA4-37C8E5D34E3D/winsdk_web.exe 9ea8d82a66a33946e8673df92d784971b35b8f65ade3e0325855be8490e3d51d
-
-    if w_workaround_wine_bug 21596; then
-        w_warn "When given a choice, select only C++ compilers and headers, the other options don't work yet.  See https://bugs.winehq.org/show_bug.cgi?id=21596"
-    fi
 
     # don't have a working unattended recipe.  Maybe we'll have to
     # do an AutoHotKey script until Microsoft gets its act together:
@@ -16081,10 +15949,6 @@ load_qq()
         w_try mv QQ/256x256/QQ.png ~/.local/share/icons/hicolor/256x256/apps
         # shellcheck disable=SC1001
         echo Exec=env WINEPREFIX="${WINEPREFIX}" "${WINE}" \""${W_PROGRAMS_X86_WIN}"/Tencent/QQ/bin/QQScLauncher.exe\" >> "${HOME}/.local/share/applications/wine/Programs/腾讯软件/QQ/腾讯QQ.desktop"
-    fi
-
-    if w_workaround_wine_bug 39657 "Disable ntoskrnl.exe to work around can't be started bug"; then
-        w_override_dlls disabled ntoskrnl.exe
     fi
 
     if w_workaround_wine_bug 37680 "Disable txplatform.exe to work around QQ can't be quit cleanly"; then
@@ -16217,16 +16081,6 @@ load_steam()
     # 2018/06/01: 3bc6942fe09f10ed3447bccdcf4a70ed369366fef6b2c7f43b541f1a3c5d1c51
     w_download http://media.steampowered.com/client/installer/SteamSetup.exe 3bc6942fe09f10ed3447bccdcf4a70ed369366fef6b2c7f43b541f1a3c5d1c51
     w_try_cd "${W_CACHE}/${W_PACKAGE}"
-
-    # Should be fixed in newer steam versions, since 2012. Commenting out for a while before removing in case users need to revert locally
-    #
-    # Install corefonts first, so if the user doesn't have cabextract/Wine with cab support, we abort before installing Steam.
-    # FIXME: support using Wine's cab support
-    #if ! test -f "$W_FONTSDIR_UNIX/Times.TTF" && \
-    #    w_workaround_wine_bug 22751 "Installing corefonts to prevent a Steam crash"
-    #then
-    #    w_call corefonts
-    #fi
 
     if [ -n "${W_OPT_UNATTENDED}" ]; then
             w_ahk_do "
@@ -16506,10 +16360,6 @@ load_vc2010express()
 
     if w_workaround_wine_bug 12501 "Installing mspatcha to work around bug in SQL Server install"; then
         w_call mspatcha
-    fi
-
-    if w_workaround_wine_bug 34627 "Installing Visual C++ 2005 managed runtime to work around bug in SQL Server install"; then
-        w_call vcrun2005
     fi
 
     w_try ${WINE} setup.exe ${W_OPT_UNATTENDED:+/q}
@@ -17286,7 +17136,7 @@ load_aoe3_demo()
         WinWaitClose
     "
 
-    if w_workaround_wine_bug 24912; then
+    if w_workaround_wine_bug 24912 ,4.19; then
         # kill off lingering installer
         w_ahk_do "
             SetTitleMatchMode, 2
@@ -17632,20 +17482,6 @@ load_bfbc2()
         sleep 500
         ControlClick,No, Updater, successfully updated  ; Button2
     "
-
-    if w_workaround_wine_bug 22762; then
-        # FIXME: does this directory name change in Windows 7?
-        w_try_cd "${W_DRIVE_C}/users/${LOGNAME}/My Documents"
-        if test -f BFBC2/settings.ini; then
-            mv BFBC2/settings.ini BFBC2/oldsettings.ini
-            sed 's,DxVersion=auto,DxVersion=9,;
-                 s,Fullscreen=true,Fullscreen=false,' BFBC2/oldsettings.ini > BFBC2/settings.ini
-        else
-            mkdir -p BFBC2
-            echo "[Graphics]" > BFBC2/settings.ini
-            echo "DxVersion=9" >> BFBC2/settings.ini
-        fi
-    fi
 
     if w_workaround_wine_bug 22961; then
         # shellcheck disable=SC2016
@@ -18239,10 +18075,6 @@ load_darknesswithin2_demo()
         }
         winwaitclose, Darkness, Setup has finished
     "
-
-    if w_workaround_wine_bug 23041; then
-        w_call d3dx9_36
-    fi
 }
 
 #----------------------------------------------------------------
@@ -18849,10 +18681,12 @@ load_dragonage()
     else
         cp -f "${ini}" "${ini}.old"
     fi
-    if w_workaround_wine_bug 22383 "use strictdrawordering to avoid video problems"; then
+
+    if w_workaround_wine_bug 22383 "use strictdrawordering to avoid video problems" ,4.15; then
         w_call strictdrawordering=enabled
     fi
-    if w_workaround_wine_bug 22557 "Setting UseVSync=0 to avoid black menu"; then
+
+    if w_workaround_wine_bug 22557 "Setting UseVSync=0 to avoid black menu" ,4.15; then
         sed 's,UseVSync=1,UseVSync=0,' < "${ini}" > "${ini}.new"
         mv -f "${ini}.new" "${ini}"
     fi
@@ -18921,15 +18755,15 @@ load_dragonage_ue()
         winwaitclose
     "
 
-    if w_workaround_wine_bug 22383; then
-        w_try_winetricks strictdrawordering=enabled
+    if w_workaround_wine_bug 22383 "use strictdrawordering to avoid video problems" ,4.15; then
+        w_call strictdrawordering=enabled
     fi
 
-    if w_workaround_wine_bug 23730; then
+    if w_workaround_wine_bug 23730 ,4.15; then
         w_warn "Run with WINEDEBUG=-all to reduce flickering."
     fi
 
-    if w_workaround_wine_bug 23081; then
+    if w_workaround_wine_bug 23081 ,4.15; then
         w_warn "If you still see flickering, try applying the patch from https://bugs.winehq.org/show_bug.cgi?id=23081"
     fi
 
@@ -19113,7 +18947,7 @@ REGEDIT4
 _EOF_
     try_regedit "${W_TMP_WIN}\\${W_PACKAGE}.reg"
 
-    if w_workaround_wine_bug 24912; then
+    if w_workaround_wine_bug 24912 ,4.19; then
         # kill off lingering installer
         w_ahk_do "
             SetTitleMatchMode, 2
@@ -19123,13 +18957,7 @@ _EOF_
         w_killall IDriver.exe
     fi
 
-    if w_workaround_wine_bug 25352; then
-        w_call devenum
-        w_call quartz
-        w_call wmp9
-    fi
-
-    if w_workaround_wine_bug 20074; then
+    if w_workaround_wine_bug 20074 "Installing native d3dx9_36" ,4.18; then
         w_call d3dx9_36
     fi
 }
@@ -20189,7 +20017,7 @@ load_oblivion()
         winwaitclose, Oblivion, Complete
     "
 
-    if w_workaround_wine_bug 20074 "Installing native d3dx9_36"; then
+    if w_workaround_wine_bug 20074 "Installing native d3dx9_36" ,4.18; then
         w_call d3dx9_36
     fi
 }
