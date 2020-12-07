@@ -6,7 +6,7 @@
 
 # Name of this version of winetricks (YYYYMMDD)
 # (This doesn't change often, use the sha256sum of the file when reporting problems)
-WINETRICKS_VERSION=20200412-next
+WINETRICKS_VERSION=20201206-next
 
 # This is a UTF-8 file
 # You should see an o with two dots over it here [ö]
@@ -6033,11 +6033,8 @@ w_metadata cmd dlls \
 
 load_cmd()
 {
-    # Originally at: https://download.microsoft.com/download/8/d/c/8dc79965-dfbc-4b25-9546-e23bc4b791c6/Q811493_W2K_SP4_X86_EN.exe
-    # Mirror list: http://www.filewatcher.com/_/?q=Q811493_W2K_SP4_X86_EN.exe
-    w_download https://ftp.gnome.org/mirror/archive/ftp.sunet.se/pub/security/vendor/microsoft/win2000/Security_Bulletins/Q811493_W2K_SP4_X86_EN.exe b5574b3516a724c2cba0d864162a3d1d684db1cf30de8db4b0e0ea6a1f6f1480
+    w_download https://web.archive.org/web/20150526022037/http://download.microsoft.com/download/8/d/c/8dc79965-dfbc-4b25-9546-e23bc4b791c6/Q811493_W2K_SP4_X86_EN.exe b5574b3516a724c2cba0d864162a3d1d684db1cf30de8db4b0e0ea6a1f6f1480
     w_try_cabextract --directory="${W_SYSTEM32_DLLS}" "${W_CACHE}/${W_PACKAGE}/${file1}" -F cmd.exe
-
     w_override_dlls native,builtin cmd.exe
 }
 
@@ -8313,6 +8310,24 @@ load_dxvk172()
 {
     # https://github.com/doitsujin/dxvk
     w_download "https://github.com/doitsujin/dxvk/releases/download/v1.7.2/dxvk-1.7.2.tar.gz" 1662f6bda93faf4f6c8b57d656779b08925889dd6b794114be874d6deb97e15b
+    helper_dxvk_d9vk "${file1}" "5.8" "1.2.140" "dxgi,d3d9,d3d10core,d3d11"
+}
+
+w_metadata dxvk173 dlls \
+    title="Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.7.3)" \
+    publisher="Philip Rebohle" \
+    year="2017" \
+    media="download" \
+    file1="dxvk-1.7.3.tar.gz" \
+    installed_file1="${W_SYSTEM32_DLLS_WIN}/d3d9.dll" \
+    installed_file2="${W_SYSTEM32_DLLS_WIN}/d3d10core.dll" \
+    installed_file3="${W_SYSTEM32_DLLS_WIN}/d3d11.dll" \
+    installed_file4="${W_SYSTEM32_DLLS_WIN}/dxgi.dll"
+
+load_dxvk173()
+{
+    # https://github.com/doitsujin/dxvk
+    w_download "https://github.com/doitsujin/dxvk/releases/download/v1.7.3/dxvk-1.7.3.tar.gz" e4c2444256b7ad63455fa6329638e3f42900ec7462dc9c26da56187a2040aba0
     helper_dxvk_d9vk "${file1}" "5.8" "1.2.140" "dxgi,d3d9,d3d10core,d3d11"
 }
 
