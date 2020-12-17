@@ -5852,7 +5852,7 @@ helper_winxpsp3()
     # Mirror list: http://www.filewatcher.com/m/WindowsXP-KB936929-SP3-x86-ENU.exe.331805736-0.html
     # 2018/04/04: http://www.download.windowsupdate.com/msdownload/update/software/dflt/2008/04/windowsxp-kb936929-sp3-x86-enu_c81472f7eeea2eca421e116cd4c03e2300ebfde4.exe
     # 2020/12/09: https://ftp.gnome.org/mirror/archive/ftp.sunet.se/pub/security/vendor/microsoft/winxp/Service_Packs/WindowsXP-KB936929-SP3-x86-ENU.exe
-    w_download_to winxpsp3 http://www.download.windowsupdate.com/msdownload/update/software/dflt/2008/04/windowsxp-kb936929-sp3-x86-enu_c81472f7eeea2eca421e116cd4c03e2300ebfde4.exe 62e524a552db9f6fd22d469010ea4d7e28ee06fa615a1c34362129f808916654
+    w_download_to winxpsp3 http://www.download.windowsupdate.com/msdownload/update/software/dflt/2008/04/windowsxp-kb936929-sp3-x86-enu_c81472f7eeea2eca421e116cd4c03e2300ebfde4.exe 62e524a552db9f6fd22d469010ea4d7e28ee06fa615a1c34362129f808916654 WindowsXP-KB936929-SP3-x86-ENU.exe
 
     w_try_cabextract -d "${W_TMP}" -L -F "${filename}" "${W_CACHE}"/winxpsp3/WindowsXP-KB936929-SP3-x86-ENU.exe
 }
@@ -5948,6 +5948,22 @@ load_amstream()
 #----------------------------------------------------------------
 
 w_metadata art2kmin dlls \
+    title="MS Access 2000 runtime" \
+    publisher="Microsoft" \
+    year="2000" \
+    media="download" \
+    file1="art2kmin.exe" \
+    installed_file1="${W_COMMONFILES_X86_WIN}/Microsoft Shared/MSDesigners98/MDT2DBNS.DLL"
+
+load_art2kmin()
+{
+    w_download http://download.microsoft.com/download/office2000dev/art2kmin/1/win98/en-us/art2kmin.exe c6bf34dfac8d22b5d4ba8a4b14256dc25215f1ce769049c7f25c40850b5e5b81
+    w_try_7z "${W_TMP}" "${W_CACHE}/${W_PACKAGE}"/art2kmin.exe
+    w_try_cd "${W_TMP}"
+    w_try "${WINE}" Setup.exe INSTALLPFILES=1 /wait ${W_OPT_UNATTENDED:+/q}
+}
+
+w_metadata art2k7min dlls \
     title="MS Access 2007 runtime" \
     publisher="Microsoft" \
     year="2007" \
@@ -5955,7 +5971,7 @@ w_metadata art2kmin dlls \
     file1="AccessRuntime.exe" \
     installed_file1="${W_COMMONFILES_X86_WIN}/Microsoft Shared/OFFICE12/ACEES.DLL"
 
-load_art2kmin()
+load_art2k7min()
 {
     # See https://www.microsoft.com/en-us/download/details.aspx?id=4438
     # Originally at https://download.microsoft.com/download/D/2/A/D2A2FC8B-0447-491C-A5EF-E8AA3A74FB98/AccessRuntime.exe
@@ -12737,25 +12753,28 @@ load_vcrun2015()
     # 2015/10/12: fdd1e1f0dcae2d0aa0720895eff33b927d13076e64464bb7c7e5843b7667cd14
     w_download https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x86.exe fdd1e1f0dcae2d0aa0720895eff33b927d13076e64464bb7c7e5843b7667cd14
 
-    if w_workaround_wine_bug 37781 "This may fail in non-XP mode, see https://bugs.winehq.org/show_bug.cgi?id=37781" ,4.15; then
-        :
-    fi
-
     w_override_dlls native,builtin api-ms-win-crt-private-l1-1-0 api-ms-win-crt-conio-l1-1-0 api-ms-win-crt-heap-l1-1-0 api-ms-win-crt-locale-l1-1-0 api-ms-win-crt-math-l1-1-0 api-ms-win-crt-runtime-l1-1-0 api-ms-win-crt-stdio-l1-1-0 api-ms-win-crt-time-l1-1-0 atl140 concrt140 msvcp140 msvcr140 ucrtbase vcomp140 vcruntime140
 
+    # Otherwise ucrtbase doesn't get replaced
+    # See https://bugs.winehq.org/show_bug.cgi?id=46317
     w_set_winver winxp
+    w_try rm -f "${W_SYSTEM32_DLLS}"/ucrtbase.dll
 
     w_try_cd "${W_CACHE}"/"${W_PACKAGE}"
     w_try "${WINE}" vc_redist.x86.exe ${W_OPT_UNATTENDED:+/q}
 
     case "${W_ARCH}" in
         win64)
+            # Also remove the 64-bit version
+            w_try rm -f "${W_SYSTEM64_DLLS}"/ucrtbase.dll
             # Also install the 64-bit version
             # 2015/10/12: 5eea714e1f22f1875c1cb7b1738b0c0b1f02aec5ecb95f0fdb1c5171c6cd93a3
             w_download https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x64.exe 5eea714e1f22f1875c1cb7b1738b0c0b1f02aec5ecb95f0fdb1c5171c6cd93a3
             w_try "${WINE}" vc_redist.x64.exe ${W_OPT_UNATTENDED:+/q}
             ;;
     esac
+
+    w_set_winver 'default'
 }
 
 w_metadata mfc140 dlls \
@@ -12794,7 +12813,7 @@ load_mfc140()
 #----------------------------------------------------------------
 
 w_metadata vcrun2017 dlls \
-    title="Visual C++ 2017 libraries (concrt140.dll,mfc140.dll,mfc140u.dll,mfcm140.dll,mfcm140u.dll,msvcp140.dll,vcamp140.dll,vccorlib140.dll,vcomp140.dll,vcruntime140.dll)" \
+    title="Visual C++ 2017 libraries (concrt140.dll,mfc140.dll,mfc140u.dll,mfcm140.dll,mfcm140u.dll,msvcp140.dll,msvcp140_1.dll,msvcp140_2.dll,vcamp140.dll,vccorlib140.dll,vcomp140.dll,vcruntime140.dll)" \
     publisher="Microsoft" \
     year="2017" \
     media="download" \
@@ -12810,19 +12829,20 @@ load_vcrun2017()
     # 2019/08/14: 54ad46ae80984aa48cae6361213692c96b3639e322730d28c7fb93b183c761da
     w_download https://aka.ms/vs/15/release/vc_redist.x86.exe 54ad46ae80984aa48cae6361213692c96b3639e322730d28c7fb93b183c761da
 
-    if w_workaround_wine_bug 37781 "This may fail in non-XP mode, see https://bugs.winehq.org/show_bug.cgi?id=37781" ,4.15; then
-        :
-    fi
+    w_override_dlls native,builtin api-ms-win-crt-private-l1-1-0 api-ms-win-crt-conio-l1-1-0 api-ms-win-crt-heap-l1-1-0 api-ms-win-crt-locale-l1-1-0 api-ms-win-crt-math-l1-1-0 api-ms-win-crt-runtime-l1-1-0 api-ms-win-crt-stdio-l1-1-0 api-ms-win-crt-time-l1-1-0 atl140 concrt140 msvcp140 msvcp140_1 msvcp140_2 msvcr140 ucrtbase vcomp140 vcruntime140
 
-    w_override_dlls native,builtin api-ms-win-crt-private-l1-1-0 api-ms-win-crt-conio-l1-1-0 api-ms-win-crt-heap-l1-1-0 api-ms-win-crt-locale-l1-1-0 api-ms-win-crt-math-l1-1-0 api-ms-win-crt-runtime-l1-1-0 api-ms-win-crt-stdio-l1-1-0 api-ms-win-crt-time-l1-1-0 atl140 concrt140 msvcp140 msvcr140 ucrtbase vcomp140 vcruntime140
-
+    # Otherwise ucrtbase doesn't get replaced
+    # See https://bugs.winehq.org/show_bug.cgi?id=46317
     w_set_winver winxp
+    w_try rm -f "${W_SYSTEM32_DLLS}"/ucrtbase.dll
 
     w_try_cd "${W_CACHE}/${W_PACKAGE}"
     w_try "${WINE}" vc_redist.x86.exe ${W_OPT_UNATTENDED:+/q}
 
     case "${W_ARCH}" in
         win64)
+            # Also remove the 64-bit version
+            w_try rm -f "${W_SYSTEM64_DLLS}"/ucrtbase.dll
             # Also install the 64-bit version
             # https://support.microsoft.com/en-gb/help/2977003/the-latest-supported-visual-c-downloads
             # 2017/10/02: 7434bf559290cccc3dd3624f10c9e6422cce9927d2231d294114b2f929f0e465
@@ -12832,12 +12852,14 @@ load_vcrun2017()
             w_try "${WINE}" vc_redist.x64.exe ${W_OPT_UNATTENDED:+/q}
             ;;
     esac
+
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
 
 w_metadata vcrun2019 dlls \
-    title="Visual C++ 2015-2019 libraries (concrt140.dll,mfc140.dll,mfc140u.dll,mfcm140.dll,mfcm140u.dll,msvcp140.dll,vcamp140.dll,vccorlib140.dll,vcomp140.dll,vcruntime140.dll) (and vcruntime140_1.dll on win64)" \
+    title="Visual C++ 2015-2019 libraries (concrt140.dll,mfc140.dll,mfc140u.dll,mfcm140.dll,mfcm140u.dll,msvcp140.dll,msvcp140_1,msvcp140_2,vcamp140.dll,vccorlib140.dll,vcomp140.dll,vcruntime140.dll) (and vcruntime140_1.dll on win64)" \
     publisher="Microsoft" \
     year="2019" \
     media="download" \
@@ -12856,13 +12878,20 @@ load_vcrun2019()
     # 2020/11/13: 50a3e92ade4c2d8f310a2812d46322459104039b9deadbd7fdd483b5c697c0c8
     w_download https://aka.ms/vs/16/release/vc_redist.x86.exe 50a3e92ade4c2d8f310a2812d46322459104039b9deadbd7fdd483b5c697c0c8
 
-    w_override_dlls native,builtin api-ms-win-crt-private-l1-1-0 api-ms-win-crt-conio-l1-1-0 api-ms-win-crt-heap-l1-1-0 api-ms-win-crt-locale-l1-1-0 api-ms-win-crt-math-l1-1-0 api-ms-win-crt-runtime-l1-1-0 api-ms-win-crt-stdio-l1-1-0 api-ms-win-crt-time-l1-1-0 atl140 concrt140 msvcp140 msvcr140 ucrtbase vcomp140 vcruntime140
+    w_override_dlls native,builtin api-ms-win-crt-private-l1-1-0 api-ms-win-crt-conio-l1-1-0 api-ms-win-crt-heap-l1-1-0 api-ms-win-crt-locale-l1-1-0 api-ms-win-crt-math-l1-1-0 api-ms-win-crt-runtime-l1-1-0 api-ms-win-crt-stdio-l1-1-0 api-ms-win-crt-time-l1-1-0 atl140 concrt140 msvcp140 msvcp140_1 msvcp140_2 msvcr140 ucrtbase vcomp140 vcruntime140
+
+    # Otherwise ucrtbase doesn't get replaced
+    # See https://bugs.winehq.org/show_bug.cgi?id=46317
+    w_set_winver winxp
+    w_try rm -f "${W_SYSTEM32_DLLS}"/ucrtbase.dll
 
     w_try_cd "${W_CACHE}"/"${W_PACKAGE}"
     w_try "${WINE}" vc_redist.x86.exe ${W_OPT_UNATTENDED:+/q}
 
     case "${W_ARCH}" in
         win64)
+            # Also remove the 64-bit version
+            w_try rm -f "${W_SYSTEM64_DLLS}"/ucrtbase.dll
             # Also install the 64-bit version
             # 2019/12/26: 40ea2955391c9eae3e35619c4c24b5aaf3d17aeaa6d09424ee9672aa9372aeed
             # 2020/03/23: b6c82087a2c443db859fdbeaae7f46244d06c3f2a7f71c35e50358066253de52
@@ -12878,6 +12907,8 @@ load_vcrun2019()
             w_try "${WINE}" vc_redist.x64.exe ${W_OPT_UNATTENDED:+/q}
             ;;
     esac
+
+    w_set_winver 'default'
 }
 
 #----------------------------------------------------------------
